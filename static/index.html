@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Board</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --fg:#14171c; --mute:#6b7280; --line:#e5e7eb; --up:#0a8f4d; --down:#d1342f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1115; --card:#181b21; --fg:#e8eaed; --mute:#8b93a1; --line:#262b33; --up:#3ddc84; --down:#ff6b64; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; }
+  header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
+  h1 { font-size:18px; margin:0; }
+  .mute { color:var(--mute); font-size:13px; }
+  .gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:16px; }
+  .gauge, .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .gauge b { display:block; font-size:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
+  .card { position:relative; overflow:hidden; }
+  .card .sym { font-weight:600; }
+  .card .score { font-size:30px; font-weight:700; margin:4px 0; }
+  .bar { position:absolute; left:0; bottom:0; height:4px; }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; min-height:20px; }
+  .chip { font-size:11px; padding:1px 6px; border:1px solid var(--line); border-radius:99px; color:var(--mute); }
+  .up { color:var(--up); } .down { color:var(--down); }
+  details { margin-top:16px; } summary { cursor:pointer; color:var(--mute); }
+</style>
+</head>
+<body>
+<header><h1>Stock Board</h1><span class="mute" id="updated">loading…</span></header>
+<div class="gauges" id="gauges"></div>
+<div class="grid" id="grid"></div>
+<details><summary>评分规则</summary><ul id="rules"></ul></details>
+<script>
+const col = s => s >= 70 ? 'var(--up)' : s >= 40 ? '#d9a400' : 'var(--down)';
+const pct = v => `<span class="${v>=0?'up':'down'}">${v>=0?'+':''}${v.toFixed(2)}%</span>`;
+async function load() {
+  try {
+    const d = await (await fetch('/api/data')).json();
+    document.getElementById('updated').textContent = d.updated ? '更新于 ' + d.updated : '等待首次数据…';
+    document.getElementById('gauges').innerHTML = d.gauges.map(g =>
+      `<div class="gauge"><span class="mute">${g.name}</span><b>${g.price}</b>${pct(g.change_pct)}</div>`).join('');
+    document.getElementById('grid').innerHTML = d.stocks.map(s =>
+      `<div class="card"><div class="sym">${s.symbol}</div>
+       <div class="score" style="color:${col(s.score)}">${s.score}</div>
+       <div class="mute">$${s.price} ${pct(s.change_pct)} · RSI ${s.rsi}</div>
+       <div class="chips">${s.signals.map(k=>`<span class="chip">${k}</span>`).join('')}</div>
+       <div class="bar" style="width:${s.score}%;background:${col(s.score)}"></div></div>`).join('');
+    document.getElementById('rules').innerHTML = Object.entries(d.rules).map(([k,v])=>`<li><code>${k}</code> ${v}</li>`).join('');
+  } catch (e) { document.getElementById('updated').textContent = '加载失败'; }
+}
+load(); setInterval(load, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+refresh_minutes: 10
+
+# Volatility / market gauges shown in the top strip
+gauges:
+  - {symbol: "^VIX",  name: "VIX"}
+  - {symbol: "^VXN",  name: "VXN (Nasdaq)"}
+  - {symbol: "^VVIX", name: "VVIX"}
+  - {symbol: "SPY",   name: "SPY"}
+  - {symbol: "QQQ",   name: "QQQ"}
+
+# One card per symbol, each gets a 0-100 score
+watchlist: [AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]
+
+# Score = sum of the weights of rules that are true (weights sum to 100)
+rules:
+  trend_up:      {weight: 25, desc: "Close > SMA50 > SMA200"}
+  macd_bull:     {weight: 20, desc: "MACD histogram > 0 and rising"}
+  rsi_ok:        {weight: 20, desc: "RSI14 between 50 and 70"}
+  breakout:      {weight: 20, desc: "Close at 20-day high"}
+  volume_spike:  {weight: 15, desc: "Volume > 1.5x 20-day average"}
