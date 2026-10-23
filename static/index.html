@@ -5,42 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StockBoard</title>
 <style>
-  :root { --bg:#fff; --card:#fff; --fg:#000; --mute:#6e7781; --line:#e6e8ea; --up:#00c805; --down:#ff5000; --mid:#d9a400; }
+  :root { --bg:#fff; --fg:#000; --mute:#6e7781; --line:#e6e8ea; --hover:#f5f6f7; --up:#00c805; --down:#ff5000; --mid:#d9a400; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#000; --card:#0b0d0e; --fg:#fff; --mute:#8d9399; --line:#23272b; }
+    :root { --bg:#000; --fg:#fff; --mute:#8d9399; --line:#23272b; --hover:#14171a; }
   }
   * { box-sizing:border-box; }
-  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; font-variant-numeric:tabular-nums; }
-  header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:16px; }
-  h1 { font-size:15px; margin:0; }
-  select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:8px; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; font-variant-numeric:tabular-nums; }
   .caption { font-size:12px; color:var(--mute); }
   .big { font-size:28px; font-weight:600; }
-  .layout { display:grid; gap:16px; }
-  @media (min-width:900px) { .layout { grid-template-columns:2fr 1fr; align-items:start; } aside { position:sticky; top:16px; } }
-  .indicator-row, .symbol-grid { display:grid; gap:8px; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }
-  .indicator-row { margin-bottom:16px; }
-  .indicator-card, .symbol-card, aside { border:1px solid var(--line); border-radius:12px; padding:8px 16px; background:var(--card); }
-  .symbol-card { cursor:pointer; }
-  .symbol-card.selected { border-color:var(--fg); }
   .row { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
   .up { color:var(--up); } .down { color:var(--down); } .gray { color:var(--mute); }
-  .strategy-gate { border-top:1px solid var(--line); padding:8px 0; }
-  .strategy-rule-row { display:grid; grid-template-columns:40px 24px 1fr auto; gap:8px; font-size:12px; padding:2px 0; }
+  .layout { display:grid; min-height:100vh; }
+  @media (min-width:900px) { .layout { grid-template-columns:280px 1fr; } aside { position:sticky; top:0; height:100vh; overflow-y:auto; border-right:1px solid var(--line); } }
+  aside { padding:16px 0; }
+  aside h2 { font-size:12px; font-weight:400; color:var(--mute); margin:16px 16px 8px; }
+  .indicator-item, .symbol-item { padding:8px 16px; display:grid; grid-template-columns:1fr auto; gap:0 8px; }
+  .symbol-item { cursor:pointer; }
+  .symbol-item:hover { background:var(--hover); }
+  .symbol-item.selected { background:var(--hover); box-shadow:inset 2px 0 var(--fg); }
+  main { padding:16px 24px; max-width:880px; }
+  select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:8px; width:calc(100% - 32px); margin:0 16px; }
+  .results { display:flex; gap:32px; margin:16px 0; }
+  .strategy-gate { border-left:1px solid var(--line); padding:0 0 16px 16px; margin-left:8px; }
+  .strategy-gate > .row { margin-left:-25px; }
+  .strategy-rule-row { display:grid; grid-template-columns:48px 24px 1fr auto; gap:8px; padding:4px 0; border-top:1px solid var(--line); }
   .not_applicable { opacity:.4; }
 </style>
 </head>
 <body>
-<header>
-  <h1>StockBoard <span class="caption" id="updated"></span></h1>
-  <select id="strategy-select"></select>
-</header>
 <div class="layout">
-  <main>
-    <div class="indicator-row" id="indicator-row"></div>
-    <div class="symbol-grid" id="symbol-grid"></div>
-  </main>
-  <aside id="strategy-panel"><span class="caption">点击一个标的</span></aside>
+  <aside>
+    <div class="row" style="padding:0 16px"><b>StockBoard</b><span class="caption" id="updated"></span></div>
+    <h2>策略</h2>
+    <select id="strategy-select"></select>
+    <h2>市场指标</h2>
+    <div id="indicator-list"></div>
+    <h2>标的</h2>
+    <div id="symbol-list"></div>
+  </aside>
+  <main id="strategy-panel"><span class="caption">点击左侧一个标的</span></main>
 </div>
 <script>
 const statusMark = { pass:'✅', fail:'❌', unknown:'❓', not_applicable:'➖' };
@@ -63,31 +66,29 @@ async function loadStrategyList() {
 async function loadDashboardSnapshot() {
   const snapshot = await (await fetch('/api/snapshot?strategy_id=' + strategySelect.value)).json();
   maxUnknownWeightRatio = snapshot.max_unknown_weight_ratio;
-  document.getElementById('updated').textContent = snapshot.updated || '等待首次数据…';
-  renderIndicatorRow(snapshot.market_indicator_card_list);
-  renderSymbolGrid(snapshot.symbol_card_list);
+  document.getElementById('updated').textContent = (snapshot.updated || '等待数据…').slice(5, 16);
+  renderIndicatorList(snapshot.market_indicator_card_list);
+  renderSymbolList(snapshot.symbol_card_list);
   if (!selectedSymbol && snapshot.symbol_card_list.length) selectedSymbol = snapshot.symbol_card_list[0].symbol;
   if (selectedSymbol) loadStrategyEvaluationForSymbol(selectedSymbol);
 }
 
-function renderIndicatorRow(indicatorList) {
-  document.getElementById('indicator-row').innerHTML = indicatorList.map(i => `
-    <div class="indicator-card"><div class="caption">${i.display_name}</div>
-      <div class="big">${i.value ?? '❓'}</div>
-      <div class="caption ${changeClass(i.change_percent, i.is_higher_value_risky)}">${percentText(i.change_percent)}</div></div>`).join('');
+function renderIndicatorList(indicatorList) {
+  document.getElementById('indicator-list').innerHTML = indicatorList.map(i => `
+    <div class="indicator-item"><span>${i.display_name}</span><b>${i.value ?? '❓'}</b>
+      <span></span><span class="caption ${changeClass(i.change_percent, i.is_higher_value_risky)}">${percentText(i.change_percent)}</span></div>`).join('');
 }
 
-function renderSymbolGrid(symbolList) {
-  document.getElementById('symbol-grid').innerHTML = symbolList.map(s => {
+function renderSymbolList(symbolList) {
+  document.getElementById('symbol-list').innerHTML = symbolList.map(s => {
     const lowData = s.unknown_weight_ratio > maxUnknownWeightRatio;
-    return `<div class="symbol-card ${s.symbol === selectedSymbol ? 'selected' : ''}" data-symbol="${s.symbol}">
-      <div class="row"><b>${s.symbol}</b><span>${passMark(s.is_pass)}</span></div>
-      <div class="big ${lowData ? 'gray' : scoreClass(s.score_percent)}" ${lowData ? '' : scoreColor(s.score_percent)}>${s.score_percent == null ? '❓' : Math.round(s.score_percent)}</div>
-      <div class="caption">$${s.price} <span class="${changeClass(s.change_percent)}">${percentText(s.change_percent)}</span></div></div>`;
+    return `<div class="symbol-item ${s.symbol === selectedSymbol ? 'selected' : ''}" data-symbol="${s.symbol}">
+      <b>${s.symbol}</b><span>${passMark(s.is_pass)} <b class="${lowData ? 'gray' : scoreClass(s.score_percent)}" ${lowData ? '' : scoreColor(s.score_percent)}>${s.score_percent == null ? '❓' : Math.round(s.score_percent)}</b></span>
+      <span class="caption">$${s.price}</span><span class="caption ${changeClass(s.change_percent)}">${percentText(s.change_percent)}</span></div>`;
   }).join('');
-  document.querySelectorAll('.symbol-card').forEach(card => card.onclick = () => {
-    selectedSymbol = card.dataset.symbol;
-    document.querySelectorAll('.symbol-card').forEach(c => c.classList.toggle('selected', c === card));
+  document.querySelectorAll('.symbol-item').forEach(item => item.onclick = () => {
+    selectedSymbol = item.dataset.symbol;
+    document.querySelectorAll('.symbol-item').forEach(i => i.classList.toggle('selected', i === item));
     loadStrategyEvaluationForSymbol(selectedSymbol);
     if (window.innerWidth < 900) document.getElementById('strategy-panel').scrollIntoView();
   });
@@ -105,15 +106,15 @@ function renderRuleRows(ruleList) {
 
 function renderStrategyTree(symbol, evaluation) {
   const gates = evaluation.gate_result_list.map(g => `
-    <div class="strategy-gate"><div class="row"><b>${g.display_name}</b><span>${passMark(g.is_pass)}</span></div>
-      ${g.expiration_window_label ? `<div class="caption">到期窗口 ${g.expiration_window_label} 天（最佳）</div>` : ''}
+    <div class="strategy-gate"><div class="row"><b>${passMark(g.is_pass)} ${g.display_name}</b>
+      <span class="caption">${g.expiration_window_label ? '到期窗口 ' + g.expiration_window_label + ' 天（最佳）' : ''}</span></div>
       ${renderRuleRows(g.rule_result_list)}
-      ${g.alternative_window_result_list.map(a => `<details><summary class="caption">窗口 ${a.expiration_window_label}</summary>${renderRuleRows(a.rule_result_list)}</details>`).join('')}
+      ${g.alternative_window_result_list.map(a => `<details><summary class="caption">其他窗口 ${a.expiration_window_label}</summary>${renderRuleRows(a.rule_result_list)}</details>`).join('')}
     </div>`).join('');
   const lowData = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
   document.getElementById('strategy-panel').innerHTML = `
-    <div class="row"><b>${symbol}</b><span class="caption">未知权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%${lowData ? ' · 数据不足' : ''}</span></div>
-    <div class="row" style="margin:8px 0"><div><div class="caption">通过</div><div class="big">${passMark(evaluation.is_pass)}</div></div>
+    <div class="row"><h1 style="margin:0">${symbol}</h1><span class="caption">未知权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%${lowData ? ' · 数据不足' : ''}</span></div>
+    <div class="results"><div><div class="caption">通过</div><div class="big">${passMark(evaluation.is_pass)}</div></div>
       <div><div class="caption">分数</div><div class="big ${scoreClass(evaluation.score_percent)}" ${scoreColor(evaluation.score_percent)}>${evaluation.score_percent ?? '❓'}</div></div></div>${gates}`;
 }
 

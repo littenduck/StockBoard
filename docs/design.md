@@ -15,16 +15,17 @@ Robinhood-style minimal. One HTML file, no framework, no chart library.
 
 ## Layout
 
-- Desktop (900px or wider): two columns. Left two thirds is the board, right one third is the strategy panel (sticky).
-- Board: first row is indicator cards, below it is the symbol grid (indices and stocks mixed).
-- Phone: stacked. Clicking a symbol card scrolls to the strategy panel.
+- Desktop (900px or wider): two columns. Left is a narrow sidebar (280px, sticky, scrolls by itself) holding lists. Right is the main area, which is the strategy tree.
+- Sidebar, top to bottom: title, strategy dropdown, market indicator list, symbol list (indices and stocks mixed). Lists, not cards: one row per item, no borders, the selected symbol has a thin left bar.
+- Main area: the selected symbol, its two results (pass, score), then the gates as a tree with a vertical line.
+- Phone: stacked, sidebar on top. Clicking a symbol scrolls to the main area.
 
 ## Components (only these four)
 
 | Class | Shows |
 |---|---|
-| `indicator-card` | name, value, daily change |
-| `symbol-card` | symbol, pass mark, score, price, daily change |
+| `indicator-item` | name, value, daily change |
+| `symbol-item` | symbol, pass mark, score, price, daily change |
 | `strategy-gate` | one gate: title, pass mark, rule rows |
 | `strategy-rule-row` | rule id, description, status mark, measured value |
 
