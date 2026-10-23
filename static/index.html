@@ -3,55 +3,123 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stock Board</title>
+<title>StockBoard</title>
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --fg:#14171c; --mute:#6b7280; --line:#e5e7eb; --up:#0a8f4d; --down:#d1342f; }
+  :root { --bg:#fff; --card:#fff; --fg:#000; --mute:#6e7781; --line:#e6e8ea; --up:#00c805; --down:#ff5000; --mid:#d9a400; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#0f1115; --card:#181b21; --fg:#e8eaed; --mute:#8b93a1; --line:#262b33; --up:#3ddc84; --down:#ff6b64; }
+    :root { --bg:#000; --card:#0b0d0e; --fg:#fff; --mute:#8d9399; --line:#23272b; }
   }
   * { box-sizing:border-box; }
-  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; }
-  header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
-  h1 { font-size:18px; margin:0; }
-  .mute { color:var(--mute); font-size:13px; }
-  .gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:16px; }
-  .gauge, .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
-  .gauge b { display:block; font-size:20px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
-  .card { position:relative; overflow:hidden; }
-  .card .sym { font-weight:600; }
-  .card .score { font-size:30px; font-weight:700; margin:4px 0; }
-  .bar { position:absolute; left:0; bottom:0; height:4px; }
-  .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; min-height:20px; }
-  .chip { font-size:11px; padding:1px 6px; border:1px solid var(--line); border-radius:99px; color:var(--mute); }
-  .up { color:var(--up); } .down { color:var(--down); }
-  details { margin-top:16px; } summary { cursor:pointer; color:var(--mute); }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; font-variant-numeric:tabular-nums; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:16px; }
+  h1 { font-size:15px; margin:0; }
+  select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:8px; }
+  .caption { font-size:12px; color:var(--mute); }
+  .big { font-size:28px; font-weight:600; }
+  .layout { display:grid; gap:16px; }
+  @media (min-width:900px) { .layout { grid-template-columns:2fr 1fr; align-items:start; } aside { position:sticky; top:16px; } }
+  .indicator-row, .symbol-grid { display:grid; gap:8px; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }
+  .indicator-row { margin-bottom:16px; }
+  .indicator-card, .symbol-card, aside { border:1px solid var(--line); border-radius:12px; padding:8px 16px; background:var(--card); }
+  .symbol-card { cursor:pointer; }
+  .symbol-card.selected { border-color:var(--fg); }
+  .row { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .up { color:var(--up); } .down { color:var(--down); } .gray { color:var(--mute); }
+  .strategy-gate { border-top:1px solid var(--line); padding:8px 0; }
+  .strategy-rule-row { display:grid; grid-template-columns:40px 24px 1fr auto; gap:8px; font-size:12px; padding:2px 0; }
+  .not_applicable { opacity:.4; }
 </style>
 </head>
 <body>
-<header><h1>Stock Board</h1><span class="mute" id="updated">loading…</span></header>
-<div class="gauges" id="gauges"></div>
-<div class="grid" id="grid"></div>
-<details><summary>评分规则</summary><ul id="rules"></ul></details>
+<header>
+  <h1>StockBoard <span class="caption" id="updated"></span></h1>
+  <select id="strategy-select"></select>
+</header>
+<div class="layout">
+  <main>
+    <div class="indicator-row" id="indicator-row"></div>
+    <div class="symbol-grid" id="symbol-grid"></div>
+  </main>
+  <aside id="strategy-panel"><span class="caption">点击一个标的</span></aside>
+</div>
 <script>
-const col = s => s >= 70 ? 'var(--up)' : s >= 40 ? '#d9a400' : 'var(--down)';
-const pct = v => `<span class="${v>=0?'up':'down'}">${v>=0?'+':''}${v.toFixed(2)}%</span>`;
-async function load() {
-  try {
-    const d = await (await fetch('/api/data')).json();
-    document.getElementById('updated').textContent = d.updated ? '更新于 ' + d.updated : '等待首次数据…';
-    document.getElementById('gauges').innerHTML = d.gauges.map(g =>
-      `<div class="gauge"><span class="mute">${g.name}</span><b>${g.price}</b>${pct(g.change_pct)}</div>`).join('');
-    document.getElementById('grid').innerHTML = d.stocks.map(s =>
-      `<div class="card"><div class="sym">${s.symbol}</div>
-       <div class="score" style="color:${col(s.score)}">${s.score}</div>
-       <div class="mute">$${s.price} ${pct(s.change_pct)} · RSI ${s.rsi}</div>
-       <div class="chips">${s.signals.map(k=>`<span class="chip">${k}</span>`).join('')}</div>
-       <div class="bar" style="width:${s.score}%;background:${col(s.score)}"></div></div>`).join('');
-    document.getElementById('rules').innerHTML = Object.entries(d.rules).map(([k,v])=>`<li><code>${k}</code> ${v}</li>`).join('');
-  } catch (e) { document.getElementById('updated').textContent = '加载失败'; }
+const statusMark = { pass:'✅', fail:'❌', unknown:'❓', not_applicable:'➖' };
+const passMark = value => value === true ? '✅' : value === false ? '❌' : '❓';
+const valueText = value => typeof value === 'number' ? Math.round(value * 100) / 100 : value ?? '';
+const percentText = value => value == null ? '' : (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+const changeClass = (value, isRisky) => value == null ? 'gray' : (value >= 0) !== !!isRisky ? 'up' : 'down';
+const scoreClass = score => score == null ? 'gray' : score >= 75 ? 'up' : score >= 60 ? '' : 'down';
+const scoreColor = score => score != null && score >= 60 && score < 75 ? 'style="color:var(--mid)"' : '';
+let selectedSymbol = null;
+let maxUnknownWeightRatio = 0.2;
+const strategySelect = document.getElementById('strategy-select');
+
+async function loadStrategyList() {
+  const data = await (await fetch('/api/strategy_list')).json();
+  strategySelect.innerHTML = data.strategy_list.map(s => `<option value="${s.strategy_id}">${s.display_name}</option>`).join('');
+  strategySelect.value = data.default_strategy_id;
 }
-load(); setInterval(load, 60000);
+
+async function loadDashboardSnapshot() {
+  const snapshot = await (await fetch('/api/snapshot?strategy_id=' + strategySelect.value)).json();
+  maxUnknownWeightRatio = snapshot.max_unknown_weight_ratio;
+  document.getElementById('updated').textContent = snapshot.updated || '等待首次数据…';
+  renderIndicatorRow(snapshot.market_indicator_card_list);
+  renderSymbolGrid(snapshot.symbol_card_list);
+  if (!selectedSymbol && snapshot.symbol_card_list.length) selectedSymbol = snapshot.symbol_card_list[0].symbol;
+  if (selectedSymbol) loadStrategyEvaluationForSymbol(selectedSymbol);
+}
+
+function renderIndicatorRow(indicatorList) {
+  document.getElementById('indicator-row').innerHTML = indicatorList.map(i => `
+    <div class="indicator-card"><div class="caption">${i.display_name}</div>
+      <div class="big">${i.value ?? '❓'}</div>
+      <div class="caption ${changeClass(i.change_percent, i.is_higher_value_risky)}">${percentText(i.change_percent)}</div></div>`).join('');
+}
+
+function renderSymbolGrid(symbolList) {
+  document.getElementById('symbol-grid').innerHTML = symbolList.map(s => {
+    const lowData = s.unknown_weight_ratio > maxUnknownWeightRatio;
+    return `<div class="symbol-card ${s.symbol === selectedSymbol ? 'selected' : ''}" data-symbol="${s.symbol}">
+      <div class="row"><b>${s.symbol}</b><span>${passMark(s.is_pass)}</span></div>
+      <div class="big ${lowData ? 'gray' : scoreClass(s.score_percent)}" ${lowData ? '' : scoreColor(s.score_percent)}>${s.score_percent == null ? '❓' : Math.round(s.score_percent)}</div>
+      <div class="caption">$${s.price} <span class="${changeClass(s.change_percent)}">${percentText(s.change_percent)}</span></div></div>`;
+  }).join('');
+  document.querySelectorAll('.symbol-card').forEach(card => card.onclick = () => {
+    selectedSymbol = card.dataset.symbol;
+    document.querySelectorAll('.symbol-card').forEach(c => c.classList.toggle('selected', c === card));
+    loadStrategyEvaluationForSymbol(selectedSymbol);
+    if (window.innerWidth < 900) document.getElementById('strategy-panel').scrollIntoView();
+  });
+}
+
+async function loadStrategyEvaluationForSymbol(symbol) {
+  const response = await fetch(`/api/evaluation/${strategySelect.value}/${symbol}`);
+  if (response.ok) renderStrategyTree(symbol, await response.json());
+}
+
+function renderRuleRows(ruleList) {
+  return ruleList.map(r => `<div class="strategy-rule-row ${r.status}"><span class="gray">${r.rule_id}</span>
+    <span>${statusMark[r.status]}</span><span>${r.description}</span><span class="gray">${valueText(r.measured_value)}</span></div>`).join('');
+}
+
+function renderStrategyTree(symbol, evaluation) {
+  const gates = evaluation.gate_result_list.map(g => `
+    <div class="strategy-gate"><div class="row"><b>${g.display_name}</b><span>${passMark(g.is_pass)}</span></div>
+      ${g.expiration_window_label ? `<div class="caption">到期窗口 ${g.expiration_window_label} 天（最佳）</div>` : ''}
+      ${renderRuleRows(g.rule_result_list)}
+      ${g.alternative_window_result_list.map(a => `<details><summary class="caption">窗口 ${a.expiration_window_label}</summary>${renderRuleRows(a.rule_result_list)}</details>`).join('')}
+    </div>`).join('');
+  const lowData = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
+  document.getElementById('strategy-panel').innerHTML = `
+    <div class="row"><b>${symbol}</b><span class="caption">未知权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%${lowData ? ' · 数据不足' : ''}</span></div>
+    <div class="row" style="margin:8px 0"><div><div class="caption">通过</div><div class="big">${passMark(evaluation.is_pass)}</div></div>
+      <div><div class="caption">分数</div><div class="big ${scoreClass(evaluation.score_percent)}" ${scoreColor(evaluation.score_percent)}>${evaluation.score_percent ?? '❓'}</div></div></div>${gates}`;
+}
+
+strategySelect.onchange = loadDashboardSnapshot;
+loadStrategyList().then(loadDashboardSnapshot);
+setInterval(loadDashboardSnapshot, 60000);
 </script>
 </body>
 </html>

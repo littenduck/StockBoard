@@ -1,0 +1,39 @@
+strategy_id: sell_put_four_in_one
+display_name: Sell Put 四合一
+source: "Notion: Sell Put 四合一决策Skill + 个股期权评分卡 (gates 0-2 only)"
+thresholds: {max_unknown_weight_ratio: 0.20}
+
+# Not built yet (need account data or manual answers): GATE 3 capital structure,
+# GATE 4 position limits, rules tagged ASK / PLAN, Fed / FOMC / CPI / oil rules.
+# Variant groups: list the loose rule first, the strict rule after it.
+gates:
+  - gate_id: gate_0_macro
+    display_name: "GATE 0 宏观/情绪开关"
+    rules:
+      - {rule_id: A07, description: "10Y < 5.0%", indicator: treasury_ten_year_yield, operator: less_than, value: 5.0, weight: 2, variant_group: ten_year_level}
+      - {rule_id: A02, description: "10Y < 4.5%", indicator: treasury_ten_year_yield, operator: less_than, value: 4.5, weight: 4, variant_group: ten_year_level}
+      - {rule_id: A03, description: "10Y 20日升幅 < 25bp", indicator: treasury_ten_year_yield_twenty_day_change_basis_points, operator: less_than, value: 25, weight: 3}
+      - {rule_id: A04, description: "HY 利差 < 400bp", indicator: high_yield_credit_spread_basis_points, operator: less_than, value: 400, weight: 4}
+      - {rule_id: A08, description: "FGI < 55", indicator: fear_greed_index, operator: less_than, value: 55, weight: 2, variant_group: fear_greed}
+      - {rule_id: A09, description: "FGI < 45", indicator: fear_greed_index, operator: less_than, value: 45, weight: 2, variant_group: fear_greed}
+      - {rule_id: A10, description: "VIX >= 13", indicator: vix_level, operator: greater_or_equal, value: 13, weight: 3, variant_group: vix_floor}
+      - {rule_id: A11, description: "VIX >= 15", indicator: vix_level, operator: greater_or_equal, value: 15, weight: 3, variant_group: vix_floor}
+      - {rule_id: Z18, description: "SPX > 200日线", indicator: spx_above_two_hundred_day_average, operator: is_true, weight: 4}
+      - {rule_id: Z19, description: "VIX 期限结构 contango", indicator: vix_term_structure_is_contango, operator: is_true, weight: 3}
+  - gate_id: gate_1_underlying
+    display_name: "GATE 1 标的筛选"
+    rules:
+      - {rule_id: A22, description: "到期前无财报", indicator: no_earnings_before_expiration, operator: is_true, weight: 5}
+      - {rule_id: F03, description: "52周区间分位 <= 50", indicator: fifty_two_week_range_percentile, operator: less_or_equal, value: 50, weight: 2, variant_group: range_position}
+      - {rule_id: F02, description: "52周区间分位 <= 25", indicator: fifty_two_week_range_percentile, operator: less_or_equal, value: 25, weight: 3, variant_group: range_position}
+      - {rule_id: Z20, description: "个股 > 200日线", indicator: price_above_two_hundred_day_average, operator: is_true, weight: 3}
+  - gate_id: gate_2_contract
+    display_name: "GATE 2 合约选择"
+    per_expiration_window: true   # evaluated once per window in settings.yaml, best window wins
+    rules:
+      - {rule_id: B03, description: "|Δ| 0.15-0.30", indicator: selected_put_absolute_delta, operator: between, value: [0.15, 0.30], weight: 4, variant_group: delta_range}
+      - {rule_id: B04, description: "|Δ| 0.15-0.20", indicator: selected_put_absolute_delta, operator: between, value: [0.15, 0.20], weight: 3, variant_group: delta_range}
+      - {rule_id: B07, description: "DTE 30-45", indicator: selected_put_days_to_expiration, operator: between, value: [30, 45], weight: 4}
+      - {rule_id: A21, description: "年化 >= 8%", indicator: selected_put_annualized_return_percent, operator: greater_or_equal, value: 8, weight: 3, variant_group: annualized_return}
+      - {rule_id: E08, description: "年化 >= 20%", indicator: selected_put_annualized_return_percent, operator: greater_or_equal, value: 20, weight: 2, variant_group: annualized_return}
+      - {rule_id: Z05, description: "ATM IV > RV30", indicator: selected_put_implied_volatility_exceeds_realized, operator: is_true, weight: 4}

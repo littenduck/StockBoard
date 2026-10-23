@@ -1,0 +1,24 @@
+refresh_interval_minutes: 10
+default_strategy_id: sell_put_four_in_one
+
+# First row of the page. is_higher_value_risky inverts the up/down colors.
+market_indicator_list:
+  - {indicator_id: vix_level, display_name: VIX, is_higher_value_risky: true}
+  - {indicator_id: vxn_level, display_name: VXN, is_higher_value_risky: true}
+  - {indicator_id: vvix_level, display_name: VVIX, is_higher_value_risky: true}
+  - {indicator_id: treasury_ten_year_yield, display_name: "10Y", is_higher_value_risky: true}
+  - {indicator_id: high_yield_credit_spread_basis_points, display_name: "HY bp", is_higher_value_risky: true}
+
+# Second row of the page: indices and stocks mixed.
+watchlist_symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]
+
+# Put contracts are picked once per window. The first window is the standard one.
+option_expiration_window_list:
+  - {minimum_days: 30, maximum_days: 45}
+  - {minimum_days: 14, maximum_days: 30}
+  - {minimum_days: 45, maximum_days: 60}
+  - {minimum_days: 60, maximum_days: 90}
+target_absolute_delta: 0.25
+
+# Kept by hand, for example [{event_name: FOMC, event_date: "2026-12-09"}]
+macro_event_calendar: []
