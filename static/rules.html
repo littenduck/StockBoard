@@ -16,12 +16,11 @@
   .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
   .rule-group { margin-bottom:var(--space-6); }
   .rule-group > header { margin-bottom:var(--space-2); }
-  .rule-group .row { display:grid; grid-template-columns:48px 1fr 64px minmax(0, 320px); gap:var(--space-3); align-items:start; margin:0;
+  .rule-group .row { display:grid; grid-template-columns:48px 1fr 64px minmax(0, 320px); gap:var(--space-3); align-items:baseline; margin:0;
     border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
-  .rule-group .row > small { line-height:20px; }
   .rule-group .row[data-alias] { color:var(--text-secondary); }
-  .rule-group .row > div > small { display:block; margin-top:var(--space-1); }
-  .rule-group > header > small { display:block; }
+  .rule-group > header > small, .rule-group .row > div > small { display:block; }
+  .rule-group .row > div > small { margin-top:var(--space-1); }
   .rule-group > header + .row { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
   .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
   .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); }

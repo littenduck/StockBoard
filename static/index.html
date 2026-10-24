@@ -17,7 +17,8 @@
   .status-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
   .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
   aside .field { width:calc(100% - var(--space-6)); margin:0 var(--space-4); }
-  aside > small { display:block; margin:var(--space-5) var(--space-4) var(--space-2); }
+  aside > small, .result-row > div > small, .strategy-gate > small { display:block; }
+  aside > small { margin:var(--space-5) var(--space-4) var(--space-2); }
   #indicator-list > .row { display:grid; grid-template-columns:1fr auto 72px; align-items:baseline; column-gap:var(--space-3); padding:var(--space-1) var(--space-2); }
   #indicator-list > .row > :nth-child(n+2) { text-align:right; }
   #symbol-list .row { display:grid; grid-template-columns:1fr 64px 64px; column-gap:var(--space-3); align-items:center; }
@@ -34,18 +35,16 @@
   .detail-header > small { flex-basis:100%; text-align:right; }
   .result-row { display:flex; gap:var(--space-6); }
   .result-row h1 { display:flex; align-items:center; gap:var(--space-2); }
-  .result-row > div > small { display:block; }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
   .strategy-gate:last-child { border-left-color:transparent; }
   .strategy-gate > header { display:flex; align-items:flex-start; gap:var(--space-2); margin:0 0 var(--space-2) -24px; }
   .strategy-gate > header > svg { background:var(--background); border-radius:50%; margin-top:2px; }
   .strategy-gate > header > small { margin-top:2px; white-space:nowrap; }
   .strategy-gate > header h3 { min-width:0; }
-  .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:start; margin:0; border-top:1px solid var(--separator); }
-  .strategy-gate .row > small, .strategy-gate .row .status-badge { line-height:20px; min-height:20px; }
+  .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); }
   .strategy-gate .row[data-status="not_applicable"], .strategy-gate .row[data-status="not_applicable"] small { color:var(--text-secondary); }
   .strategy-gate .row > :last-child { text-align:right; color:var(--text-secondary); }
-  .strategy-gate > small { display:block; margin:var(--space-2) 0 var(--space-1); }
+  .strategy-gate > small { margin:var(--space-2) 0 var(--space-1); }
   .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); }
   .strategy-line strong { margin-left:var(--space-1); }
   #strategy-help { width:min(520px, calc(100vw - var(--space-6))); max-height:calc(100vh - 2 * var(--space-6)); overflow-y:auto; padding:var(--space-5); color:var(--text); }
