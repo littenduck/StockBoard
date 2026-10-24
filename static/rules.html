@@ -8,49 +8,43 @@
 <link rel="stylesheet" href="/base.css">
 <style>
   main { max-width:960px; margin:0 auto; padding:var(--space-6); }
-  .top-row { display:flex; justify-content:space-between; align-items:center; margin:-14px 0 var(--space-2); }
-  .back-link { display:inline-block; padding:14px 0; color:var(--text-secondary); text-decoration:none; }
-  .rule-note { display:block; margin-top:var(--space-1); }
-  .back-link:hover { color:var(--text); }
+  .top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2); }
   .page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
     padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
-  .explanation { background:var(--surface); border:1px solid var(--separator); border-radius:12px; padding:var(--space-4) var(--space-5); margin-bottom:var(--space-5); }
-  .explanation p + p, .explanation p + ul { margin-top:var(--space-2); }
+  #explanation { margin-bottom:var(--space-5); }
+  #explanation p + p, #explanation p + ul { margin-top:var(--space-2); }
   .legend { display:flex; flex-wrap:wrap; gap:var(--space-1) var(--space-4); }
   .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
-  select { min-height:44px; padding:var(--space-3); font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--separator); border-radius:8px; }
   .rule-group { margin-bottom:var(--space-6); }
   .rule-group > header { margin-bottom:var(--space-2); }
-  .rule-row { display:grid; grid-template-columns:48px 1fr 64px minmax(0, 320px); gap:var(--space-3); align-items:start;
-    padding:var(--space-2) var(--space-2); border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
-  .rule-row.is-target { background:var(--fill); border-radius:8px; box-shadow:inset 3px 0 var(--accent); }
-  .rule-row > .caption { line-height:20px; }
-  .rule-row.is-alias { color:var(--text-secondary); }
-  .rule-row.is-alias a { padding:15px 4px; margin:-15px -4px; }
+  .rule-group .row { display:grid; grid-template-columns:48px 1fr 64px minmax(0, 320px); gap:var(--space-3); align-items:start; margin:0;
+    border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
+  .rule-group .row > .caption { line-height:20px; }
+  .rule-group .row[data-alias] { color:var(--text-secondary); }
+  .rule-group .row p { margin-top:var(--space-1); }
+  .rule-group > header + .row { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
   .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
   .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); }
-  .usage span { padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; white-space:nowrap; }
-  .column-header { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
   @media (max-width:899px) {
     main { padding:var(--space-5) var(--space-4); }
-    .rule-row { grid-template-columns:48px 1fr auto; row-gap:var(--space-1); }
+    .rule-group .row { grid-template-columns:48px 1fr auto; row-gap:var(--space-1); }
     .rule-meta { grid-column:2 / 4; grid-template-columns:auto 1fr; }
-    .column-header { display:none; }
+    .rule-group > header + .row { display:none; }
   }
 </style>
 </head>
 <body data-title-key="rules_title">
 <main>
-  <div class="top-row"><a class="back-link caption" id="back-link" href="/"></a>
+  <div class="top-row"><a class="link caption hit" id="back-link" href="/"></a>
     <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
   <header class="page-header">
     <h1 class="display" id="page-heading"></h1>
     <p class="caption" id="summary"></p>
   </header>
-  <section class="explanation" id="explanation"></section>
+  <section class="panel" id="explanation"></section>
   <div class="filter-row">
     <label class="caption" for="filter-select" id="filter-label"></label>
-    <select id="filter-select"><option value="all"></option><option value="used"></option><option value="automatic"></option></select>
+    <select class="field" id="filter-select"><option value="all"></option><option value="used"></option><option value="automatic"></option></select>
   </div>
   <div id="rule-group-list"><p class="caption" id="loading-rules"></p></div>
 </main>
@@ -63,14 +57,14 @@ let ruleCatalog = null, loadFailed = false;
 
 function renderRuleRow(rule) {
   if (rule.alias_of) {
-    return `<div class="rule-row is-alias" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
-      <span>${languageRenderText(rule.description)} <a class="caption" href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">${escapeText(languageText('same_as', { id:rule.alias_of }))}</a></span><span></span></div>`;
+    return `<div class="row" data-alias id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
+      <span>${languageRenderText(rule.description)} <a class="link caption hit" href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">${escapeText(languageText('same_as', { id:rule.alias_of }))}</a></span><span></span></div>`;
   }
-  return `<div class="rule-row" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
-    <span>${languageRenderText(rule.description)}${rule.note ? `<span class="caption rule-note">${languageRenderText(rule.note)}</span>` : ''}</span>
+  return `<div class="row" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
+    <div>${languageRenderText(rule.description)}${rule.note ? `<p class="caption">${languageRenderText(rule.note)}</p>` : ''}</div>
     <span class="caption">W${rule.default_weight}</span>
     <span class="rule-meta caption"><span class="${AVAILABILITY_COLOR[rule.availability]}">${escapeText(languageText(rule.availability))}</span>
-      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<span>${escapeText(primaryText(usage.display_name))} · W${usage.weight}</span>`).join('') : escapeText(languageText('not_used'))}</span></span></div>`;
+      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<span class="chip">${escapeText(primaryText(usage.display_name))} · W${usage.weight}</span>`).join('') : escapeText(languageText('not_used'))}</span></span></div>`;
 }
 
 function renderStaticText() {
@@ -111,7 +105,7 @@ function renderRuleCatalog(shouldScrollToTarget = true) {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
     return `<section class="rule-group"><header><h2 class="title">${languageRenderText(group.display_name)}</h2><p class="caption">${languageRenderText(group.description)}</p></header>
-      <div class="rule-row column-header caption"><span>${escapeText(languageText('column_id'))}</span><span>${escapeText(languageText('column_rule'))}</span><span>${escapeText(languageText('column_weight'))}</span>
+      <div class="row caption"><span>${escapeText(languageText('column_id'))}</span><span>${escapeText(languageText('column_rule'))}</span><span>${escapeText(languageText('column_weight'))}</span>
         <span class="rule-meta"><span>${escapeText(languageText('availability'))}</span><span>${escapeText(languageText('column_used_by'))}</span></span></div>
       ${ruleList.map(renderRuleRow).join('')}</section>`;
   }).join('');
