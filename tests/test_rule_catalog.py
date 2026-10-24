@@ -3,6 +3,7 @@ import os
 import pytest
 
 from stockboard_backend import indicator_calculation
+from stockboard_backend.localized_text import CHINESE_CHARACTER_PATTERN
 from stockboard_backend.rule_catalog import RuleCatalog, RuleCatalogEntry, RuleGroup, \
     rule_catalog_load_rule_catalog_from_yaml_file, rule_catalog_validate_rule_catalog_against_known_indicators
 from stockboard_backend.settings_loader import PROJECT_DIRECTORY
@@ -45,3 +46,24 @@ def test_catalog_validation_finds_problems():
                             RuleCatalogEntry("A02", "copy", alias_of="A77"),
                             RuleCatalogEntry("B01", "no group", 3, "user_answer"))
     assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, set())) == 3
+
+
+FORBIDDEN_ENGLISH_WORD_LIST = ["loose grade", "strict grade", "loose level", "strict level", "Not applicable", "not applicable"]
+
+
+def assert_localized_text_is_complete(localized_text, field_name):
+    assert localized_text.en and localized_text.zh, field_name
+    assert not CHINESE_CHARACTER_PATTERN.search(localized_text.en), "Chinese left in English: " + field_name
+    for word in FORBIDDEN_ENGLISH_WORD_LIST:
+        assert word not in localized_text.en, "off-glossary '{}' in {}".format(word, field_name)
+
+
+def test_every_catalog_text_is_bilingual_and_follows_the_glossary():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    for group in catalog.rule_group_list:
+        assert_localized_text_is_complete(group.display_name, "group " + group.group_id)
+        assert_localized_text_is_complete(group.description, "group description " + group.group_id)
+    for entry in catalog.rule_entry_by_id.values():
+        assert_localized_text_is_complete(entry.description, "rule " + entry.rule_id)
+        if entry.note:
+            assert_localized_text_is_complete(entry.note, "note " + entry.rule_id)
