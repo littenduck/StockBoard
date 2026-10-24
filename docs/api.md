@@ -52,7 +52,7 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 |---|---|
 | `status.generated_at` | when the data was computed; `null` before the first snapshot |
 | `status.server_time` | server clock now; compute data age as `server_time - generated_at` |
-| `status.market_is_open` | US regular hours, Monday to Friday 9:30 to 16:00 ET (holidays not checked) |
+| `status.market_is_open` | US regular hours, Monday to Friday 9:30 to 16:00 ET; closed on `market_holiday_list` days, 13:00 close on `market_early_close_list` days (`config/settings.yaml`) |
 | `status.stale_after_minutes` | while the market is open, older data should be shown as stale |
 | `change_unit` | `percent` (relative change) or `basis_points` (absolute change of a rate) |
 | `is_pass` | `true` passed, `false` vetoed by a weight 5 rule, `null` unknown |

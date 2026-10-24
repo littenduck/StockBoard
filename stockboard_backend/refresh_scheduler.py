@@ -159,15 +159,16 @@ def refresh_scheduler_refresh_snapshot_file(
     return snapshot
 
 
-def refresh_scheduler_determine_whether_refresh_is_due(refresh_interval_minutes: int) -> bool:
+def refresh_scheduler_determine_whether_refresh_is_due(settings: ApplicationSettings) -> bool:
     """Due when there is no snapshot yet, or the market is open and the snapshot is old enough."""
     snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(SNAPSHOT_FILE_PATH)
     if snapshot is None or snapshot.get("schema_version") != SNAPSHOT_SCHEMA_VERSION:
         return True
     is_market_open = market_data.market_data_determine_whether_us_market_is_open(
-        datetime.datetime.now(datetime.timezone.utc))
+        datetime.datetime.now(datetime.timezone.utc), settings.market_holiday_date_set,
+        settings.market_early_close_date_set)
     age_minutes = (time.time() - os.path.getmtime(SNAPSHOT_FILE_PATH)) / 60
-    return is_market_open and age_minutes >= refresh_interval_minutes
+    return is_market_open and age_minutes >= settings.refresh_interval_minutes
 
 
 def refresh_scheduler_start_background_refresh_thread(
@@ -176,7 +177,7 @@ def refresh_scheduler_start_background_refresh_thread(
     def loop() -> None:
         while True:
             try:
-                if refresh_scheduler_determine_whether_refresh_is_due(settings.refresh_interval_minutes):
+                if refresh_scheduler_determine_whether_refresh_is_due(settings):
                     refresh_scheduler_refresh_snapshot_file(settings, strategy_definition_by_id)
             except Exception as error:  # keep the loop alive through network or data errors
                 print("refresh failed:", error)

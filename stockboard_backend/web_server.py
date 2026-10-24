@@ -59,7 +59,8 @@ def web_server_build_status(generated_at: Optional[str]) -> dict:
         "server_time": refresh_scheduler.refresh_scheduler_get_current_exchange_time_text(),
         "generated_at": generated_at,
         "market_is_open": market_data.market_data_determine_whether_us_market_is_open(
-            datetime.datetime.now(datetime.timezone.utc)),
+            datetime.datetime.now(datetime.timezone.utc), application_settings.market_holiday_date_set,
+            application_settings.market_early_close_date_set),
         "refresh_interval_minutes": application_settings.refresh_interval_minutes,
         "stale_after_minutes": application_settings.stale_after_minutes,
     }

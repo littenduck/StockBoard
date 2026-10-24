@@ -1,6 +1,6 @@
 """Fetch prices and calendar dates from yfinance."""
 import datetime
-from typing import Dict, List, Optional
+from typing import Dict, FrozenSet, List, Optional
 from zoneinfo import ZoneInfo
 
 import pandas
@@ -34,9 +34,15 @@ def market_data_fetch_next_earnings_date_by_symbol(symbol: str) -> Optional[date
     return min(upcoming_date_list) if upcoming_date_list else None
 
 
-def market_data_determine_whether_us_market_is_open(current_time: datetime.datetime) -> bool:
-    """Regular hours Monday to Friday, 9:30 to 16:00 New York time. Holidays are not checked."""
+def market_data_determine_whether_us_market_is_open(
+    current_time: datetime.datetime,
+    holiday_date_set: FrozenSet[datetime.date] = frozenset(),
+    early_close_date_set: FrozenSet[datetime.date] = frozenset(),
+) -> bool:
+    """Regular hours Monday to Friday, 9:30 to 16:00 New York time; closed on holidays,
+    13:00 close on early close days. Both sets come from config/settings.yaml."""
     new_york_time = current_time.astimezone(NEW_YORK_TIME_ZONE)
-    if new_york_time.weekday() >= 5:
+    if new_york_time.weekday() >= 5 or new_york_time.date() in holiday_date_set:
         return False
-    return datetime.time(9, 30) <= new_york_time.time() <= datetime.time(16, 0)
+    closing_time = datetime.time(13, 0) if new_york_time.date() in early_close_date_set else datetime.time(16, 0)
+    return datetime.time(9, 30) <= new_york_time.time() <= closing_time

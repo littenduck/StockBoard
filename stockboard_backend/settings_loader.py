@@ -1,7 +1,8 @@
 """Load config/settings.yaml into typed settings."""
+import datetime
 import os
 from dataclasses import dataclass, field
-from typing import List
+from typing import FrozenSet, List
 
 import yaml
 
@@ -36,6 +37,8 @@ class ApplicationSettings:
     macro_event_calendar: list
     stale_after_minutes: int = 60
     allowed_origin_list: List[str] = field(default_factory=list)
+    market_holiday_date_set: FrozenSet[datetime.date] = frozenset()
+    market_early_close_date_set: FrozenSet[datetime.date] = frozenset()
 
 
 def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> ApplicationSettings:
@@ -51,4 +54,8 @@ def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> App
         macro_event_calendar=raw.get("macro_event_calendar") or [],
         stale_after_minutes=raw.get("stale_after_minutes", 60),
         allowed_origin_list=raw.get("allowed_origin_list") or [],
+        market_holiday_date_set=frozenset(
+            datetime.date.fromisoformat(str(text)) for text in raw.get("market_holiday_list") or []),
+        market_early_close_date_set=frozenset(
+            datetime.date.fromisoformat(str(text)) for text in raw.get("market_early_close_list") or []),
     )
