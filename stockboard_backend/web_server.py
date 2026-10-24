@@ -81,6 +81,11 @@ def web_server_get_rule_catalog_page() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rules.html"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/language.js")
+def web_server_get_language_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "language.js"), headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/base.css")
 def web_server_get_base_stylesheet() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "base.css"), headers={"Cache-Control": "no-cache"})
@@ -97,7 +102,7 @@ def web_server_get_rule_catalog() -> dict:
                     {"strategy_id": strategy.strategy_id, "display_name": dataclasses.asdict(strategy.display_name),
                      "weight": rule.weight})
     entry_list = list(application_rule_catalog.rule_entry_by_id.values())
-    return {"group_list": [{
+    return {"default_language": application_settings.default_language, "group_list": [{
         "group_id": group.group_id, "display_name": dataclasses.asdict(group.display_name),
         "description": dataclasses.asdict(group.description),
         "rule_list": [{
