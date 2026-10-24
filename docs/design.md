@@ -66,7 +66,8 @@ Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places car
 
 ## Layout
 
-- Desktop (900px or wider): grid `300px 1fr`. Sidebar sticky, scrolls by itself, `--surface` background, 1px right separator. Main max width 880px, padding 32px.
+- Desktop (900px or wider): grid `300px 1fr`. Sidebar sticky, scrolls by itself, `--surface` background, 1px right separator. Main max width 880px, padding 32px, centered in the remaining space so the white space is even on both sides.
+- Main header: symbol and price on the left, 结论 and 分数 on the right, both big values on one bottom line; the missing-data note sits under them; a 1px separator closes the header. On phones the results wrap under the symbol.
 - Sidebar order: header (title, theme button), status bar, strategy select, 市场指标 list, 标的 list.
 - Phone (below 900px): one column. Indicators become a horizontal scroll strip. Selecting a symbol scrolls to main; main has a "↑ 列表" link.
 

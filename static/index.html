@@ -53,10 +53,13 @@
   .symbol-item.is-failed { cursor:default; opacity:0.6; }
   .placeholder { height:36px; margin:var(--space-2) var(--space-4); border-radius:8px; background:var(--separator); }
 
-  main { padding:var(--space-6); max-width:880px; width:100%; }
+  main { padding:var(--space-6); max-width:880px; width:100%; justify-self:center; }
   .back-link { display:none; padding:14px 0; margin:-14px 0 var(--space-2); color:var(--text-secondary); }
   .symbol-header { display:flex; flex-wrap:wrap; align-items:baseline; column-gap:var(--space-3); }
-  .result-row { display:flex; flex-wrap:wrap; gap:var(--space-2) var(--space-6); margin:var(--space-4) 0 var(--space-6); }
+  .detail-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
+    padding-bottom:var(--space-5); margin-bottom:var(--space-6); border-bottom:1px solid var(--separator); }
+  .detail-note { flex-basis:100%; text-align:right; }
+  .result-row { display:flex; gap:var(--space-6); }
   .result-row .display { display:flex; align-items:center; gap:var(--space-2); }
   .tag { display:inline-block; padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
@@ -85,6 +88,7 @@
     #indicator-list { display:flex; gap:var(--space-2); overflow-x:auto; padding:0 var(--space-4); }
     #indicator-list .indicator-item { flex:none; border:1px solid var(--separator); border-radius:12px; padding:var(--space-2) var(--space-3); }
     main { padding:var(--space-5) var(--space-4); }
+    .detail-note { text-align:left; }
     .back-link { display:inline-block; }
   }
 </style>
@@ -276,14 +280,14 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
         <summary class="caption">其他到期窗口 ${escapeText(window.expiration_window_label)} 天</summary>${renderRuleRows(window.rule_result_list)}</details>`).join('')}
     </section>`).join('');
   strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">↑ 列表</a>
-    <div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
+    <header class="detail-header"><div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
       <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></p>` : ''}</div>
     <div class="result-row">
       <div><p class="caption">结论</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
       <div><p class="caption">分数${isInsufficient ? ' <span class="tag">数据不足</span>' : ''}</p>
         <p class="display ${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</p></div>
-      <p class="caption" style="flex-basis:100%">数据缺失权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%（未知规则不计入分数）</p>
-    </div>${gates}`;
+      </div><p class="caption detail-note">数据缺失权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%（未知规则不计入分数）</p>
+    </header>${gates}`;
   if (shouldAnimate) { strategyPanel.classList.remove('panel-enter'); void strategyPanel.offsetWidth; strategyPanel.classList.add('panel-enter'); }
 }
 
