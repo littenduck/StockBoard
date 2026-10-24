@@ -21,13 +21,14 @@ Test: `.venv/bin/python -m pytest tests`
 
 | Path | What |
 |---|---|
+| `config/rules.yaml` | every rule, defined once; strategies reference rules by id |
 | `config/settings.yaml` | refresh interval, indicator cards, watchlist, option expiration windows |
 | `strategies/*.yaml` | strategies: gates, rules, weights (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, status badges, layout) |
 | `docs/indicator.md` | every indicator, its meaning and source |
 | `docs/strategy.md` | strategy file format, scoring, pass veto |
 | `stockboard_backend/` | Python package, one module per job, function names are `module_verb_object` |
-| `static/index.html` | the whole front end |
+| `static/index.html`, `static/rules.html`, `static/base.css` | dashboard, rule catalog page (`/rules`), shared design tokens |
 | `docs/api.md` | JSON API (`/api/v1`) for the page and any future client |
 | `.claude/skills/` | skills that point Claude at the design and strategy docs |
 

@@ -10,6 +10,19 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 - Errors: HTTP 404 with `{"detail": "..."}` for an unknown strategy or symbol.
 - CORS is off unless `allowed_origin_list` in `config/settings.yaml` lists origins. Native apps do not need it.
 
+## GET /api/v1/rules
+
+Every rule from `config/rules.yaml`, grouped by letter, with the strategies that use it.
+
+```json
+{"group_list": [{"group_id": "A", "display_name": "A · #1 Sell Put 五层决策框架", "description": "...",
+  "rule_list": [{"rule_id": "A22", "description": "到期前无财报", "default_weight": 5, "availability": "automatic",
+                 "alias_of": null, "note": null,
+                 "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": "Sell Put 四合一", "weight": 5}]}]}]}
+```
+
+`availability`: `automatic`, `missing_data_source`, `account_data`, `user_answer`, `trade_plan`, `not_implemented`. A rule with `alias_of` is a duplicate listing of another rule.
+
 ## GET /api/v1/strategies
 
 ```json

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>规则目录 · StockBoard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23C96442'/%3E%3Cpath d='M7 21l6-6 4 4 8-9' fill='none' stroke='%23FAF9F5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/base.css">
+<style>
+  main { max-width:960px; margin:0 auto; padding:var(--space-6); }
+  .back-link { display:inline-block; padding:14px 0; margin:-14px 0 var(--space-2); color:var(--text-secondary); text-decoration:none; }
+  .back-link:hover { color:var(--text); }
+  .page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
+    padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
+  .explanation { background:var(--surface); border:1px solid var(--separator); border-radius:12px; padding:var(--space-4) var(--space-5); margin-bottom:var(--space-5); }
+  .explanation p + p, .explanation p + ul { margin-top:var(--space-2); }
+  .legend { display:flex; flex-wrap:wrap; gap:var(--space-1) var(--space-4); }
+  .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
+  select { min-height:44px; padding:var(--space-3); font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--separator); border-radius:8px; }
+  .rule-group { margin-bottom:var(--space-6); }
+  .rule-group > header { margin-bottom:var(--space-2); }
+  .rule-row { display:grid; grid-template-columns:48px 1fr 64px minmax(0, 320px); gap:var(--space-3); align-items:start;
+    padding:var(--space-2) var(--space-2); border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
+  .rule-row.is-target { background:var(--fill); border-radius:8px; box-shadow:inset 3px 0 var(--accent); }
+  .rule-row > .caption { line-height:20px; }
+  .rule-row.is-alias { color:var(--text-secondary); }
+  .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
+  .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); }
+  .usage span { padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; white-space:nowrap; }
+  .column-header { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
+  @media (max-width:899px) {
+    main { padding:var(--space-5) var(--space-4); }
+    .rule-row { grid-template-columns:48px 1fr auto; row-gap:var(--space-1); }
+    .rule-meta { grid-column:2 / 4; grid-template-columns:auto 1fr; }
+    .column-header { display:none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <a class="back-link caption" href="/">← 返回看板</a>
+  <header class="page-header">
+    <h1 class="display">规则目录</h1>
+    <p class="caption" id="summary"></p>
+  </header>
+  <section class="explanation">
+    <p><span class="strong">编号规则：</span>字母加两位数字。字母表示规则来自哪一组：A 到 F 和 Z 来自 Notion「个股期权评分卡」的六个策略和公共补充层，T、R、M 是后来为股票策略新增的。同一个编号在所有策略里指的是同一条规则。</p>
+    <p>每个策略只挑选它需要、并且能自动计算的规则，所以策略树里同一层的编号不连续。同一层里如果先出现宽松档（如 A07「10Y &lt; 5.0%」）再出现严格档（如 A02「10Y &lt; 4.5%」），是因为两者属于同一个变体组，只计算通过的最严格那一档。</p>
+    <p class="caption">数据状态：</p>
+    <ul class="legend caption" id="legend"></ul>
+  </section>
+  <div class="filter-row">
+    <label class="caption" for="filter-select">显示</label>
+    <select id="filter-select">
+      <option value="all">全部规则</option>
+      <option value="used">已被策略使用的规则</option>
+      <option value="automatic">可以自动计算的规则</option>
+    </select>
+  </div>
+  <div id="rule-group-list"><p class="caption">正在读取规则…</p></div>
+</main>
+<script>
+const AVAILABILITY_STYLE = {
+  automatic: { text:'自动计算', color:'positive', explanation:'用看板已经抓取的数据就能判断' },
+  missing_data_source: { text:'缺少数据源', color:'caution', explanation:'需要暂时没有稳定免费来源的数据，如 FGI、IV 百分位、新闻、基本面' },
+  account_data: { text:'需要账户数据', color:'muted', explanation:'需要券商账户的净值、现金、持仓或期权权限' },
+  user_answer: { text:'需要你回答', color:'muted', explanation:'只有你能回答，如是否愿意长期持有' },
+  trade_plan: { text:'交易计划项', color:'muted', explanation:'是下单后的计划（止盈、止损），不是筛选条件' },
+  not_implemented: { text:'尚未实现', color:'muted', explanation:'原则上可以计算，还没有做' },
+};
+const escapeText = text => String(text ?? '').replace(/[&<>"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[character]);
+let ruleCatalog = null;
+
+function renderRuleRow(rule) {
+  if (rule.alias_of) {
+    return `<div class="rule-row is-alias" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
+      <span>${escapeText(rule.description)} <a class="caption" href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">同 ${rule.alias_of}</a></span><span></span></div>`;
+  }
+  const style = AVAILABILITY_STYLE[rule.availability];
+  return `<div class="rule-row" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
+    <span>${escapeText(rule.description)}${rule.note ? `<br><span class="caption">${escapeText(rule.note)}</span>` : ''}</span>
+    <span class="caption">W${rule.default_weight}</span>
+    <span class="rule-meta caption"><span class="${style.color}">${style.text}</span>
+      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<span>${escapeText(usage.display_name)} · W${usage.weight}</span>`).join('') : '未被使用'}</span></span></div>`;
+}
+
+function renderRuleCatalog() {
+  const filter = document.getElementById('filter-select').value;
+  const keepRule = rule => filter === 'all' || (filter === 'used' ? rule.used_by.length > 0 : rule.availability === 'automatic');
+  document.getElementById('rule-group-list').innerHTML = ruleCatalog.group_list.map(group => {
+    const ruleList = group.rule_list.filter(keepRule);
+    if (!ruleList.length) return '';
+    return `<section class="rule-group"><header><h2 class="title">${escapeText(group.display_name)}</h2><p class="caption">${escapeText(group.description)}</p></header>
+      <div class="rule-row column-header caption"><span>编号</span><span>说明</span><span>默认权重</span><span class="rule-meta"><span>数据状态</span><span>使用它的策略</span></span></div>
+      ${ruleList.map(renderRuleRow).join('')}</section>`;
+  }).join('');
+  const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (target) { target.classList.add('is-target'); target.scrollIntoView({ block:'center' }); }
+}
+
+async function loadRuleCatalog() {
+  ruleCatalog = await (await fetch('/api/v1/rules')).json();
+  const ruleList = ruleCatalog.group_list.flatMap(group => group.rule_list).filter(rule => !rule.alias_of);
+  document.getElementById('summary').textContent =
+    `共 ${ruleList.length} 条规则 · 可自动计算 ${ruleList.filter(rule => rule.availability === 'automatic').length} 条 · 被策略使用 ${ruleList.filter(rule => rule.used_by.length).length} 条`;
+  document.getElementById('legend').innerHTML = Object.values(AVAILABILITY_STYLE).map(style =>
+    `<li><span class="${style.color}">${style.text}</span>：${style.explanation}</li>`).join('');
+  renderRuleCatalog();
+}
+
+try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
+document.getElementById('filter-select').onchange = renderRuleCatalog;
+loadRuleCatalog().catch(() => { document.getElementById('rule-group-list').innerHTML = '<p class="caption negative">读取规则失败，请确认服务正在运行。</p>'; });
+</script>
+</body>
+</html>

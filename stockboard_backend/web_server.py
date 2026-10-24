@@ -75,6 +75,36 @@ def web_server_get_index_page() -> FileResponse:
                         headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/rules")
+def web_server_get_rule_catalog_page() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rules.html"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/base.css")
+def web_server_get_base_stylesheet() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "base.css"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/v1/rules")
+def web_server_get_rule_catalog() -> dict:
+    """Every rule grouped by letter, with the strategies (and weights) that use it."""
+    usage_list_by_rule_id = {}
+    for strategy in strategy_definition_by_id.values():
+        for gate in strategy.gate_list:
+            for rule in gate.rule_list:
+                usage_list_by_rule_id.setdefault(rule.rule_id, []).append(
+                    {"strategy_id": strategy.strategy_id, "display_name": strategy.display_name, "weight": rule.weight})
+    entry_list = list(application_rule_catalog.rule_entry_by_id.values())
+    return {"group_list": [{
+        "group_id": group.group_id, "display_name": group.display_name, "description": group.description,
+        "rule_list": [{
+            "rule_id": entry.rule_id, "description": entry.description, "default_weight": entry.default_weight,
+            "availability": entry.availability, "alias_of": entry.alias_of, "note": entry.note,
+            "used_by": usage_list_by_rule_id.get(entry.rule_id, []),
+        } for entry in entry_list if entry.group_id == group.group_id],
+    } for group in application_rule_catalog.rule_group_list]}
+
+
 @app.get("/api/v1/strategies")
 def web_server_get_strategy_list() -> dict:
     return {

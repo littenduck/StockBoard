@@ -6,31 +6,8 @@
 <title>StockBoard</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23C96442'/%3E%3Cpath d='M7 21l6-6 4 4 8-9' fill='none' stroke='%23FAF9F5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#FAF9F5">
+<link rel="stylesheet" href="/base.css">
 <style>
-  :root {
-    --background:#FAF9F5; --surface:#FFFFFF; --fill:#F0EEE6; --separator:#E8E6DC; --text:#141413; --text-secondary:#6B6A64;
-    --accent:#C96442; --positive:#146C35; --negative:#B42318; --caution:#8A5A00;
-    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
-    color-scheme:light;
-  }
-  :root[data-theme="dark"] {
-    --background:#262624; --surface:#30302E; --fill:#3A3A37; --separator:#3D3D3A; --text:#F5F4EE; --text-secondary:#A8A69D;
-    --accent:#D97757; --positive:#4ADE80; --negative:#FF8A8A; --caution:#FBBF24; color-scheme:dark;
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--background); color:var(--text); font:400 15px/20px -apple-system,BlinkMacSystemFont,system-ui,sans-serif; font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
-  h1, h2, h3, p, ul { margin:0; padding:0; font-size:inherit; font-weight:inherit; }
-  ul { list-style:none; }
-  button { font:inherit; color:inherit; background:none; border:0; padding:0; text-align:inherit; cursor:pointer; }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
-  .caption { font-size:12px; line-height:16px; color:var(--text-secondary); }
-  .title { font-size:20px; line-height:24px; font-weight:600; }
-  .display { font-size:34px; line-height:40px; font-weight:600; letter-spacing:-0.02em; }
-  .strong { font-weight:600; }
-  .positive { color:var(--positive); } .negative { color:var(--negative); } .caution { color:var(--caution); } .muted { color:var(--text-secondary); }
-  .icon { width:16px; height:16px; flex:none; }
-  .display .icon { width:28px; height:28px; }
-  .status-badge { display:inline-flex; align-items:center; gap:var(--space-1); white-space:nowrap; }
 
   .layout { display:grid; min-height:100vh; }
   .layout > * { min-width:0; }
@@ -75,6 +52,10 @@
   .strategy-rule-row.not_applicable, .strategy-rule-row.not_applicable .caption { color:var(--text-secondary); }
   .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
   .window-title { margin:var(--space-4) 0 var(--space-1); }
+  .rule-link { text-decoration:none; } .rule-link:hover { color:var(--text); text-decoration:underline; }
+  .catalog-link { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+  .sidebar-footer-link { display:block; margin:var(--space-5) var(--space-4) 0; padding:14px 0; color:var(--text-secondary); text-decoration:none; border-top:1px solid var(--separator); }
+  .sidebar-footer-link:hover { color:var(--text); }
   .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); margin-bottom:var(--space-1); }
   .help-button { width:44px; height:44px; margin:-12px -12px -12px -8px; display:grid; place-items:center; border-radius:50%; color:var(--text-secondary); transition:background-color 120ms ease; }
   .strategy-name { font-size:15px; line-height:20px; font-weight:600; color:var(--text); margin-left:var(--space-1); }
@@ -124,6 +105,7 @@
     <ul id="indicator-list"></ul>
     <h2 class="caption">标的</h2>
     <ul id="symbol-list"><li class="placeholder"></li><li class="placeholder"></li><li class="placeholder"></li></ul>
+    <a class="sidebar-footer-link caption" href="/rules">规则目录</a>
   </aside>
   <main id="strategy-panel" tabindex="-1"><p class="caption">选择左侧的标的查看策略树</p></main>
 </div>
@@ -238,7 +220,8 @@ function renderStrategyHelp() {
   document.getElementById('strategy-help').innerHTML = `<header><h2 class="title" id="strategy-help-title">${escapeText(strategy.display_name)}</h2>
       <button class="help-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="关闭说明"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button></header>
     <p class="summary">${escapeText(strategy.summary)}</p>${paragraphList.map(paragraph => `<p>${escapeText(paragraph)}</p>`).join('')}
-    <p class="caption">来源：${escapeText(strategy.source)}</p>`;
+    <p class="caption">来源：${escapeText(strategy.source)}</p>
+    <p><a class="catalog-link" href="/rules">查看全部规则和编号说明 →</a></p>`;
 }
 
 async function loadDashboardSnapshot() {
@@ -292,7 +275,7 @@ function calculateScoreText(ruleResultList) {
 
 function renderRuleRows(ruleResultList) {
   return ruleResultList.map(rule => `<div class="strategy-rule-row ${rule.status}">
-    <span class="caption">${escapeText(rule.rule_id)}</span>${renderStatusBadge(rule.status)}
+    <a class="caption rule-link" href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="在规则目录中查看 ${escapeText(rule.rule_id)}">${escapeText(rule.rule_id)}</a>${renderStatusBadge(rule.status)}
     <span>${escapeText(rule.description)}</span><span>${formatMeasuredValue(rule.measured_value)}</span></div>`).join('');
 }
 

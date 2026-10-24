@@ -1,6 +1,6 @@
 # Design
 
-Claude-style warm palette, Apple-level clarity. One HTML file, vanilla JS and CSS, no framework, no chart library, no web font, no CDN.
+Claude-style warm palette, Apple-level clarity. Two pages (`static/index.html` dashboard, `static/rules.html` rule catalog) sharing `static/base.css` for tokens and type; vanilla JS and CSS, no framework, no chart library, no web font, no CDN.
 Light theme is the default; the user can switch to dark with the button in the sidebar header.
 
 ## Colors
@@ -82,6 +82,7 @@ Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places car
 | `sparkline` | 64 by 20 SVG polyline of the last 60 closes, colored by first vs last |
 | `strategy-gate` | gate title, summary badge, rule rows |
 | `strategy-rule-row` | rule id, status badge, description, measured value |
+| `rule-row` (rules page) | rule id, description and note, default weight, availability, strategies that use it; the row named in the URL hash is highlighted |
 | `help-popover` | native `popover` opened by the question mark next to the strategy name; title, summary, help paragraphs, source; closes with the close button, Esc or a click outside |
 
 ## Language

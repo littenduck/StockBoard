@@ -64,3 +64,11 @@ def test_unknown_strategy_and_symbol_return_404(snapshot_file_path):
 def test_evaluation_for_symbol(snapshot_file_path):
     write_snapshot(snapshot_file_path)
     assert web_server.web_server_get_strategy_evaluation_for_symbol(STRATEGY_ID, "AAA")["symbol"] == "AAA"
+
+
+def test_rule_catalog_lists_usage():
+    response = web_server.web_server_get_rule_catalog()
+    rule_by_id = {rule["rule_id"]: rule for group in response["group_list"] for rule in group["rule_list"]}
+    assert any(usage["strategy_id"] == STRATEGY_ID for usage in rule_by_id["A22"]["used_by"])
+    assert rule_by_id["A15"]["used_by"] == [] and rule_by_id["A15"]["availability"] == "user_answer"
+    assert rule_by_id["B09"]["alias_of"] == "A21"
