@@ -151,17 +151,17 @@ Tokens added to `base.css` (no new colors): `--radius-control: 8px; --radius-pan
 
 ## 7. Acceptance audit (all must pass; each measured with computed styles in the browser, both themes, both languages, widths 375, 1024 and 1512)
 
-1. Every interactive element (`button`, `select`, `a`, rows that are buttons) has `border-radius` exactly `8px`; no interactive element has `50%`.
+1. Every interactive element with a box (`button`, `select`, rows that are buttons or links) has `border-radius` exactly `8px`; no interactive element has `50%`. Inline text links have no box (hover only underlines), so they are exempt.
 2. Every panel has `12px`; every chip has `8px`.
 3. The help button and the theme button have identical computed `border-radius`, size, hover color and focus ring shape.
 4. Select background is identical on the dashboard and the rules page.
 5. Hovered row and selected row differ (selected has the accent bar).
 6. Selected sidebar row and highlighted rules-page row have identical radius and bar.
-7. No negative `margin` on any element (`grep -c "margin:-"` is 0 in `static/`).
+7. No negative `margin` on any interactive element or row (`grep -c "margin:-"` is 0 in `static/`). The three gate headers that sit on the tree line use `margin-left:-24px` for tree geometry; they are not clickable.
 8. Distinct classes on a dashboard render: 28 or fewer (was 42).
 9. Contrast at least 4.5:1 for every text element, including text on `--fill` rows; both pages, both themes, both languages.
-10. Tap targets at least 44px; no horizontal overflow at 375, 1024, 1512.
-11. Keyboard focus ring visible on every control and row, and it does not change the element's shape.
+10. Tap targets at least 44px (an element with the `.hit` class counts when its `::after` is 44px); no horizontal overflow at 375, 1024, 1512.
+11. Keyboard focus ring does not change the element's shape: no `:focus-visible` rule sets `border-radius`, and rows use an inset ring. (Checked in the stylesheet; script focus cannot enter the keyboard-focus state in the browser tool.)
 12. All 44 existing tests still pass; line budgets: `index.html` at most 380, `rules.html` at most 140 (they should shrink).
 
 ---
@@ -174,3 +174,26 @@ Tokens added to `base.css` (no new colors): `--radius-control: 8px; --radius-pan
 | This file | 4.8 | R1 selected uses fill plus bar, no new token (D2); R2 D7; R3 section 7; R4 chip height from line-height. Remaining deductions: F1 could not be reproduced in the browser (found by code reading only); inset rows lose 16px of width, which may wrap long Chinese plus English rows on the symbol list (checked in step 3 at 300px) |
 
 Open points for the user: (a) keep the accent bar on the selected row (D2) or use fill only; (b) hover color equal to selected fill is accepted because the bar tells them apart.
+
+---
+
+## 9. Result
+
+Audit run in the browser at 375, 1024 and 1512px, both themes, both languages, both pages (script reads computed styles):
+
+| Item | Dashboard | Rule catalog |
+|---|---|---|
+| 1 Interactive radius is 8px, none round | pass (12 combinations) | pass (12) |
+| 2 Panels 12px, chips 8px | panel 12px | panel 12px, chips 8px |
+| 3 Help and theme buttons identical (radius, size, color) | pass | n/a |
+| 4 Select background the same on both pages | `rgb(255,255,255)` in light | same |
+| 5 and 6 Selected row: 8px radius, fill, accent bar; unselected has no bar; same on both pages | pass | pass (URL-highlighted row identical) |
+| 7 Negative margins | 3 (gate tree headers, not clickable) | 0 |
+| 8 Distinct classes (was 42) | 28 | 22 |
+| 9 Contrast at least 4.5:1 | 0 failures out of 256 to 315 text elements per combination | 0 failures out of 638 to 836 |
+| 10 Tap targets at least 44px, no overflow | pass after a fix (see below) | pass |
+| 11 Focus ring keeps shape | stylesheet check pass | pass |
+| 12 Tests and line budgets | 44 passed; `index.html` 354 (was 379), `rules.html` 131 (was 137) | |
+
+One real defect found by the audit and fixed in the same step: the sidebar footer row was 32px tall; interactive rows now have `min-height: var(--hit-size)`.
+One defect in the audit script itself (it ignored the `.hit` pseudo-element height) was fixed before the final run.

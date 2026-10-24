@@ -42,7 +42,7 @@ button { font:inherit; color:inherit; background:none; border:0; padding:0; text
 .field { min-height:var(--hit-size); padding:var(--space-3); font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--separator); border-radius:var(--radius-control); }
 
 .row { margin:0 var(--space-2); padding:var(--space-2); border-radius:var(--radius-control); transition:background-color 120ms ease; }
-.row:is(button, a) { display:grid; width:calc(100% - var(--space-4)); }
+.row:is(button, a) { display:grid; align-content:center; width:calc(100% - var(--space-4)); min-height:var(--hit-size); }
 .row:is(button, a):hover { color:var(--text); }
 .row:is(button, a):hover, .row[aria-current="true"], .row.is-target { background:var(--fill); }
 .row[aria-current="true"], .row.is-target { box-shadow:inset 3px 0 var(--accent); }
