@@ -9,6 +9,10 @@ strategy_id: sell_put_four_in_one        # unique, snake_case
 display_name: Sell Put 四合一
 source: "where this strategy came from"
 thresholds: {max_unknown_weight_ratio: 0.20}
+summary: "one sentence shown at the top of the help popover"
+help: |
+  Longer explanation. Blank lines separate paragraphs.
+  Shown when the user clicks the question mark next to the strategy name.
 gates:                                    # evaluated in order, top to bottom
   - gate_id: gate_0_macro
     display_name: "GATE 0 宏观/情绪开关"

@@ -2,6 +2,17 @@ strategy_id: sell_put_four_in_one
 display_name: Sell Put 四合一
 source: "Notion: Sell Put 四合一决策Skill + 个股期权评分卡 (gates 0-2 only)"
 thresholds: {max_unknown_weight_ratio: 0.20}
+summary: "卖出现金担保看跌期权（Cash-Secured Put）：在宏观环境安全、标的质量好时，卖出 30-45 天、Delta 约 0.25 的虚值 Put 收取权利金。"
+help: |
+  这是一个卖方期权策略：你卖出一张看跌期权（Put）并收取权利金。到期时股价高于行权价，权利金全部归你；跌破行权价，你以行权价买入 100 股，所以要选自己愿意长期持有的标的。
+
+  它合并了四条来源（Notion「Sell Put 四合一决策 Skill」）：#1 五层决策框架负责宏观与情绪开关；#2 CSP 执行参数负责 Delta、到期天数和收益；#5 Wheel 循环；#6 车轮选股与尾部风险。
+
+  评估顺序：GATE 0 宏观/情绪开关（利率、信用利差、VIX、大盘趋势）→ GATE 1 标的筛选（到期前无财报、52 周位置、200 日均线）→ GATE 2 合约选择（在每个到期窗口里选 Delta 最接近 0.25 的虚值 Put，再看 Delta、DTE、年化收益、IV 是否高于实际波动）。
+
+  权重 5 的规则（目前是 A22「到期前无财报」）一票否决。资金结构（GATE 3）和仓位上限（GATE 4）需要账户数据，这一版没有接入。
+
+  期权数据只在美股开盘时有实时报价，休市时 GATE 2 显示「未知」。不构成投资建议。
 
 # Not built yet (need account data or manual answers): GATE 3 capital structure,
 # GATE 4 position limits, rules tagged ASK / PLAN, Fed / FOMC / CPI / oil rules.

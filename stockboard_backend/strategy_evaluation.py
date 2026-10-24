@@ -49,6 +49,8 @@ class StrategyDefinition:
     source: str
     thresholds: StrategyThresholds
     gate_list: List[GateDefinition]
+    summary: str = ""
+    help_text: str = ""
 
 
 @dataclass

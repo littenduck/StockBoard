@@ -76,7 +76,8 @@ def web_server_get_index_page() -> FileResponse:
 def web_server_get_strategy_list() -> dict:
     return {
         "default_strategy_id": application_settings.default_strategy_id,
-        "strategy_list": [{"strategy_id": s.strategy_id, "display_name": s.display_name}
+        "strategy_list": [{"strategy_id": s.strategy_id, "display_name": s.display_name, "summary": s.summary,
+                           "help_text": s.help_text, "source": s.source}
                           for s in strategy_definition_by_id.values()],
     }
 

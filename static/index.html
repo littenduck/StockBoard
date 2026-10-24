@@ -75,6 +75,16 @@
   .strategy-rule-row.not_applicable, .strategy-rule-row.not_applicable .caption { color:var(--text-secondary); }
   .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
   .window-title { margin:var(--space-4) 0 var(--space-1); }
+  .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); margin-bottom:var(--space-1); }
+  .help-button { width:44px; height:44px; margin:-12px -12px -12px -8px; display:grid; place-items:center; border-radius:50%; color:var(--text-secondary); transition:background-color 120ms ease; }
+  .strategy-name { font-size:15px; line-height:20px; font-weight:600; color:var(--text); margin-left:var(--space-1); }
+  .help-button:hover { background:var(--fill); color:var(--text); }
+  .help-popover { width:min(520px, calc(100vw - var(--space-6))); max-height:calc(100vh - 2 * var(--space-6)); overflow-y:auto; padding:var(--space-5);
+    border:1px solid var(--separator); border-radius:12px; background:var(--surface); color:var(--text); }
+  .help-popover::backdrop { background:rgb(20 20 19 / 0.24); }
+  .help-popover > header { display:flex; justify-content:space-between; align-items:center; margin:-8px -12px var(--space-3) 0; }
+  .help-popover p + p { margin-top:var(--space-3); }
+  .help-popover .summary { font-weight:600; }
   .panel-enter { animation:panel-enter 160ms ease-out; }
   @keyframes panel-enter { from { opacity:0; transform:translateY(4px); } }
   @keyframes pulse { 50% { opacity:0.3; } }
@@ -99,6 +109,8 @@
   <symbol id="icon-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></symbol>
   <symbol id="icon-unknown" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
   <symbol id="icon-not-applicable" viewBox="0 0 16 16"><path d="M4.5 8h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="icon-help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
+  <symbol id="icon-close" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
   <symbol id="icon-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></symbol>
 </svg>
 <div class="layout">
@@ -115,6 +127,7 @@
   </aside>
   <main id="strategy-panel" tabindex="-1"><p class="caption">选择左侧的标的查看策略树</p></main>
 </div>
+<div id="strategy-help" class="help-popover" popover aria-labelledby="strategy-help-title"></div>
 <script>
 const STATUS_STYLE = {
   pass: { icon:'icon-pass', text:'通过', color:'positive' },
@@ -131,7 +144,7 @@ const strategyPanel = document.getElementById('strategy-panel');
 const statusBar = document.getElementById('status-bar');
 let selectedSymbol = decodeURIComponent(location.hash.slice(1)) || null;
 let latestSnapshot = null, statusReceivedAt = 0, connectionError = false;
-let evaluationRequestNumber = 0, renderedEvaluationKey = '', maxUnknownWeightRatio = 0.2;
+let evaluationRequestNumber = 0, renderedEvaluationKey = '', maxUnknownWeightRatio = 0.2, strategyById = {};
 
 const escapeText = text => String(text ?? '').replace(/[&<>"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[character]);
 const signText = value => (value > 0 ? '+' : value < 0 ? '−' : '');
@@ -214,6 +227,18 @@ async function loadStrategyList() {
   const data = await (await fetch('/api/v1/strategies')).json();
   strategySelect.innerHTML = data.strategy_list.map(strategy => `<option value="${escapeText(strategy.strategy_id)}">${escapeText(strategy.display_name)}</option>`).join('');
   strategySelect.value = data.default_strategy_id;
+  strategyById = Object.fromEntries(data.strategy_list.map(strategy => [strategy.strategy_id, strategy]));
+  renderStrategyHelp();
+}
+
+function renderStrategyHelp() {
+  const strategy = strategyById[strategySelect.value];
+  if (!strategy) return;
+  const paragraphList = strategy.help_text.split(/\n\s*\n/).filter(Boolean);
+  document.getElementById('strategy-help').innerHTML = `<header><h2 class="title" id="strategy-help-title">${escapeText(strategy.display_name)}</h2>
+      <button class="help-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="关闭说明"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button></header>
+    <p class="summary">${escapeText(strategy.summary)}</p>${paragraphList.map(paragraph => `<p>${escapeText(paragraph)}</p>`).join('')}
+    <p class="caption">来源：${escapeText(strategy.source)}</p>`;
 }
 
 async function loadDashboardSnapshot() {
@@ -277,6 +302,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   renderedEvaluationKey = evaluationKey;
   const isInsufficient = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
   const score = evaluation.score_percent == null ? '—' : Math.round(evaluation.score_percent);
+  const strategyName = (strategyById[strategySelect.value] || {}).display_name || strategySelect.value;
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
       <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
@@ -287,7 +313,9 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
         ${renderRuleRows(window.rule_result_list)}`).join('')}
     </section>`).join('');
   strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">↑ 列表</a>
-    <header class="detail-header"><div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
+    <header class="detail-header"><p class="strategy-line caption">策略<span class="strategy-name">${escapeText(strategyName)}</span>
+      <button class="help-button" popovertarget="strategy-help" aria-label="${escapeText(strategyName)} 策略说明"><svg class="icon" aria-hidden="true"><use href="#icon-help"/></svg></button></p>
+      <div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
       <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></p>` : ''}</div>
     <div class="result-row">
       <div><p class="caption">结论</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
@@ -317,7 +345,7 @@ function applyTheme(themeName) {
 try { applyTheme(localStorage.getItem('stockboard-theme') === 'dark' ? 'dark' : 'light'); } catch (error) { applyTheme('light'); }
 document.getElementById('theme-button').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 symbolList.addEventListener('keydown', handleSymbolListKeydown);
-strategySelect.onchange = () => { renderedEvaluationKey = ''; loadDashboardSnapshot(); };
+strategySelect.onchange = () => { renderedEvaluationKey = ''; renderStrategyHelp(); loadDashboardSnapshot(); };
 loadStrategyList().then(loadDashboardSnapshot, () => { connectionError = true; renderStatusBar(); });
 setInterval(loadDashboardSnapshot, 60000);
 setInterval(renderStatusBar, 30000);

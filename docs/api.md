@@ -14,7 +14,9 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 
 ```json
 {"default_strategy_id": "sell_put_four_in_one",
- "strategy_list": [{"strategy_id": "sell_put_four_in_one", "display_name": "Sell Put 四合一"}]}
+ "strategy_list": [{"strategy_id": "sell_put_four_in_one", "display_name": "Sell Put 四合一",
+                    "summary": "one sentence", "help_text": "paragraphs separated by blank lines",
+                    "source": "where the strategy came from"}]}
 ```
 
 ## GET /api/v1/snapshot?strategy_id=sell_put_four_in_one

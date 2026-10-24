@@ -82,6 +82,7 @@ Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places car
 | `sparkline` | 64 by 20 SVG polyline of the last 60 closes, colored by first vs last |
 | `strategy-gate` | gate title, summary badge, rule rows |
 | `strategy-rule-row` | rule id, status badge, description, measured value |
+| `help-popover` | native `popover` opened by the question mark next to the strategy name; title, summary, help paragraphs, source; closes with the close button, Esc or a click outside |
 
 ## Language
 

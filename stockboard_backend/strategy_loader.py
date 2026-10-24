@@ -25,7 +25,8 @@ def strategy_loader_load_strategy_definition_from_yaml_file(strategy_file_path: 
     ]
     return StrategyDefinition(
         strategy_id=raw["strategy_id"], display_name=raw["display_name"], source=raw.get("source", ""),
-        thresholds=StrategyThresholds(**raw.get("thresholds", {})), gate_list=gate_list)
+        thresholds=StrategyThresholds(**raw.get("thresholds", {})), gate_list=gate_list,
+        summary=raw.get("summary", ""), help_text=raw.get("help", "").strip())
 
 
 def strategy_loader_load_all_strategy_definitions_from_directory(
