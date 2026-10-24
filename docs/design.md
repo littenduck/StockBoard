@@ -11,7 +11,7 @@ CSS custom properties on `:root` (light) and `:root[data-theme="dark"]`. Every t
 |---|---|---|---|
 | `--background` | `#FAF9F5` | `#262624` | page, main area |
 | `--surface` | `#FFFFFF` | `#30302E` | sidebar |
-| `--fill` | `#F0EEE6` | `#3A3A37` | hover and selected row |
+| `--fill` | `#F0EEE6` | `#3A3A37` | hover and selected row (selected adds the accent bar) |
 | `--separator` | `#E8E6DC` | `#3D3D3A` | 1px lines, placeholder rows |
 | `--text` | `#141413` | `#F5F4EE` | primary text |
 | `--text-secondary` | `#6B6A64` | `#A8A69D` | captions, unknown, not applicable |
@@ -38,10 +38,7 @@ No other sizes. Every heading element has an explicit size.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius 8px for rows, 12px for containers. No shadows.
-
-Touch targets are at least 44px tall. The one spacing exception: a 16px-line element that must reach 44px uses 14px vertical padding.
-Font weights: 400 and 600 only.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius tokens: `--radius-control` 8px (everything clickable, plus chips), `--radius-panel` 12px (boxes). Hit size token: `--hit-size` 44px. No shadows except the 3px accent bar on a selected row. Font weights: 400 and 600 only.
 
 ## Status
 
@@ -71,23 +68,35 @@ Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places car
 - Sidebar order: header (title, theme button), status bar, strategy select, 市场指标 list, 标的 list.
 - Phone (below 900px): one column. Indicators become a horizontal scroll strip. Selecting a symbol scrolls to main; main has a "↑ 列表" link.
 
-## Components (only these)
+## Shape and states
 
-| Class | Shows |
+One shape language. Everything the user can click shares one radius, one hover and one focus ring.
+
+| Rule | Value |
 |---|---|
-| `status-bar` | market open or closed, data age, stale or connection warning, full ET time on hover |
-| `indicator-item` | name, value, change (`+1.23%` or `+3.0 bp`) |
-| `symbol-item` | symbol, sparkline, status icon, integer score, price, change. A `<button>` |
-| `status-badge` | icon plus text from the Status table |
-| `sparkline` | 64 by 20 SVG polyline of the last 60 closes, colored by first vs last |
-| `strategy-gate` | gate title, summary badge, rule rows |
-| `strategy-rule-row` | rule id, status badge, description, measured value |
-| `rule-row` (rules page) | rule id, description and note, default weight, availability, strategies that use it; the row named in the URL hash is highlighted |
-| `help-popover` | native `popover` opened by the question mark next to the strategy name; title, summary, help paragraphs, source; closes with the close button, Esc or a click outside |
+| Interactive elements | radius `--radius-control`; min height `--hit-size`; no negative margins anywhere |
+| Hover | background `--fill`; text becomes `--text`. Same for icon button, interactive row, link hit area |
+| Keyboard focus | 2px `--accent` outline, offset 2px, follows the element's own radius (`:focus-visible` never sets a radius); rows use `outline-offset: -2px` so the ring is not clipped |
+| Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, from the URL hash): `--fill` plus `box-shadow: inset 3px 0 var(--accent)`. A darker fill is not used: secondary text would fall below 4.5:1 |
+| Disabled or failed | no opacity (contrast); text becomes `--text-secondary` |
+| Field (`select`) | 1px `--separator` border, `--surface` background on every page, radius control, padding `--space-3` |
+| Row | margin `0 var(--space-2)`, padding `var(--space-2)`, radius control |
+| Panel | radius panel, `--surface`, 1px `--separator` border, padding `--space-4` or `--space-5` |
+| Chip | radius control, 1px `--separator` border, padding `0 var(--space-2)`, caption type; height comes from line height, never fixed |
+| Hit area (`.hit`) | `position: relative` plus an `::after` that extends the clickable area to `--hit-size` without changing layout; replaces every negative-margin hack |
+| Circles | only non-clickable marks: `status-dot`, `gate-marker`, sparkline |
 
-## Language
+## Elements (five families)
 
-Chinese UI. Symbols and technical terms stay English: VIX, SPX, DTE, IV, RV30, GATE, bp. Times are exchange time, labelled `ET`.
+| Family | Classes | Used for |
+|---|---|---|
+| Text | `caption` `title` `display` `strong`, colors `positive` `negative` `caution` `muted`, `link`, `link-emphasis` | all text and every link (hover underline; `link-emphasis` is always underlined) |
+| Control | `icon-button`, `field` | theme, language, help and close buttons; strategy and filter selects |
+| Row | `row` (a `button` or `a` row is interactive; `aria-current` or `.is-target` marks selected) | symbol, indicator and rule rows, sidebar footer link, loading placeholders |
+| Surface | `panel`, `chip` | popover, explanation box; tag, usage chips, phone indicator strip |
+| Mark | `status-badge`, `status-dot`, `sparkline`, `gate-marker` | pass, fail and unknown badges, market dot, price trend, gate icon |
+
+Layout-only containers (not elements): sidebar, main, `detail-header`, `result-row`, `strategy-gate`, `status-bar`, dividers. Do not add a new element class; compose these.
 
 ## Language
 
@@ -98,8 +107,9 @@ English is the default; Chinese mode shows Chinese with the English underneath. 
 | `.translation` | block, 12px / 16px, `--text-secondary`, weight 400 | English line under Chinese text |
 | `.translation-inline` | 12px, `--text-secondary`, 4px left margin | English after a 12px caption on the same line |
 | `.translation-paragraph` | 15px body, `--text-secondary` | English help paragraph after its Chinese paragraph |
-| `.icon-button` | 44px square, radius 8px, `--text-secondary` icon, `--fill` on hover; used for the theme button (half-filled circle) and the language button (globe). The language button (Tabler "language" icon, 中英文 glyph) toggles English and Chinese; its aria-label and tooltip say what a click does (Switch to Chinese / 切换到英文) | sidebar header, rules page header |
 
 English appears under: sidebar section captions, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result captions, expiration window lines, the rules page explanation.
 Never doubled: status words, numbers, prices, percentages, times, symbols, the status bar, buttons, select options, aria-labels.
 `<html lang>` is `en` or `zh-Hans`; every English line in Chinese mode carries `lang="en"`.
+
+The language button (Tabler `language` icon) is an `icon-button`; one click toggles English and Chinese, and its aria-label and tooltip say what a click does. Technical terms stay English in both languages: VIX, SPX, DTE, IV, RV30, GATE, bp. Times are exchange time, labelled `ET`.
