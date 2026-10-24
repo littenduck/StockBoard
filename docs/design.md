@@ -50,7 +50,7 @@ Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius-control` 8px, for everything (controls, rows, boxes, small tags). Hit size token: `--hit-size` 44px. No shadows.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows.
 
 ## Status
 
@@ -86,10 +86,10 @@ One shape language. Everything the user can click shares one radius, one hover a
 
 | Rule | Value |
 |---|---|
-| Interactive elements | radius `--radius-control`; min height `--hit-size`; no negative margins anywhere |
+| Interactive elements | radius `--radius`; min height `--hit-size`; no negative margins anywhere (the gate icon is offset with `position:absolute`) |
 | Hover | background `--fill`; text becomes `--text`. Same for icon button, interactive row, link |
 | Keyboard focus | 2px `--accent` outline, offset 2px, follows the element's own radius (`:focus-visible` never sets a radius); rows use `outline-offset: -2px` so the ring is not clipped |
-| Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, from the URL hash): `--fill` plus a straight accent pill, 3px wide and 16px tall, centered on the row's left edge (`::before`). It is a separate shape, not an inset shadow, so it never bends with the row's rounded corner. A darker fill is not used: secondary text would fall below 4.5:1 |
+| Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, the row named by the URL hash): `--fill` plus a straight accent pill, 3px wide and 16px tall, centered on the row's left edge (`::before`). It is a separate shape, not an inset shadow, so it never bends with the row's rounded corner. A darker fill is not used: secondary text would fall below 4.5:1 |
 | Disabled or failed | no opacity (contrast); text becomes `--text-secondary` |
 | Field (`select`) | a `span.field` wraps the `select` and a Tabler chevron: 1px `--separator` border, `--surface` background on every page, radius control, 44px tall. The browser's own arrow is turned off; the chevron sits 12px from the right edge. Keyboard focus rings the whole field |
 | Row | margin `0 var(--space-2)`, padding `var(--space-2)`, radius control |
@@ -108,9 +108,9 @@ Text is done by tags. There are 7 element classes (6 styled in `base.css` plus `
 | List row | `.row` (a `button` or `a` row is interactive; `aria-current` or `.is-target` marks selected) | symbol, indicator and rule rows, sidebar footer link, loading placeholders |
 | Box | `.box`: bordered, radius 8px, `--surface` | popover, explanation box, and `small.box` for tags, usage chips and the phone indicator strip |
 | Mark | `.status-badge` (icon plus word), `.status-dot` (8px dot, `currentColor`), `.sparkline` (inline SVG drawn by the page script, no CSS of its own; the dashboard only uses the class to place it in the row grid) | pass, fail and unknown badges, market dot, price trend |
-| Helper | `.icon` (16px svg, `flex:none`), `.placeholder` (loading row, `--separator` fill), `.is-target` (row selected by the URL hash), `.panel-enter` (fade-in animation, page-local in `index.html`) | icons, loading rows, rule row from the hash, main panel on symbol change |
+| Helper | `.icon` (16px svg, `flex:none`), `.placeholder` (loading row, `--separator` fill), `.is-target` (row named by the URL hash), `.panel-enter` (fade-in animation, page-local in `index.html`) | icons, loading rows, rule row from the hash, main panel on symbol change |
 
-Layout-only containers (not elements, styled by the page only for layout): page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.legend`, `.usage`, `.rule-meta`, dividers.
+Layout-only containers (not elements, styled by the page only for layout): page grid (`.layout`), `aside`, `main`, `#strategy-help` (the popover, a `.box`), `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.usage`, `.rule-meta`, dividers.
 
 ## Language
 

@@ -6,8 +6,8 @@ description: Use when changing any StockBoard page (static/index.html, static/ru
 Read `docs/design.md` first and follow it exactly.
 
 - Text is plain HTML tags (h1, h2, h3, p, li, small, strong, a). Do not add text classes; the tag decides the look.
-- Build only from the element classes listed in `docs/design.md`: `.icon-button`, `.field`, `.row`, `.box`, `.status-badge`, `.status-dot`, `.sparkline`. (`.sparkline` is an inline SVG with no CSS.) Helper classes also exist: `.icon`, `.placeholder`, `.is-target`, and the page-local animation `.panel-enter`. Compose them; do not add a new element class.
-- One radius: `--radius-control` (8px) for everything.
+- Build only from the element classes listed in `docs/design.md`: `.icon-button`, `.field`, `.row`, `.box`, `.status-badge`, `.status-dot`, `.sparkline`. (`.sparkline` is an inline SVG with no CSS.) Helper classes also exist: `.icon`, `.placeholder`, and the page-local animation `.panel-enter`. Compose them; do not add a new element class.
+- One radius: `--radius` (8px) for everything.
 - English companions are always `<small lang="en">`, on their own line under the Chinese line.
 - Icons come from `static/icons.svg` (Tabler); never hand-draw one.
 - No negative margins on anything clickable or any row.

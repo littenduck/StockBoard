@@ -65,8 +65,8 @@ Sizes in use: **28, 20, 15, 12** (was 34, 20, 15, 12). Weights: 400 and 600.
 | **Box** | `.box`: bordered, 8px, `--surface`. It is the popover, the explanation box, and (as `small.box`) the small tags and chips | 1 |
 | **Mark** | `.status-badge` (icon plus word), `.status-dot`, `.sparkline` | 3 |
 
-That is **7 element classes** (was 14; six styled in `base.css` plus `.sparkline`, an inline SVG with no CSS), plus helpers `.icon`, `.placeholder`, `.is-target` and the page-local `.panel-enter`, with the 12px panel radius dropped: **one radius, 8px**, for everything (`--radius-panel` is deleted).
-Layout-only containers stay but are not components: the page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.legend`, `.usage`, `.rule-meta`.
+That is **7 element classes** (was 14; six styled in `base.css` plus `.sparkline`, an inline SVG with no CSS), plus helpers `.icon`, `.placeholder` and the page-local `.panel-enter`, with the 12px panel radius dropped: **one radius, 8px**, for everything (`--radius-panel` is deleted).
+Layout-only containers stay but are not components: the page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.usage`, `.rule-meta`.
 Target: **18 or fewer distinct classes on a dashboard render** (28 now) and **14 or fewer on the rule catalog page** (22 now).
 
 ---
@@ -90,7 +90,7 @@ Target: **18 or fewer distinct classes on a dashboard render** (28 now) and **14
 | `.detail-note` | `<small>` (structural selector) |
 | `--radius-panel`, `--font-*` leftovers | delete |
 
-Kept unchanged: `.icon-button`, `.field`, `.row`, `.status-badge`, `.status-dot`, `.sparkline`, `.icon`, color modifiers, `.is-target`, `aria-current`, `data-status`.
+Kept unchanged: `.icon-button`, `.field`, `.row`, `.status-badge`, `.status-dot`, `.sparkline`, `.icon`, color modifiers, `aria-current`, `data-status`.
 
 ---
 
@@ -130,8 +130,8 @@ Parallel: steps 4 and 5 touch different files and may run at the same time after
 3. `grep -rn` for `caption|title|display|strong|translation|link-emphasis|\bhit\b|\.panel|\.chip` as CSS class names finds nothing in `static/` (the tags `strong` and `small` are fine).
 4. Distinct classes: dashboard 18 or fewer (popover open), rule catalog 14 or fewer.
 5. In the popover the order is: `h2` title, its English `small`, `h3` summary, its English `small`, then `p` / `small` pairs, then a `small` source line, then the link. Sizes follow section 2 and every `p` pair has the same spacing.
-6. Every earlier acceptance item still passes: interactive radius 8px and none round; contrast at least 4.5:1 on every text element; tap targets at least 44px (a link counts through its `::after`); no horizontal overflow; selected row and URL-highlighted row identical; no negative margin on any interactive element or row.
-7. 44 tests pass; line budgets: `index.html` at most 354, `rules.html` at most 131 (they should shrink), `base.css` at most 70.
+6. Every earlier acceptance item still passes: interactive radius 8px and none round; contrast at least 4.5:1 on every text element; tap targets at least 44px (a link counts through its `::after`; links inside dense rows are 36px because the row is about 37px tall and a 44px area would overlap neighbours); no horizontal overflow; selected row and URL-highlighted row identical; no negative margin on any interactive element or row.
+7. 44 tests pass; line budgets: `index.html` at most 354, `rules.html` at most 137 (6 lines added to replace an inline `onclick` with a `hashchange` handler), `base.css` at most 70.
 
 ---
 
