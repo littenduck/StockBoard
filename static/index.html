@@ -106,7 +106,8 @@
     <header><h1 class="title">StockBoard</h1>
       <button class="theme-button" id="theme-button" aria-label="切换浅色或深色模式"><svg class="icon"><use href="#icon-theme"/></svg></button></header>
     <div class="status-bar caption" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><span>正在获取数据…</span></div>
-    <select id="strategy-select" aria-label="策略"></select>
+    <h2 class="caption" id="strategy-heading">策略</h2>
+    <select id="strategy-select" aria-labelledby="strategy-heading"></select>
     <h2 class="caption">市场指标</h2>
     <ul id="indicator-list"></ul>
     <h2 class="caption">标的</h2>
