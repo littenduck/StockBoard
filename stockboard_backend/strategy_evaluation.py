@@ -14,7 +14,8 @@ class IndicatorValue:
     indicator_id: str
     value: Any
     source: str
-    change_percent: Optional[float] = None
+    change_value: Optional[float] = None
+    change_unit: Optional[str] = None  # "percent" or "basis_points"
 
 
 @dataclass

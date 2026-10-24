@@ -4,6 +4,7 @@ from stockboard_backend.indicator_calculation import (
     indicator_calculation_calculate_change_over_trading_days,
     indicator_calculation_calculate_fifty_two_week_range_percentile,
     indicator_calculation_calculate_is_price_above_two_hundred_day_average,
+    indicator_calculation_calculate_latest_change_basis_points,
     indicator_calculation_calculate_realized_volatility_annualized_percent,
     indicator_calculation_calculate_relative_strength_index,
     indicator_calculation_calculate_simple_moving_average,
@@ -40,3 +41,8 @@ def test_change_over_trading_days():
     value_series = pandas.Series([1.0, 2.0, 4.0])
     assert indicator_calculation_calculate_change_over_trading_days(value_series, 2) == 3.0
     assert indicator_calculation_calculate_change_over_trading_days(value_series, 3) is None
+
+
+def test_latest_change_basis_points():
+    assert indicator_calculation_calculate_latest_change_basis_points(pandas.Series([4.10, 4.13])) == 3.0
+    assert indicator_calculation_calculate_latest_change_basis_points(pandas.Series([4.1])) is None

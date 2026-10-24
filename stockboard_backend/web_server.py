@@ -31,7 +31,10 @@ def web_server_start_background_refresh() -> None:
 
 def web_server_load_snapshot_or_empty_snapshot() -> dict:
     snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(refresh_scheduler.SNAPSHOT_FILE_PATH)
-    return snapshot or {"updated": None, "market_indicator_card_list": [], "symbol_result_list": [], "error_list": []}
+    if snapshot is None or snapshot.get("schema_version") != refresh_scheduler.SNAPSHOT_SCHEMA_VERSION:
+        return {"generated_at": None, "market_indicator_card_list": [], "symbol_result_list": [],
+                "failed_symbol_list": []}
+    return snapshot
 
 
 def web_server_find_strategy_id_or_raise(strategy_id: Optional[str]) -> str:
@@ -64,11 +67,12 @@ def web_server_get_dashboard_snapshot(strategy_id: Optional[str] = None) -> dict
         evaluation = symbol_result["evaluation_by_strategy_id"][chosen_strategy_id]
         symbol_card_list.append({
             "symbol": symbol_result["symbol"], "price": symbol_result["price"],
-            "change_percent": symbol_result["change_percent"], "is_pass": evaluation["is_pass"],
+            "change_value": symbol_result["change_value"], "change_unit": symbol_result["change_unit"],
+            "is_pass": evaluation["is_pass"],
             "score_percent": evaluation["score_percent"], "unknown_weight_ratio": evaluation["unknown_weight_ratio"],
         })
     return {
-        "updated": snapshot["updated"], "strategy_id": chosen_strategy_id,
+        "updated": snapshot["generated_at"], "strategy_id": chosen_strategy_id,
         "max_unknown_weight_ratio": strategy_definition_by_id[chosen_strategy_id].thresholds.max_unknown_weight_ratio,
         "market_indicator_card_list": snapshot["market_indicator_card_list"],
         "symbol_card_list": symbol_card_list,

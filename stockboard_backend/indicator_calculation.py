@@ -82,6 +82,14 @@ def indicator_calculation_calculate_latest_change_percent(value_series: pandas.S
     return round(float(clean_series.iloc[-1] / clean_series.iloc[-2] - 1) * 100, 2)
 
 
+def indicator_calculation_calculate_latest_change_basis_points(value_series: pandas.Series) -> Optional[float]:
+    """For series quoted in percent points (FRED DGS10, BAMLH0A0HYM2): one percent point is 100 bp."""
+    clean_series = value_series.dropna()
+    if len(clean_series) < 2:
+        return None
+    return round(float(clean_series.iloc[-1] - clean_series.iloc[-2]) * 100, 1)
+
+
 def indicator_calculation_build_market_indicator_value_by_id(
     price_history_by_symbol: Dict[str, pandas.DataFrame],
     ten_year_yield_series: Optional[pandas.Series],
@@ -90,15 +98,16 @@ def indicator_calculation_build_market_indicator_value_by_id(
     """Indicators shared by every symbol. A source that failed is simply left out (the rules read unknown)."""
     value_by_id: Dict[str, IndicatorValue] = {}
 
-    def add_value(indicator_id: str, value, source: str, change_percent: Optional[float] = None) -> None:
-        value_by_id[indicator_id] = IndicatorValue(indicator_id, value, source, change_percent)
+    def add_value(indicator_id: str, value, source: str, change_value: Optional[float] = None,
+                  change_unit: Optional[str] = None) -> None:
+        value_by_id[indicator_id] = IndicatorValue(indicator_id, value, source, change_value, change_unit)
 
     close_series_by_symbol = {symbol: history["Close"] for symbol, history in price_history_by_symbol.items()}
     for symbol, indicator_id in (("^VIX", "vix_level"), ("^VXN", "vxn_level"), ("^VVIX", "vvix_level")):
         if symbol in close_series_by_symbol:
             series = close_series_by_symbol[symbol]
             add_value(indicator_id, round(float(series.iloc[-1]), 2), "yfinance " + symbol,
-                      indicator_calculation_calculate_latest_change_percent(series))
+                      indicator_calculation_calculate_latest_change_percent(series), "percent")
     if "^VIX" in close_series_by_symbol and "^VIX3M" in close_series_by_symbol:
         add_value("vix_term_structure_is_contango",
                   bool(close_series_by_symbol["^VIX"].iloc[-1] < close_series_by_symbol["^VIX3M"].iloc[-1]),
@@ -110,13 +119,14 @@ def indicator_calculation_build_market_indicator_value_by_id(
             add_value("spx_above_two_hundred_day_average", above_average, "yfinance ^GSPC")
     if ten_year_yield_series is not None and len(ten_year_yield_series):
         add_value("treasury_ten_year_yield", round(float(ten_year_yield_series.iloc[-1]), 2), "FRED DGS10",
-                  indicator_calculation_calculate_latest_change_percent(ten_year_yield_series))
+                  indicator_calculation_calculate_latest_change_basis_points(ten_year_yield_series), "basis_points")
         change = indicator_calculation_calculate_change_over_trading_days(ten_year_yield_series, 20)
         if change is not None:
             add_value("treasury_ten_year_yield_twenty_day_change_basis_points", round(change * 100, 1), "FRED DGS10")
     if credit_spread_series is not None and len(credit_spread_series):
         add_value("high_yield_credit_spread_basis_points", round(float(credit_spread_series.iloc[-1]) * 100),
-                  "FRED BAMLH0A0HYM2", indicator_calculation_calculate_latest_change_percent(credit_spread_series))
+                  "FRED BAMLH0A0HYM2",
+                  indicator_calculation_calculate_latest_change_basis_points(credit_spread_series), "basis_points")
     return value_by_id
 
 
@@ -130,12 +140,13 @@ def indicator_calculation_build_symbol_indicator_value_by_id(
     close_series = price_history["Close"]
     value_by_id: Dict[str, IndicatorValue] = {}
 
-    def add_value(indicator_id: str, value, change_percent: Optional[float] = None) -> None:
+    def add_value(indicator_id: str, value, change_value: Optional[float] = None,
+                  change_unit: Optional[str] = None) -> None:
         if value is not None:
-            value_by_id[indicator_id] = IndicatorValue(indicator_id, value, "yfinance", change_percent)
+            value_by_id[indicator_id] = IndicatorValue(indicator_id, value, "yfinance", change_value, change_unit)
 
     add_value("last_price", round(float(close_series.iloc[-1]), 2),
-              indicator_calculation_calculate_latest_change_percent(close_series))
+              indicator_calculation_calculate_latest_change_percent(close_series), "percent")
     add_value("fifty_two_week_range_percentile",
               indicator_calculation_calculate_fifty_two_week_range_percentile(close_series))
     add_value("price_above_two_hundred_day_average",

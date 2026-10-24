@@ -18,6 +18,8 @@ MARKET_GAUGE_SYMBOL_LIST = ["^VIX", "^VXN", "^VVIX", "^VIX3M", "^GSPC"]
 HISTORY_PERIOD = "1y"
 SYMBOL_WORKER_COUNT = 4
 POLL_SECONDS = 60
+SNAPSHOT_SCHEMA_VERSION = 2
+SPARKLINE_TRADING_DAY_COUNT = 60
 
 
 def refresh_scheduler_fetch_series_or_none(fetch_function):
@@ -83,7 +85,10 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     return {
         "symbol": symbol,
         "price": last_price.value,
-        "change_percent": last_price.change_percent,
+        "change_value": last_price.change_value,
+        "change_unit": last_price.change_unit,
+        "sparkline_close_price_list": [
+            round(float(price), 2) for price in price_history["Close"].iloc[-SPARKLINE_TRADING_DAY_COUNT:]],
         "evaluation_by_strategy_id": {
             strategy_id: dataclasses.asdict(strategy_evaluation.strategy_evaluation_evaluate_strategy_for_symbol(
                 strategy_definition, symbol, combined_indicator_value_by_id, option_indicator_by_window_label))
@@ -95,7 +100,7 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
 def refresh_scheduler_build_dashboard_snapshot(
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
 ) -> dict:
-    error_list: List[str] = []
+    failed_symbol_list: List[str] = []
     market_history_by_symbol = market_data.market_data_fetch_daily_price_history_for_symbol_list(
         MARKET_GAUGE_SYMBOL_LIST, HISTORY_PERIOD)
     shared_indicator_value_by_id = indicator_calculation.indicator_calculation_build_market_indicator_value_by_id(
@@ -106,12 +111,21 @@ def refresh_scheduler_build_dashboard_snapshot(
     symbol_history_by_symbol = market_data.market_data_fetch_daily_price_history_for_symbol_list(
         settings.watchlist_symbol_list, HISTORY_PERIOD)
     symbol_list = [s for s in settings.watchlist_symbol_list if s in symbol_history_by_symbol]
-    error_list += [s for s in settings.watchlist_symbol_list if s not in symbol_history_by_symbol]
-    with ThreadPoolExecutor(max_workers=SYMBOL_WORKER_COUNT) as executor:
-        symbol_result_list = list(executor.map(
-            lambda symbol: refresh_scheduler_evaluate_symbol_for_all_strategies(
+    failed_symbol_list += [s for s in settings.watchlist_symbol_list if s not in symbol_history_by_symbol]
+
+    def evaluate_symbol_or_none(symbol: str) -> Optional[dict]:
+        try:
+            return refresh_scheduler_evaluate_symbol_for_all_strategies(
                 symbol, symbol_history_by_symbol[symbol], shared_indicator_value_by_id, settings,
-                strategy_definition_by_id), symbol_list))
+                strategy_definition_by_id)
+        except Exception as error:  # one broken symbol must not abort the whole snapshot
+            print("symbol failed:", symbol, error)
+            return None
+
+    with ThreadPoolExecutor(max_workers=SYMBOL_WORKER_COUNT) as executor:
+        symbol_result_or_none_list = list(executor.map(evaluate_symbol_or_none, symbol_list))
+    symbol_result_list = [result for result in symbol_result_or_none_list if result is not None]
+    failed_symbol_list += [s for s, r in zip(symbol_list, symbol_result_or_none_list) if r is None]
 
     market_indicator_card_list = []
     for indicator_setting in settings.market_indicator_list:
@@ -120,14 +134,21 @@ def refresh_scheduler_build_dashboard_snapshot(
             "indicator_id": indicator_setting.indicator_id, "display_name": indicator_setting.display_name,
             "is_higher_value_risky": indicator_setting.is_higher_value_risky,
             "value": None if indicator_value is None else indicator_value.value,
-            "change_percent": None if indicator_value is None else indicator_value.change_percent,
+            "change_value": None if indicator_value is None else indicator_value.change_value,
+            "change_unit": None if indicator_value is None else indicator_value.change_unit,
         })
     return {
-        "updated": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "schema_version": SNAPSHOT_SCHEMA_VERSION,
+        "generated_at": refresh_scheduler_get_current_exchange_time_text(),
         "market_indicator_card_list": market_indicator_card_list,
         "symbol_result_list": symbol_result_list,
-        "error_list": error_list,
+        "failed_symbol_list": failed_symbol_list,
     }
+
+
+def refresh_scheduler_get_current_exchange_time_text() -> str:
+    """ISO 8601 in New York time with offset, for example 2026-10-23T15:52:19-04:00."""
+    return datetime.datetime.now(market_data.NEW_YORK_TIME_ZONE).replace(microsecond=0).isoformat()
 
 
 def refresh_scheduler_refresh_snapshot_file(
@@ -140,7 +161,8 @@ def refresh_scheduler_refresh_snapshot_file(
 
 def refresh_scheduler_determine_whether_refresh_is_due(refresh_interval_minutes: int) -> bool:
     """Due when there is no snapshot yet, or the market is open and the snapshot is old enough."""
-    if not os.path.exists(SNAPSHOT_FILE_PATH):
+    snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(SNAPSHOT_FILE_PATH)
+    if snapshot is None or snapshot.get("schema_version") != SNAPSHOT_SCHEMA_VERSION:
         return True
     is_market_open = market_data.market_data_determine_whether_us_market_is_open(
         datetime.datetime.now(datetime.timezone.utc))
@@ -172,7 +194,7 @@ if __name__ == "__main__" and "--once" in sys.argv:
     loaded_strategies = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
         os.path.join(PROJECT_DIRECTORY, "strategies"))
     result = refresh_scheduler_refresh_snapshot_file(loaded_settings, loaded_strategies)
-    print(result["updated"], len(result["symbol_result_list"]), "symbols, errors:", result["error_list"])
+    print(result["generated_at"], len(result["symbol_result_list"]), "symbols, failed:", result["failed_symbol_list"])
     for symbol_result in result["symbol_result_list"]:
         evaluation = symbol_result["evaluation_by_strategy_id"][loaded_settings.default_strategy_id]
         print(symbol_result["symbol"], "pass:", evaluation["is_pass"], "score:", evaluation["score_percent"],
