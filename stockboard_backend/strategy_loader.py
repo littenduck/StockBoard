@@ -1,26 +1,42 @@
-"""Load strategy YAML files into StrategyDefinition objects."""
+"""Load strategy YAML files into StrategyDefinition objects. Rules come from the rule catalog by id."""
 import glob
 import os
 from typing import Dict, List, Set
 
 import yaml
 
+from stockboard_backend.rule_catalog import RuleCatalog
 from stockboard_backend.strategy_evaluation import (
     GateDefinition, RuleDefinition, StrategyDefinition, StrategyThresholds,
 )
 
 
-def strategy_loader_load_strategy_definition_from_yaml_file(strategy_file_path: str) -> StrategyDefinition:
+def strategy_loader_build_rule_definition_from_catalog(raw_rule: dict, rule_catalog: RuleCatalog) -> RuleDefinition:
+    """A strategy entry is {rule_id, weight?, variant_group?}; everything else comes from the catalog."""
+    entry = rule_catalog.rule_entry_by_id.get(raw_rule["rule_id"])
+    if entry is None:
+        raise ValueError("rule {} is not in config/rules.yaml".format(raw_rule["rule_id"]))
+    if entry.alias_of:
+        raise ValueError("rule {} is a copy of {}; use {}".format(entry.rule_id, entry.alias_of, entry.alias_of))
+    if not entry.indicator:
+        raise ValueError("rule {} cannot be computed automatically ({})".format(entry.rule_id, entry.availability))
+    return RuleDefinition(
+        rule_id=entry.rule_id, description=entry.description, indicator=entry.indicator, operator=entry.operator,
+        weight=raw_rule.get("weight", entry.default_weight), value=entry.value,
+        variant_group=raw_rule.get("variant_group"))
+
+
+def strategy_loader_load_strategy_definition_from_yaml_file(
+    strategy_file_path: str, rule_catalog: RuleCatalog,
+) -> StrategyDefinition:
     with open(strategy_file_path) as strategy_file:
         raw = yaml.safe_load(strategy_file)
     gate_list = [
         GateDefinition(
             gate_id=raw_gate["gate_id"], display_name=raw_gate["display_name"],
             per_expiration_window=raw_gate.get("per_expiration_window", False),
-            rule_list=[RuleDefinition(
-                rule_id=raw_rule["rule_id"], description=raw_rule["description"], indicator=raw_rule["indicator"],
-                operator=raw_rule["operator"], weight=raw_rule["weight"], value=raw_rule.get("value"),
-                variant_group=raw_rule.get("variant_group")) for raw_rule in raw_gate["rules"]])
+            rule_list=[strategy_loader_build_rule_definition_from_catalog(raw_rule, rule_catalog)
+                       for raw_rule in raw_gate["rules"]])
         for raw_gate in raw["gates"]
     ]
     return StrategyDefinition(
@@ -30,11 +46,11 @@ def strategy_loader_load_strategy_definition_from_yaml_file(strategy_file_path: 
 
 
 def strategy_loader_load_all_strategy_definitions_from_directory(
-    strategy_directory_path: str,
+    strategy_directory_path: str, rule_catalog: RuleCatalog,
 ) -> Dict[str, StrategyDefinition]:
     strategy_definition_by_id = {}
     for strategy_file_path in sorted(glob.glob(os.path.join(strategy_directory_path, "*.yaml"))):
-        strategy_definition = strategy_loader_load_strategy_definition_from_yaml_file(strategy_file_path)
+        strategy_definition = strategy_loader_load_strategy_definition_from_yaml_file(strategy_file_path, rule_catalog)
         strategy_definition_by_id[strategy_definition.strategy_id] = strategy_definition
     return strategy_definition_by_id
 

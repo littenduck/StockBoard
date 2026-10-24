@@ -189,11 +189,12 @@ def refresh_scheduler_start_background_refresh_thread(
 
 
 if __name__ == "__main__" and "--once" in sys.argv:
-    from stockboard_backend import settings_loader, strategy_loader
+    from stockboard_backend import rule_catalog, settings_loader, strategy_loader
     loaded_settings = settings_loader.settings_loader_load_settings_from_yaml_file(
         os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
     loaded_strategies = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
-        os.path.join(PROJECT_DIRECTORY, "strategies"))
+        os.path.join(PROJECT_DIRECTORY, "strategies"), rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(
+            os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml")))
     result = refresh_scheduler_refresh_snapshot_file(loaded_settings, loaded_strategies)
     print(result["generated_at"], len(result["symbol_result_list"]), "symbols, failed:", result["failed_symbol_list"])
     for symbol_result in result["symbol_result_list"]:
