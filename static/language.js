@@ -1,6 +1,6 @@
 /* Interface text and bilingual rendering shared by every page. Rules: docs/language.md. */
 const UI_TEXT = {
-  language: { en:'Language', zh:'语言' },
+  switch_language: { en:'Switch to Chinese', zh:'切换到英文' },
   loading_data: { en:'Loading data…', zh:'正在获取数据…' },
   strategy: { en:'Strategy', zh:'策略' },
   market: { en:'Market', zh:'市场指标' },
@@ -93,10 +93,8 @@ function languageApply(languageCode, onChange) {
 function languageApplyDocument() {
   document.documentElement.lang = activeLanguage === 'zh' ? 'zh-Hans' : 'en';
   if (document.body.dataset.titleKey) document.title = languageText(document.body.dataset.titleKey);
-  document.querySelectorAll('.language-switch').forEach(languageSwitch => {
-    languageSwitch.setAttribute('aria-label', languageText('language'));
-    languageSwitch.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.language === activeLanguage)));
-  });
+  const languageButton = document.getElementById('language-button');
+  if (languageButton) { languageButton.setAttribute('aria-label', languageText('switch_language')); languageButton.title = languageText('switch_language'); }
 }
 /* In Chinese mode each helper adds the English underneath (block), after (inline) or as the next paragraph. */
 function languageRenderText(localizedText, isInline = false) {
@@ -112,7 +110,6 @@ function languageRenderParagraphs(localizedText) {
     + (englishList[index] ? `<p class="translation-paragraph" lang="en">${languageEscape(englishList[index])}</p>` : '')).join('');
 }
 function languageBindSwitch(onChange) {
-  document.querySelectorAll('.language-switch button').forEach(button =>
-    button.onclick = () => { if (button.dataset.language !== activeLanguage) languageApply(button.dataset.language, onChange); });
+  document.getElementById('language-button').onclick = () => languageApply(activeLanguage === 'zh' ? 'en' : 'zh', onChange);
   languageApplyDocument();
 }

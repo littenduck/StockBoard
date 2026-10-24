@@ -98,7 +98,7 @@ English is the default; Chinese mode shows Chinese with the English underneath. 
 | `.translation` | block, 12px / 16px, `--text-secondary`, weight 400 | English line under Chinese text |
 | `.translation-inline` | 12px, `--text-secondary`, 4px left margin | English after a 12px caption on the same line |
 | `.translation-paragraph` | 15px body, `--text-secondary` | English help paragraph after its Chinese paragraph |
-| `.language-switch` | segmented control `EN | 中文`, 1px separator border, radius 8px, each button at least 44px tall, selected button `--fill` with `aria-pressed="true"` | sidebar header and rules page header |
+| `.icon-button` | 44px square, radius 8px, `--text-secondary` icon, `--fill` on hover; used for the theme button (half-filled circle) and the language button (globe). The language button toggles English and Chinese; its aria-label and tooltip say what a click does (Switch to Chinese / 切换到英文) | sidebar header, rules page header |
 
 English appears under: sidebar section captions, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result captions, expiration window lines, the rules page explanation.
 Never doubled: status words, numbers, prices, percentages, times, symbols, the status bar, buttons, select options, aria-labels.

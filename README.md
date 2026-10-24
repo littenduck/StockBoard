@@ -1,6 +1,6 @@
 # StockBoard
 
-A personal stock dashboard. The left sidebar lists market indicators (VIX, VXN, VVIX, 10Y, HY spread) and symbols, each with a **pass** result, a **score** and a price sparkline. Select a symbol to see its strategy tree on the right, gate by gate and rule by rule. A status bar shows whether the market is open and how old the data is. English by default; the EN | 中文 switch shows Chinese with the English underneath. Light theme by default; the button next to it switches to dark.
+A personal stock dashboard. The left sidebar lists market indicators (VIX, VXN, VVIX, 10Y, HY spread) and symbols, each with a **pass** result, a **score** and a price sparkline. Select a symbol to see its strategy tree on the right, gate by gate and rule by rule. A status bar shows whether the market is open and how old the data is. English by default; the globe button switches to Chinese, shown with the English underneath. Light theme by default; the half-circle button switches to dark.
 
 ## Run
 

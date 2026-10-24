@@ -220,3 +220,6 @@ Execution note: the first budget of 70 lines for all of `language.js` counted th
 | Revised (this file) | 5.0 | P1 data and English land in the same commit per file group (steps 3, 4); P2 completeness plus no-CJK-in-English plus forbidden-words test; P3 explicit in 4.2; P4 in 4.1 and 4.3; P5 step 8 updates the authoring guide and the skill; P6 line budgets in 4.2, 4.3, 4.1 and section 6 |
 
 Residual risks (not deductions, accepted): rule rows are taller in Chinese mode (requested feature); translations are mine and should get a read-through from the user after merge.
+
+
+Change after review: the user asked for the language control to look exactly like the theme button, so the `EN | 中文` segmented control (D3, 2.2) became a single globe icon button sharing the `.icon-button` style; one click toggles the language.
