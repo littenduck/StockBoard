@@ -41,7 +41,7 @@ System font only: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif`. Al
 
 Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 
-**Links:** gray `--text-secondary`, no underline. Hover and keyboard focus turn the text `--text` and underline it. Inside a paragraph or list item (`p a`, `li a`) a link is always `--text` and underlined, like Markdown. Every `a` has a 44px hit area built in (`::after`), so no separate hit class is needed.
+**Links:** gray `--text-secondary`, no underline. Hover and keyboard focus turn the text `--text` and underline it. Inside a paragraph, list item or small line (`p a`, `li a`, `small a`) a link is always `--text` and underlined, like Markdown. Every `a` has a 44px hit area built in (`::after`), so no separate hit class is needed. Inside a `.row` the hit area is `--hit-size` minus 8px (`.row a::after`), so links in dense rows do not overlap the rows above and below.
 
 **Vertical rhythm** (inside any `.box`, the popover and the explanation box included):
 - `.box > * + * { margin-top: 12px }`
