@@ -81,7 +81,8 @@ def web_server_get_strategy_list() -> dict:
         "default_strategy_id": application_settings.default_strategy_id,
         "strategy_list": [{"strategy_id": s.strategy_id, "display_name": s.display_name, "summary": s.summary,
                            "help_text": s.help_text, "source": s.source}
-                          for s in strategy_definition_by_id.values()],
+                          for s in sorted(strategy_definition_by_id.values(),
+                                          key=lambda s: s.strategy_id != application_settings.default_strategy_id)],
     }
 
 

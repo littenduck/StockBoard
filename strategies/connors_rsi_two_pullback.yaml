@@ -1,0 +1,28 @@
+strategy_id: connors_rsi_two_pullback
+display_name: RSI(2) 回调（Connors）
+source: "Larry Connors 与 Cesar Alvarez《Short Term Trading Strategies That Work》(2008) 中的 RSI(2) 均值回归思路，参数取二手资料的常用值"
+thresholds: {max_unknown_weight_ratio: 0.20}
+summary: "在长期上升趋势里买短期超跌：收盘价在 200 日线上方，同时 2 日 RSI 跌到 10 以下。"
+help: |
+  这是一个短线均值回归策略：上升趋势里的股票被短暂打压后，往往会在几天内反弹。它用 2 日 RSI 这种非常敏感的指标来找「跌过头」的时刻。
+
+  核心条件是收盘价必须高于 200 日均线，这是一票否决条件，用来保证只在长期上升趋势里买入，不去接下跌趋势里的飞刀。在此基础上，2 日 RSI 低于 10 视为超跌，低于 5 是更严格的一档；收盘价低于 5 日均线说明正处于短期回调中。
+
+  资料里的常见离场方式是收盘价回到 5 日均线上方，或 2 日 RSI 回升到 70 以上。各资料的具体阈值不完全一致，这里用的是最常见的数值。
+
+  这类信号出现得比较少，大部分时间分数会偏低，这是正常的。本页面只做筛选，不给出离场信号。不构成投资建议。
+gates:
+  - gate_id: gate_0_market
+    display_name: "GATE 0 市场环境"
+    rules:
+      - {rule_id: Z18, weight: 3}
+  - gate_id: gate_1_trend
+    display_name: "GATE 1 长期趋势"
+    rules:
+      - {rule_id: Z20, weight: 5}
+  - gate_id: gate_2_pullback
+    display_name: "GATE 2 短期超跌"
+    rules:
+      - {rule_id: R01, weight: 4, variant_group: rsi_two_oversold}
+      - {rule_id: R02, weight: 3, variant_group: rsi_two_oversold}
+      - {rule_id: R03, weight: 3}
