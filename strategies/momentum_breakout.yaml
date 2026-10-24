@@ -1,0 +1,30 @@
+strategy_id: momentum_breakout
+display_name: 动量突破（52 周新高）
+source: "常见的 52 周新高突破与价格动量规则（强者恒强），阈值为常用经验值"
+thresholds: {max_unknown_weight_ratio: 0.20}
+summary: "找正在创新高的强势股：价格离 52 周高点不到 5%，过去 6 个月涨幅超过 10%，并且放量。"
+help: |
+  动量策略基于一个长期被观察到的现象：过去一段时间涨得好的股票，接下来一段时间往往继续跑赢。接近 52 周新高的股票上方没有套牢盘，更容易突破。
+
+  核心条件是价格距离 52 周高点不超过 5%，这是一票否决条件。在此基础上，过去 6 个月涨幅超过 10% 说明动量真实存在，成交量达到 20 日均量的 1.5 倍说明突破有资金推动，50 日线高于 200 日线说明中期趋势向上，RSI(14) 低于 80 则避免追在极度超买的位置。
+
+  市场环境（SPX 在 200 日线上方、VIX 不处于恐慌区）不好时，突破更容易失败。
+
+  动量策略的风险是突破失败后回落很快，实际交易时通常配合止损，例如跌回突破位下方就离场。本页面只做筛选，不给出离场信号。不构成投资建议。
+gates:
+  - gate_id: gate_0_market
+    display_name: "GATE 0 市场环境"
+    rules:
+      - {rule_id: Z18, weight: 3}
+      - {rule_id: T01, weight: 2}
+  - gate_id: gate_1_momentum
+    display_name: "GATE 1 趋势与动量"
+    rules:
+      - {rule_id: M01, weight: 4}
+      - {rule_id: T02, weight: 4}
+  - gate_id: gate_2_breakout
+    display_name: "GATE 2 突破确认"
+    rules:
+      - {rule_id: M02, weight: 5}
+      - {rule_id: M03, weight: 3}
+      - {rule_id: M04, weight: 2}

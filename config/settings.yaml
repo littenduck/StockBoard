@@ -1,0 +1,36 @@
+refresh_interval_minutes: 10
+# The page marks data older than this as stale while the market is open.
+stale_after_minutes: 60
+# Other web origins allowed to call the API (CORS). Empty: same-origin page and native apps only.
+allowed_origin_list: []
+default_strategy_id: sell_put_four_in_one
+
+# First row of the page. is_higher_value_risky inverts the up/down colors.
+market_indicator_list:
+  - {indicator_id: vix_level, display_name: VIX, is_higher_value_risky: true}
+  - {indicator_id: vxn_level, display_name: VXN, is_higher_value_risky: true}
+  - {indicator_id: vvix_level, display_name: VVIX, is_higher_value_risky: true}
+  - {indicator_id: treasury_ten_year_yield, display_name: "10Y", is_higher_value_risky: true}
+  - {indicator_id: high_yield_credit_spread_basis_points, display_name: "HY bp", is_higher_value_risky: true}
+
+# Second row of the page: indices and stocks mixed.
+watchlist_symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]
+
+# Put contracts are picked once per window. The first window is the standard one.
+option_expiration_window_list:
+  - {minimum_days: 30, maximum_days: 45}
+  - {minimum_days: 14, maximum_days: 30}
+  - {minimum_days: 45, maximum_days: 60}
+  - {minimum_days: 60, maximum_days: 90}
+target_absolute_delta: 0.25
+
+# NYSE full-day closures, kept by hand. Check https://www.nyse.com/markets/hours-calendars each year.
+market_holiday_list: [
+  2026-01-01, 2026-01-19, 2026-02-16, 2026-04-03, 2026-05-25, 2026-06-19, 2026-07-03, 2026-09-07, 2026-11-26, 2026-12-25,
+  2027-01-01, 2027-01-18, 2027-02-15, 2027-03-26, 2027-05-31, 2027-06-18, 2027-07-05, 2027-09-06, 2027-11-25, 2027-12-24,
+]
+# NYSE days that close at 13:00 ET. 2027 not yet listed: add from the NYSE calendar.
+market_early_close_list: [2026-11-27, 2026-12-24]
+
+# Kept by hand, for example [{event_name: FOMC, event_date: "2026-12-09"}]
+macro_event_calendar: []

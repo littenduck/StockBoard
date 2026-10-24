@@ -1,0 +1,159 @@
+# Rule catalog: every rule any strategy may use, in one place.
+# Rule id = group letter + two digits. A to F and Z come from the Notion scorecard
+# ("个股期权评分卡: 任意股票×6策略×100指标"); T, R, M were added with the stock strategies.
+# A strategy file only lists rule ids and weights; the definition lives here.
+#
+# availability:
+#   automatic            computed from data the app already fetches
+#   missing_data_source  needs data with no stable free source yet (FGI, IV percentile, news, fundamentals)
+#   account_data         needs your brokerage account (net value, cash, positions, option level)
+#   user_answer          needs your answer (willingness to hold, sleep test)
+#   trade_plan           a plan for after the trade (take profit, stop loss), not a screen
+#   not_implemented      computable in principle, not built yet
+# alias_of: the Notion scorecard lists some rules twice under two letters; the copy points to the original.
+
+rule_group_list:
+  - {group_id: A, display_name: "A · #1 Sell Put 五层决策框架", description: "宏观与情绪开关、仓位硬顶、到期前无财报。"}
+  - {group_id: B, display_name: "B · #2 CSP 执行参数", description: "IV 择时、Delta、DTE、权利金和止盈。"}
+  - {group_id: C, display_name: "C · #3 SPMO 动量轮动", description: "按 SPMO 成分股做半年轮动，不是期权策略。"}
+  - {group_id: D, display_name: "D · #4 买方方向性期权", description: "极端情绪时买入期权，控制仓位和止盈止损。"}
+  - {group_id: E, display_name: "E · #5 Sell Put 加 Covered Call 循环（Wheel）", description: "被行权后卖 Covered Call 的循环机制。"}
+  - {group_id: F, display_name: "F · #6 车轮选股与尾部风险", description: "基本面、52 周低位、避开事件窗口。"}
+  - {group_id: Z, display_name: "Z · 公共补充层", description: "适用于所有卖方策略的风控、流动性、事件和趋势规则。"}
+  - {group_id: T, display_name: "T · 趋势跟踪", description: "黄金交叉一类的均线趋势规则。"}
+  - {group_id: R, display_name: "R · 短期超跌回调", description: "Larry Connors RSI(2) 一类的回调规则。"}
+  - {group_id: M, display_name: "M · 动量突破", description: "接近 52 周新高、放量、中期涨幅。"}
+
+rule_list:
+  # A · #1 五层决策框架
+  - {rule_id: A01, description: "近 6 个月 Fed 未加息且无新加息指引", default_weight: 4, availability: missing_data_source}
+  - {rule_id: A02, description: "10Y < 4.5%", default_weight: 4, availability: automatic, indicator: treasury_ten_year_yield, operator: less_than, value: 4.5}
+  - {rule_id: A03, description: "10Y 20 日升幅 < 25bp", default_weight: 3, availability: automatic, indicator: treasury_ten_year_yield_twenty_day_change_basis_points, operator: less_than, value: 25}
+  - {rule_id: A04, description: "HY 信用利差 < 400bp", default_weight: 4, availability: automatic, indicator: high_yield_credit_spread_basis_points, operator: less_than, value: 400, note: "原规则还要求 20 日升幅 < 50bp，这部分尚未实现"}
+  - {rule_id: A05, description: "窗口内无 ≥ $10B 的大型 IPO", default_weight: 1, availability: missing_data_source}
+  - {rule_id: A06, description: "下次 FOMC 加息概率 < 50%", default_weight: 3, availability: missing_data_source}
+  - {rule_id: A07, description: "10Y < 5.0%（A02 宽松档）", default_weight: 2, availability: automatic, indicator: treasury_ten_year_yield, operator: less_than, value: 5.0}
+  - {rule_id: A08, description: "FGI < 55", default_weight: 2, availability: missing_data_source, indicator: fear_greed_index, operator: less_than, value: 55}
+  - {rule_id: A09, description: "FGI < 45（A08 严格档）", default_weight: 2, availability: missing_data_source, indicator: fear_greed_index, operator: less_than, value: 45}
+  - {rule_id: A10, description: "VIX >= 13", default_weight: 3, availability: automatic, indicator: vix_level, operator: greater_or_equal, value: 13}
+  - {rule_id: A11, description: "VIX >= 15（A10 严格档）", default_weight: 3, availability: automatic, indicator: vix_level, operator: greater_or_equal, value: 15}
+  - {rule_id: A12, description: "IV 百分位 >= 40", default_weight: 3, availability: missing_data_source}
+  - {rule_id: A13, description: "IV 百分位 >= 50（A12 严格档）", default_weight: 3, availability: missing_data_source}
+  - {rule_id: A14, description: "IV 百分位 >= 70（严格档）", default_weight: 2, availability: missing_data_source}
+  - {rule_id: A15, description: "你愿意长期持有该股", default_weight: 4, availability: user_answer}
+  - {rule_id: A16, description: "Strike <= 你愿意接盘的价格", default_weight: 4, availability: user_answer}
+  - {rule_id: A17, description: "全部 Put 名义敞口（含新仓）<= 净值 × 70%", default_weight: 4, availability: account_data}
+  - {rule_id: A18, description: "该股名义敞口 <= 净值 × 35%", default_weight: 4, availability: account_data}
+  - {rule_id: A19, description: "现金 >= 净值 × 30%", default_weight: 3, availability: account_data}
+  - {rule_id: A20, description: "零杠杆，现金担保", default_weight: 3, availability: account_data}
+  - {rule_id: A21, description: "年化收益 >= 8%", default_weight: 3, availability: automatic, indicator: selected_put_annualized_return_percent, operator: greater_or_equal, value: 8}
+  - {rule_id: A22, description: "到期前无财报", default_weight: 5, availability: automatic, indicator: no_earnings_before_expiration, operator: is_true}
+  - {rule_id: A23, description: "DTE 14-45", default_weight: 2, availability: automatic, indicator: selected_put_days_to_expiration, operator: between, value: [14, 45]}
+  - {rule_id: A24, description: "睡眠测试：跌到 52 周低点时的亏损可以承受", default_weight: 3, availability: user_answer}
+  # B · #2 CSP 执行参数
+  - {rule_id: B01, description: "IV 抬升期：VIX 高于 20 日均值，或 IV > RV30", default_weight: 3, availability: not_implemented}
+  - {rule_id: B02, description: "FGI < 35", default_weight: 2, availability: missing_data_source, indicator: fear_greed_index, operator: less_than, value: 35}
+  - {rule_id: B03, description: "|Δ| 0.15-0.30", default_weight: 4, availability: automatic, indicator: selected_put_absolute_delta, operator: between, value: [0.15, 0.30]}
+  - {rule_id: B04, description: "|Δ| 0.15-0.20（B03 严格档）", default_weight: 3, availability: automatic, indicator: selected_put_absolute_delta, operator: between, value: [0.15, 0.20]}
+  - {rule_id: B05, description: "Strike 低于最近支撑位", default_weight: 2, availability: not_implemented}
+  - {rule_id: B06, description: "现价距最近支撑 <= 3%", default_weight: 3, availability: not_implemented}
+  - {rule_id: B07, description: "DTE 30-45", default_weight: 4, availability: automatic, indicator: selected_put_days_to_expiration, operator: between, value: [30, 45]}
+  - {rule_id: B08, description: "到期日是月度期权（第三个周五）", default_weight: 2, availability: not_implemented}
+  - {rule_id: B09, description: "年化收益 >= 8%", alias_of: A21}
+  - {rule_id: B10, description: "月化权利金 >= 2%", default_weight: 3, availability: not_implemented}
+  - {rule_id: B11, description: "月化权利金 >= 4%（B10 严格档）", default_weight: 1, availability: not_implemented}
+  - {rule_id: B12, description: "路径 A：使用 margin 账户", default_weight: 2, availability: user_answer}
+  - {rule_id: B13, description: "单腿占用 > 净值 × 20% 时改用价差", default_weight: 3, availability: account_data}
+  - {rule_id: B14, description: "期权权限 >= L2", default_weight: 5, availability: account_data}
+  - {rule_id: B15, description: "期权权限 >= L3（做价差）", default_weight: 3, availability: account_data}
+  - {rule_id: B16, description: "盈利 50% 时买回平仓", default_weight: 4, availability: trade_plan}
+  - {rule_id: B17, description: "盈利 70% 时买回平仓（B16 另一档）", default_weight: 3, availability: trade_plan}
+  # C · #3 SPMO 动量轮动
+  - {rule_id: C01, description: "现在处于 3 月或 9 月换仓窗口", default_weight: 2, availability: not_implemented}
+  - {rule_id: C02, description: "在换仓日以收盘价执行", default_weight: 1, availability: trade_plan}
+  - {rule_id: C03, description: "标的是 SPMO 权重最大的 1 只", default_weight: 3, availability: missing_data_source}
+  - {rule_id: C04, description: "计划持有至少半年（不设止损）", default_weight: 2, availability: trade_plan}
+  - {rule_id: C05, description: "标的在 SPMO 权重前 20", default_weight: 3, availability: missing_data_source}
+  - {rule_id: C06, description: "近 12 个月策略夏普 >= SPY（策略未失效）", default_weight: 3, availability: not_implemented}
+  # D · #4 买方方向性
+  - {rule_id: D01, description: "市值或成交额前 100", default_weight: 3, availability: missing_data_source}
+  - {rule_id: D02, description: "极度恐慌（FGI < 25 或 VIX > 30）时看涨", default_weight: 3, availability: missing_data_source}
+  - {rule_id: D03, description: "极度贪婪（FGI > 75）时小仓看跌", default_weight: 2, availability: missing_data_source}
+  - {rule_id: D04, description: "近 30 日出手 <= 2 次", default_weight: 3, availability: user_answer}
+  - {rule_id: D05, description: "隐含杠杆（Δ × 股价 ÷ 权利金）>= 10 倍", default_weight: 3, availability: not_implemented}
+  - {rule_id: D06, description: "到期 60-90 天", default_weight: 2, availability: not_implemented}
+  - {rule_id: D07, description: "行权价是目标价附近的整数且成交量大", default_weight: 2, availability: not_implemented}
+  - {rule_id: D08, description: "单只期权仓位 <= 净值 × 10%", default_weight: 4, availability: account_data}
+  - {rule_id: D09, description: "分 2 批以上建仓", default_weight: 2, availability: trade_plan}
+  - {rule_id: D10, description: "多头期权总权利金 <= 净值 × 20%", default_weight: 4, availability: account_data}
+  - {rule_id: D11, description: "计划持有 3-10 天", default_weight: 2, availability: trade_plan}
+  - {rule_id: D12, description: "止盈 +60%", default_weight: 3, availability: trade_plan}
+  - {rule_id: D13, description: "止盈 +100%（D12 另一档）", default_weight: 3, availability: trade_plan}
+  - {rule_id: D14, description: "止损：正股到目标位而期权仍亏损时离场", default_weight: 3, availability: trade_plan}
+  - {rule_id: D15, description: "方向为做多（做空只限情绪股小仓）", default_weight: 2, availability: not_implemented}
+  # E · #5 Wheel
+  - {rule_id: E01, description: "你愿意长期持有该股", alias_of: A15}
+  - {rule_id: E02, description: "市值 > $200B", default_weight: 2, availability: missing_data_source}
+  - {rule_id: E03, description: "Strike = 现价 −10% 到 −15%", default_weight: 2, availability: not_implemented}
+  - {rule_id: E04, description: "Strike = 现价 −10% 到 −20%（E03 另一档）", default_weight: 2, availability: not_implemented}
+  - {rule_id: E05, description: "DTE 30-45", alias_of: B07}
+  - {rule_id: E06, description: "月化权利金 >= 2%", alias_of: B10}
+  - {rule_id: E07, description: "月化权利金 >= 4%", alias_of: B11}
+  - {rule_id: E08, description: "年化收益 >= 20%（A21 严格档）", default_weight: 2, availability: automatic, indicator: selected_put_annualized_return_percent, operator: greater_or_equal, value: 20}
+  - {rule_id: E09, description: "现金 >= Strike × 100", default_weight: 4, availability: account_data}
+  - {rule_id: E10, description: "持股时已规划卖 Covered Call", default_weight: 3, availability: trade_plan}
+  - {rule_id: E11, description: "Covered Call 行权价 = 现价 +10%", default_weight: 2, availability: not_implemented}
+  - {rule_id: E12, description: "Covered Call 到期约 30 天", default_weight: 2, availability: not_implemented}
+  - {rule_id: E13, description: "Covered Call 张数 = 持股 ÷ 100，不超卖", default_weight: 5, availability: account_data}
+  - {rule_id: E14, description: "Covered Call 行权价 >= 成本价", default_weight: 4, availability: account_data}
+  - {rule_id: E15, description: "成本 <= 现价 × 1.15，否则暂停 Covered Call", default_weight: 3, availability: account_data}
+  - {rule_id: E16, description: "开仓目的已经明确（收租或接盘）", default_weight: 4, availability: user_answer}
+  # F · #6 车轮选股与尾部风险
+  - {rule_id: F01, description: "基本面优质：盈利为正、营收同比 > 0、买入评级 > 60%", default_weight: 4, availability: missing_data_source}
+  - {rule_id: F02, description: "52 周区间分位 <= 25（F03 严格档）", default_weight: 3, availability: automatic, indicator: fifty_two_week_range_percentile, operator: less_or_equal, value: 25}
+  - {rule_id: F03, description: "52 周区间分位 <= 50", default_weight: 2, availability: automatic, indicator: fifty_two_week_range_percentile, operator: less_or_equal, value: 50}
+  - {rule_id: F04, description: "现价距最近支撑 <= 3%", alias_of: B06}
+  - {rule_id: F05, description: "到期前无财报", alias_of: A22}
+  - {rule_id: F06, description: "DTE 窗口内无 FOMC 决议日", default_weight: 2, availability: not_implemented}
+  - {rule_id: F07, description: "DTE 窗口内无 CPI、PCE 或选举日", default_weight: 2, availability: not_implemented}
+  - {rule_id: F08, description: "|Δ| <= 0.30", default_weight: 4, availability: automatic, indicator: selected_put_absolute_delta, operator: less_or_equal, value: 0.30}
+  - {rule_id: F09, description: "DTE > 30", default_weight: 3, availability: automatic, indicator: selected_put_days_to_expiration, operator: greater_than, value: 30}
+  - {rule_id: F10, description: "现金 >= Strike × 100", alias_of: E09}
+  - {rule_id: F11, description: "零杠杆，现金担保", alias_of: A20}
+  - {rule_id: F12, description: "成本 <= 现价 × 1.15", alias_of: E15}
+  # Z · 公共补充层
+  - {rule_id: Z01, description: "止损：亏损达到 2 倍权利金", default_weight: 4, availability: trade_plan}
+  - {rule_id: Z02, description: "剩 21 天时时间止损或展期", default_weight: 3, availability: trade_plan}
+  - {rule_id: Z03, description: "单笔最大亏损（到止损）<= 净值 × 2%", default_weight: 5, availability: account_data}
+  - {rule_id: Z04, description: "同板块敞口 <= 总敞口 50%", default_weight: 4, availability: account_data}
+  - {rule_id: Z05, description: "ATM IV（30-45 天）> RV30", default_weight: 4, availability: automatic, indicator: selected_put_implied_volatility_exceeds_realized, operator: is_true}
+  - {rule_id: Z06, description: "买卖价差 <= 中间价 5%", default_weight: 3, availability: not_implemented}
+  - {rule_id: Z07, description: "OI >= 500 且当日成交量 >= 100", default_weight: 3, availability: not_implemented}
+  - {rule_id: Z08, description: "窗口内无除息日", default_weight: 2, availability: not_implemented}
+  - {rule_id: Z09, description: "窗口内无关税或政策截止日", default_weight: 3, availability: missing_data_source}
+  - {rule_id: Z10, description: "没有正在升级的地缘冲突", default_weight: 3, availability: missing_data_source}
+  - {rule_id: Z11, description: "没有待决的行业监管或出口管制事件", default_weight: 3, availability: missing_data_source}
+  - {rule_id: Z12, description: "WTI < $100 且月涨幅 < 15%", default_weight: 3, availability: missing_data_source}
+  - {rule_id: Z13, description: "不在非农数据前后 1 天开仓", default_weight: 2, availability: not_implemented}
+  - {rule_id: Z14, description: "不在 CPI 或 PCE 公布日开仓", default_weight: 2, availability: not_implemented}
+  - {rule_id: Z15, description: "同业龙头财报不在窗口内", default_weight: 3, availability: missing_data_source}
+  - {rule_id: Z16, description: "大客户或上下游财报不在窗口内", default_weight: 3, availability: missing_data_source}
+  - {rule_id: Z17, description: "分析师 EPS 上修多于下修", default_weight: 2, availability: missing_data_source}
+  - {rule_id: Z18, description: "SPX > 200 日线", default_weight: 4, availability: automatic, indicator: spx_above_two_hundred_day_average, operator: is_true}
+  - {rule_id: Z19, description: "VIX 期限结构为 contango", default_weight: 3, availability: automatic, indicator: vix_term_structure_is_contango, operator: is_true}
+  - {rule_id: Z20, description: "个股 > 200 日线", default_weight: 3, availability: automatic, indicator: price_above_two_hundred_day_average, operator: is_true, note: "原规则还要求未创 52 周新低，这部分尚未实现"}
+  # T · 趋势跟踪
+  - {rule_id: T01, description: "VIX < 25（市场没有恐慌）", default_weight: 2, availability: automatic, indicator: vix_level, operator: less_than, value: 25}
+  - {rule_id: T02, description: "50 日线 > 200 日线（黄金交叉状态）", default_weight: 5, availability: automatic, indicator: fifty_day_average_above_two_hundred_day_average, operator: is_true}
+  - {rule_id: T03, description: "收盘价 > 50 日线", default_weight: 4, availability: automatic, indicator: price_above_fifty_day_average, operator: is_true}
+  - {rule_id: T04, description: "RSI(14) 在 40-70 之间（趋势健康、不过热）", default_weight: 3, availability: automatic, indicator: relative_strength_index_fourteen_day, operator: between, value: [40, 70]}
+  - {rule_id: T05, description: "距 52 周高点 <= 15%", default_weight: 2, availability: automatic, indicator: distance_from_fifty_two_week_high_percent, operator: less_or_equal, value: 15}
+  # R · 短期超跌回调
+  - {rule_id: R01, description: "RSI(2) < 10", default_weight: 4, availability: automatic, indicator: relative_strength_index_two_day, operator: less_than, value: 10}
+  - {rule_id: R02, description: "RSI(2) < 5（R01 严格档）", default_weight: 3, availability: automatic, indicator: relative_strength_index_two_day, operator: less_than, value: 5}
+  - {rule_id: R03, description: "收盘价 < 5 日线（短期回调中）", default_weight: 3, availability: automatic, indicator: price_below_five_day_average, operator: is_true}
+  # M · 动量突破
+  - {rule_id: M01, description: "6 个月涨幅 > 10%", default_weight: 4, availability: automatic, indicator: return_six_month_percent, operator: greater_than, value: 10}
+  - {rule_id: M02, description: "距 52 周高点 <= 5%（接近新高）", default_weight: 5, availability: automatic, indicator: distance_from_fifty_two_week_high_percent, operator: less_or_equal, value: 5}
+  - {rule_id: M03, description: "成交量 >= 20 日均量 × 1.5（放量）", default_weight: 3, availability: automatic, indicator: volume_ratio_to_twenty_day_average, operator: greater_or_equal, value: 1.5}
+  - {rule_id: M04, description: "RSI(14) < 80（没有极度超买）", default_weight: 2, availability: automatic, indicator: relative_strength_index_fourteen_day, operator: less_than, value: 80}

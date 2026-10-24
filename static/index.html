@@ -1,57 +1,337 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stock Board</title>
+<title>StockBoard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23C96442'/%3E%3Cpath d='M7 21l6-6 4 4 8-9' fill='none' stroke='%23FAF9F5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#FAF9F5">
+<link rel="stylesheet" href="/base.css">
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --fg:#14171c; --mute:#6b7280; --line:#e5e7eb; --up:#0a8f4d; --down:#d1342f; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#0f1115; --card:#181b21; --fg:#e8eaed; --mute:#8b93a1; --line:#262b33; --up:#3ddc84; --down:#ff6b64; }
+
+  .layout { display:grid; min-height:100vh; }
+  .layout > * { min-width:0; }
+  aside { background:var(--surface); padding:var(--space-4) 0 var(--space-5); }
+  aside > header { display:flex; justify-content:space-between; align-items:center; padding:0 var(--space-4); }
+  .theme-button { width:44px; height:44px; margin-right:calc(-1 * var(--space-3)); display:grid; place-items:center; border-radius:8px; color:var(--text-secondary); }
+  .theme-button:hover { background:var(--fill); }
+  .status-bar { display:flex; align-items:center; gap:var(--space-2); margin:var(--space-2) var(--space-4) var(--space-4); }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
+  .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
+  select { width:calc(100% - var(--space-6)); margin:0 var(--space-4); min-height:44px; padding:var(--space-3); font:inherit; color:var(--text); background:var(--background); border:1px solid var(--separator); border-radius:8px; }
+  aside h2 { margin:var(--space-5) var(--space-4) var(--space-2); }
+  .indicator-item { display:grid; grid-template-columns:1fr auto 72px; align-items:baseline; column-gap:var(--space-3); padding:var(--space-1) var(--space-4); }
+  .indicator-item > :nth-child(n+2) { text-align:right; }
+  .symbol-item { width:100%; display:grid; grid-template-columns:1fr 64px 64px; column-gap:var(--space-3); align-items:center; padding:var(--space-2) var(--space-4); border-radius:0; transition:background-color 120ms ease; }
+  .symbol-item:hover, .symbol-item[aria-current="true"] { background:var(--fill); }
+  .symbol-item[aria-current="true"] { box-shadow:inset 3px 0 var(--accent); }
+  .symbol-item .sparkline { grid-row:span 2; }
+  .symbol-item .score { grid-row:span 2; justify-self:end; display:flex; align-items:center; gap:var(--space-1); }
+  .symbol-item.is-failed { cursor:default; opacity:0.6; }
+  .placeholder { height:36px; margin:var(--space-2) var(--space-4); border-radius:8px; background:var(--separator); }
+
+  main { padding:var(--space-6); max-width:880px; width:100%; justify-self:center; }
+  .back-link { display:none; padding:14px 0; margin:-14px 0 var(--space-2); color:var(--text-secondary); }
+  .symbol-header { display:flex; flex-wrap:wrap; align-items:baseline; column-gap:var(--space-3); }
+  .detail-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
+    padding-bottom:var(--space-5); margin-bottom:var(--space-6); border-bottom:1px solid var(--separator); }
+  .detail-note { flex-basis:100%; text-align:right; }
+  .result-row { display:flex; gap:var(--space-6); }
+  .result-row .display { display:flex; align-items:center; gap:var(--space-2); }
+  .tag { display:inline-block; padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; }
+  .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
+  .strategy-gate:last-child { border-left-color:transparent; }
+  .strategy-gate > header { display:flex; align-items:center; gap:var(--space-2); margin-left:-24px; }
+  .strategy-gate > header .icon { background:var(--background); border-radius:50%; }
+  .strategy-gate > header h3 { min-width:0; }
+  .strategy-gate > header > span { white-space:nowrap; }
+  .gate-note { margin-top:var(--space-1); }
+  .strategy-gate > header + * { margin-top:var(--space-2); }
+  .strategy-rule-row { display:grid; grid-template-columns:40px 72px 1fr auto; gap:var(--space-3); align-items:start; padding:var(--space-2) 0; border-top:1px solid var(--separator); }
+  .strategy-rule-row > .caption, .strategy-rule-row .status-badge { line-height:20px; min-height:20px; }
+  .strategy-rule-row.not_applicable, .strategy-rule-row.not_applicable .caption { color:var(--text-secondary); }
+  .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
+  .window-title { margin:var(--space-4) 0 var(--space-1); }
+  .rule-link { text-decoration:none; padding:12px 8px; margin:-12px -8px; } .rule-link:hover { color:var(--text); text-decoration:underline; }
+  .catalog-link { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+  .sidebar-footer-link { display:block; margin:var(--space-5) var(--space-4) 0; padding:14px 0; color:var(--text-secondary); text-decoration:none; border-top:1px solid var(--separator); }
+  .sidebar-footer-link:hover { color:var(--text); }
+  .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); margin-bottom:var(--space-1); }
+  .help-button { width:44px; height:44px; margin:-12px -12px -12px -8px; display:grid; place-items:center; border-radius:50%; color:var(--text-secondary); transition:background-color 120ms ease; }
+  .strategy-name { font-size:15px; line-height:20px; font-weight:600; color:var(--text); margin-left:var(--space-1); }
+  .help-button:hover { background:var(--fill); color:var(--text); }
+  .help-popover { width:min(520px, calc(100vw - var(--space-6))); max-height:calc(100vh - 2 * var(--space-6)); overflow-y:auto; padding:var(--space-5);
+    border:1px solid var(--separator); border-radius:12px; background:var(--surface); color:var(--text); }
+  .help-popover::backdrop { background:rgb(20 20 19 / 0.24); }
+  .help-popover > header { display:flex; justify-content:space-between; align-items:center; margin:-8px -12px var(--space-3) 0; }
+  .help-popover p + p { margin-top:var(--space-3); }
+  .help-popover .summary { font-weight:600; }
+  .panel-enter { animation:panel-enter 160ms ease-out; }
+  @keyframes panel-enter { from { opacity:0; transform:translateY(4px); } }
+  @keyframes pulse { 50% { opacity:0.3; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+
+  @media (min-width:900px) {
+    .layout { grid-template-columns:300px 1fr; }
+    aside { position:sticky; top:0; height:100vh; overflow-y:auto; border-right:1px solid var(--separator); }
   }
-  * { box-sizing:border-box; }
-  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; }
-  header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
-  h1 { font-size:18px; margin:0; }
-  .mute { color:var(--mute); font-size:13px; }
-  .gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:16px; }
-  .gauge, .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
-  .gauge b { display:block; font-size:20px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
-  .card { position:relative; overflow:hidden; }
-  .card .sym { font-weight:600; }
-  .card .score { font-size:30px; font-weight:700; margin:4px 0; }
-  .bar { position:absolute; left:0; bottom:0; height:4px; }
-  .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; min-height:20px; }
-  .chip { font-size:11px; padding:1px 6px; border:1px solid var(--line); border-radius:99px; color:var(--mute); }
-  .up { color:var(--up); } .down { color:var(--down); }
-  details { margin-top:16px; } summary { cursor:pointer; color:var(--mute); }
+  @media (max-width:899px) {
+    #indicator-list { display:flex; gap:var(--space-2); overflow-x:auto; padding:0 var(--space-4); }
+    #indicator-list .indicator-item { flex:none; grid-template-columns:auto auto auto; border:1px solid var(--separator); border-radius:12px; padding:var(--space-2) var(--space-3); }
+    main { padding:var(--space-5) var(--space-4); }
+    .detail-note { text-align:left; }
+    .back-link { display:inline-block; }
+  }
 </style>
 </head>
 <body>
-<header><h1>Stock Board</h1><span class="mute" id="updated">loading…</span></header>
-<div class="gauges" id="gauges"></div>
-<div class="grid" id="grid"></div>
-<details><summary>评分规则</summary><ul id="rules"></ul></details>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="icon-pass" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5 8.3l2 2 4-4.3" fill="none" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="icon-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="icon-unknown" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
+  <symbol id="icon-not-applicable" viewBox="0 0 16 16"><path d="M4.5 8h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="icon-help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
+  <symbol id="icon-close" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="icon-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></symbol>
+</svg>
+<div class="layout">
+  <aside>
+    <header><h1 class="title">StockBoard</h1>
+      <button class="theme-button" id="theme-button" aria-label="切换浅色或深色模式"><svg class="icon"><use href="#icon-theme"/></svg></button></header>
+    <div class="status-bar caption" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><span>正在获取数据…</span></div>
+    <h2 class="caption" id="strategy-heading">策略</h2>
+    <select id="strategy-select" aria-labelledby="strategy-heading"></select>
+    <h2 class="caption">市场指标</h2>
+    <ul id="indicator-list"></ul>
+    <h2 class="caption">标的</h2>
+    <ul id="symbol-list"><li class="placeholder"></li><li class="placeholder"></li><li class="placeholder"></li></ul>
+    <a class="sidebar-footer-link caption" href="/rules">规则目录</a>
+  </aside>
+  <main id="strategy-panel" tabindex="-1"><p class="caption">选择左侧的标的查看策略树</p></main>
+</div>
+<div id="strategy-help" class="help-popover" popover aria-labelledby="strategy-help-title"></div>
 <script>
-const col = s => s >= 70 ? 'var(--up)' : s >= 40 ? '#d9a400' : 'var(--down)';
-const pct = v => `<span class="${v>=0?'up':'down'}">${v>=0?'+':''}${v.toFixed(2)}%</span>`;
-async function load() {
-  try {
-    const d = await (await fetch('/api/data')).json();
-    document.getElementById('updated').textContent = d.updated ? '更新于 ' + d.updated : '等待首次数据…';
-    document.getElementById('gauges').innerHTML = d.gauges.map(g =>
-      `<div class="gauge"><span class="mute">${g.name}</span><b>${g.price}</b>${pct(g.change_pct)}</div>`).join('');
-    document.getElementById('grid').innerHTML = d.stocks.map(s =>
-      `<div class="card"><div class="sym">${s.symbol}</div>
-       <div class="score" style="color:${col(s.score)}">${s.score}</div>
-       <div class="mute">$${s.price} ${pct(s.change_pct)} · RSI ${s.rsi}</div>
-       <div class="chips">${s.signals.map(k=>`<span class="chip">${k}</span>`).join('')}</div>
-       <div class="bar" style="width:${s.score}%;background:${col(s.score)}"></div></div>`).join('');
-    document.getElementById('rules').innerHTML = Object.entries(d.rules).map(([k,v])=>`<li><code>${k}</code> ${v}</li>`).join('');
-  } catch (e) { document.getElementById('updated').textContent = '加载失败'; }
+const STATUS_STYLE = {
+  pass: { icon:'icon-pass', text:'通过', color:'positive' },
+  fail: { icon:'icon-fail', text:'未通过', color:'negative' },
+  veto: { icon:'icon-fail', text:'否决', color:'negative' },
+  unknown: { icon:'icon-unknown', text:'未知', color:'muted' },
+  not_applicable: { icon:'icon-not-applicable', text:'不适用', color:'muted' },
+};
+const priceFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const valueFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits:2 });
+const strategySelect = document.getElementById('strategy-select');
+const symbolList = document.getElementById('symbol-list');
+const strategyPanel = document.getElementById('strategy-panel');
+const statusBar = document.getElementById('status-bar');
+let selectedSymbol = decodeURIComponent(location.hash.slice(1)) || null;
+let latestSnapshot = null, statusReceivedAt = 0, connectionError = false;
+let evaluationRequestNumber = 0, renderedEvaluationKey = '', maxUnknownWeightRatio = 0.2, strategyById = {};
+
+const escapeText = text => String(text ?? '').replace(/[&<>"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[character]);
+const signText = value => (value > 0 ? '+' : value < 0 ? '−' : '');
+const summaryStatus = isPass => isPass === true ? 'pass' : isPass === false ? 'veto' : 'unknown';
+const scoreColor = score => score == null ? 'muted' : score >= 75 ? 'positive' : score >= 60 ? 'caution' : 'negative';
+
+function formatChange(value, unit) {
+  if (value == null) return '';
+  return unit === 'basis_points' ? `${signText(value)}${Math.abs(value).toFixed(1)} bp` : `${signText(value)}${Math.abs(value).toFixed(2)}%`;
 }
-load(); setInterval(load, 60000);
+function formatMeasuredValue(value) {
+  if (value == null) return '';
+  if (typeof value === 'boolean') return value ? '是' : '否';
+  return typeof value === 'number' ? valueFormat.format(value) : escapeText(value);
+}
+function formatExchangeTime(isoText, isFull) {
+  return isFull ? `${isoText.slice(0, 10)} ${isoText.slice(11, 19)} ET` : `${isoText.slice(5, 7)}/${isoText.slice(8, 10)} ${isoText.slice(11, 16)} ET`;
+}
+function formatAge(minutes) {
+  if (minutes < 1) return '刚刚';
+  return minutes < 60 ? `${Math.floor(minutes)} 分钟前` : `${Math.floor(minutes / 60)} 小时前`;
+}
+function renderStatusBadge(status, showText = true) {
+  const style = STATUS_STYLE[status];
+  return `<span class="status-badge ${style.color}" ${showText ? '' : `aria-label="${style.text}"`}><svg class="icon" aria-hidden="true"><use href="#${style.icon}"/></svg>${showText ? style.text : ''}</span>`;
+}
+function renderSparkline(closePriceList) {
+  if (!closePriceList || closePriceList.length < 2) return '<span class="sparkline"></span>';
+  const lowest = Math.min(...closePriceList), range = (Math.max(...closePriceList) - lowest) || 1;
+  const points = closePriceList.map((price, index) =>
+    `${(index / (closePriceList.length - 1) * 64).toFixed(1)},${(18 - (price - lowest) / range * 16).toFixed(1)}`).join(' ');
+  const color = closePriceList[closePriceList.length - 1] >= closePriceList[0] ? 'var(--positive)' : 'var(--negative)';
+  return `<svg class="sparkline" viewBox="0 0 64 20" width="64" height="20" aria-hidden="true"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+
+function renderStatusBar() {
+  const status = latestSnapshot && latestSnapshot.status;
+  let text = '正在获取数据…', color = 'muted', title = '';
+  if (connectionError) { text = '连接断开，正在重试'; color = 'negative'; }
+  else if (status && status.generated_at) {
+    const ageMinutes = (Date.parse(status.server_time) - Date.parse(status.generated_at) + Date.now() - statusReceivedAt) / 60000;
+    title = '数据生成于 ' + formatExchangeTime(status.generated_at, true);
+    if (!status.market_is_open) text = '休市 · 最后更新 ' + formatExchangeTime(status.generated_at, false);
+    else if (ageMinutes > status.stale_after_minutes) { text = '数据已过期 · 最后更新 ' + formatExchangeTime(status.generated_at, false); color = 'caution'; }
+    else { text = '开盘中 · 更新于 ' + formatAge(ageMinutes); color = 'positive'; }
+  }
+  statusBar.className = `status-bar caption ${color}` + (statusBar.classList.contains('is-loading') ? ' is-loading' : '');
+  statusBar.title = title;
+  statusBar.lastElementChild.textContent = text;
+}
+
+function renderIndicatorList(indicatorList) {
+  document.getElementById('indicator-list').innerHTML = indicatorList.map(indicator => {
+    const isRising = indicator.change_value > 0;
+    const color = indicator.change_value ? ((isRising !== indicator.is_higher_value_risky) ? 'positive' : 'negative') : 'muted';
+    return `<li class="indicator-item"><span>${escapeText(indicator.display_name)}</span>
+      <span class="strong">${indicator.value == null ? '—' : valueFormat.format(indicator.value)}</span>
+      <span class="caption ${color}">${formatChange(indicator.change_value, indicator.change_unit)}</span></li>`;
+  }).join('');
+}
+
+function renderSymbolList(symbolCardList, failedSymbolList) {
+  const focusedSymbol = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.symbol : null;
+  symbolList.innerHTML = symbolCardList.map(card => {
+    const isInsufficient = card.unknown_weight_ratio > maxUnknownWeightRatio;
+    const score = card.score_percent == null ? '—' : Math.round(card.score_percent);
+    const status = summaryStatus(card.is_pass);
+    return `<li><button class="symbol-item" data-symbol="${escapeText(card.symbol)}" aria-current="${card.symbol === selectedSymbol}"
+        aria-label="${escapeText(card.symbol)}，${STATUS_STYLE[status].text}，分数 ${score}${isInsufficient ? '，数据不足' : ''}">
+      <span class="strong">${escapeText(card.symbol)}</span>${renderSparkline(card.sparkline_close_price_list)}
+      <span class="score">${renderStatusBadge(status, false)}<span class="strong ${isInsufficient ? 'muted' : scoreColor(card.score_percent)}">${score}</span></span>
+      <span class="caption">$${priceFormat.format(card.price)} <span class="${card.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(card.change_value, card.change_unit)}</span></span>
+    </button></li>`;
+  }).join('') + failedSymbolList.map(symbol => `<li><div class="symbol-item is-failed" aria-disabled="true"><span class="strong">${escapeText(symbol)}</span><span></span><span></span><span class="caption">获取失败</span></div></li>`).join('');
+  symbolList.querySelectorAll('button.symbol-item').forEach(button => button.onclick = () => selectSymbol(button.dataset.symbol, true));
+  if (focusedSymbol) { const button = symbolList.querySelector(`[data-symbol="${focusedSymbol}"]`); if (button) button.focus(); }
+}
+
+async function loadStrategyList() {
+  const data = await (await fetch('/api/v1/strategies')).json();
+  strategySelect.innerHTML = data.strategy_list.map(strategy => `<option value="${escapeText(strategy.strategy_id)}">${escapeText(strategy.display_name)}</option>`).join('');
+  strategySelect.value = data.default_strategy_id;
+  strategyById = Object.fromEntries(data.strategy_list.map(strategy => [strategy.strategy_id, strategy]));
+  renderStrategyHelp();
+}
+
+function renderStrategyHelp() {
+  const strategy = strategyById[strategySelect.value];
+  if (!strategy) return;
+  const paragraphList = strategy.help_text.split(/\n\s*\n/).filter(Boolean);
+  document.getElementById('strategy-help').innerHTML = `<header><h2 class="title" id="strategy-help-title">${escapeText(strategy.display_name)}</h2>
+      <button class="help-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="关闭说明"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button></header>
+    <p class="summary">${escapeText(strategy.summary)}</p>${paragraphList.map(paragraph => `<p>${escapeText(paragraph)}</p>`).join('')}
+    <p class="caption">来源：${escapeText(strategy.source)}</p>
+    <p><a class="catalog-link" href="/rules">查看全部规则和编号说明 →</a></p>`;
+}
+
+async function loadDashboardSnapshot() {
+  statusBar.classList.add('is-loading');
+  try {
+    const response = await fetch('/api/v1/snapshot?strategy_id=' + encodeURIComponent(strategySelect.value));
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    latestSnapshot = await response.json();
+    statusReceivedAt = Date.now();
+    connectionError = false;
+    maxUnknownWeightRatio = latestSnapshot.max_unknown_weight_ratio;
+    renderIndicatorList(latestSnapshot.market_indicator_card_list);
+    const symbolCardList = latestSnapshot.symbol_card_list;
+    if (symbolCardList.length || latestSnapshot.status.generated_at) renderSymbolList(symbolCardList, latestSnapshot.failed_symbol_list);
+    if (!symbolCardList.some(card => card.symbol === selectedSymbol)) selectedSymbol = symbolCardList.length ? symbolCardList[0].symbol : null;
+    if (selectedSymbol) selectSymbol(selectedSymbol, false);
+  } catch (error) {
+    connectionError = true;
+  } finally {
+    statusBar.classList.remove('is-loading');
+    renderStatusBar();
+  }
+}
+
+function selectSymbol(symbol, isUserAction) {
+  const isNewSymbol = symbol !== selectedSymbol || isUserAction;
+  selectedSymbol = symbol;
+  history.replaceState(null, '', '#' + encodeURIComponent(symbol));
+  symbolList.querySelectorAll('button.symbol-item').forEach(button => button.setAttribute('aria-current', String(button.dataset.symbol === symbol)));
+  loadStrategyEvaluationForSymbol(symbol, isNewSymbol && isUserAction);
+  if (isUserAction && window.innerWidth < 900) strategyPanel.scrollIntoView({ behavior:'smooth' });
+}
+
+async function loadStrategyEvaluationForSymbol(symbol, shouldAnimate) {
+  const requestNumber = ++evaluationRequestNumber;
+  try {
+    const response = await fetch(`/api/v1/evaluations/${encodeURIComponent(strategySelect.value)}/${encodeURIComponent(symbol)}`);
+    if (!response.ok || requestNumber !== evaluationRequestNumber) return;
+    renderStrategyTree(symbol, await response.json(), shouldAnimate);
+  } catch (error) {
+    if (requestNumber === evaluationRequestNumber) { connectionError = true; renderStatusBar(); }
+  }
+}
+
+function calculateScoreText(ruleResultList) {
+  const judgedList = ruleResultList.filter(rule => rule.status === 'pass' || rule.status === 'fail');
+  const judgedWeight = judgedList.reduce((total, rule) => total + rule.weight, 0);
+  const passedWeight = judgedList.filter(rule => rule.status === 'pass').reduce((total, rule) => total + rule.weight, 0);
+  return judgedWeight ? Math.round(passedWeight / judgedWeight * 100) : '—';
+}
+
+function renderRuleRows(ruleResultList) {
+  return ruleResultList.map(rule => `<div class="strategy-rule-row ${rule.status}">
+    <a class="caption rule-link" href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="在规则目录中查看 ${escapeText(rule.rule_id)}">${escapeText(rule.rule_id)}</a>${renderStatusBadge(rule.status)}
+    <span>${escapeText(rule.description)}</span><span>${formatMeasuredValue(rule.measured_value)}</span></div>`).join('');
+}
+
+function renderStrategyTree(symbol, evaluation, shouldAnimate) {
+  const evaluationKey = strategySelect.value + JSON.stringify(evaluation);
+  if (evaluationKey === renderedEvaluationKey && !shouldAnimate) return;
+  renderedEvaluationKey = evaluationKey;
+  const isInsufficient = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
+  const score = evaluation.score_percent == null ? '—' : Math.round(evaluation.score_percent);
+  const strategyName = (strategyById[strategySelect.value] || {}).display_name || strategySelect.value;
+  const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
+  const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
+      <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
+        <h3 class="title">${escapeText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${STATUS_STYLE[summaryStatus(gate.is_pass)].text}</span></header>
+      ${gate.expiration_window_label ? `<p class="caption gate-note">到期窗口 ${escapeText(gate.expiration_window_label)} 天（最佳） · 本层分数 ${calculateScoreText(gate.rule_result_list)}</p>` : ''}
+      ${renderRuleRows(gate.rule_result_list)}
+      ${gate.alternative_window_result_list.map(window => `<h4 class="caption window-title">备选到期窗口 ${escapeText(window.expiration_window_label)} 天 · 本层分数 ${calculateScoreText(window.rule_result_list)}</h4>
+        ${renderRuleRows(window.rule_result_list)}`).join('')}
+    </section>`).join('');
+  strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">↑ 列表</a>
+    <header class="detail-header"><p class="strategy-line caption">策略<span class="strategy-name">${escapeText(strategyName)}</span>
+      <button class="help-button" popovertarget="strategy-help" aria-label="${escapeText(strategyName)} 策略说明"><svg class="icon" aria-hidden="true"><use href="#icon-help"/></svg></button></p>
+      <div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
+      <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></p>` : ''}</div>
+    <div class="result-row">
+      <div><p class="caption">结论</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
+      <div><p class="caption">分数${isInsufficient ? ' <span class="tag">数据不足</span>' : ''}</p>
+        <p class="display ${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</p></div>
+      </div><p class="caption detail-note">数据缺失权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%（未知规则不计入分数）</p>
+    </header>${gates}`;
+  if (shouldAnimate) { strategyPanel.classList.remove('panel-enter'); void strategyPanel.offsetWidth; strategyPanel.classList.add('panel-enter'); }
+}
+
+function handleSymbolListKeydown(event) {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  const buttonList = [...symbolList.querySelectorAll('button.symbol-item')];
+  const nextButton = buttonList[buttonList.indexOf(document.activeElement) + (event.key === 'ArrowDown' ? 1 : -1)];
+  if (!nextButton) return;
+  event.preventDefault();
+  nextButton.focus();
+  selectSymbol(nextButton.dataset.symbol, true);
+}
+
+function applyTheme(themeName) {
+  document.documentElement.dataset.theme = themeName;
+  document.querySelector('meta[name="theme-color"]').content = themeName === 'dark' ? '#262624' : '#FAF9F5';
+  try { localStorage.setItem('stockboard-theme', themeName); } catch (error) { /* storage blocked: theme lasts this visit only */ }
+}
+
+try { applyTheme(localStorage.getItem('stockboard-theme') === 'dark' ? 'dark' : 'light'); } catch (error) { applyTheme('light'); }
+document.getElementById('theme-button').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+symbolList.addEventListener('keydown', handleSymbolListKeydown);
+strategySelect.onchange = () => { renderedEvaluationKey = ''; renderStrategyHelp(); loadDashboardSnapshot(); };
+loadStrategyList().then(loadDashboardSnapshot, () => { connectionError = true; renderStatusBar(); });
+setInterval(loadDashboardSnapshot, 60000);
+setInterval(renderStatusBar, 30000);
 </script>
 </body>
 </html>
