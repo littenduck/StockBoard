@@ -72,3 +72,17 @@ def test_rule_catalog_lists_usage():
     assert any(usage["strategy_id"] == STRATEGY_ID for usage in rule_by_id["A22"]["used_by"])
     assert rule_by_id["A15"]["used_by"] == [] and rule_by_id["A15"]["availability"] == "user_answer"
     assert rule_by_id["B09"]["alias_of"] == "A21"
+
+
+def test_strategy_list_is_bilingual_with_english_default():
+    response = web_server.web_server_get_strategy_list()
+    assert response["default_language"] == "en"
+    first_strategy = response["strategy_list"][0]
+    assert first_strategy["strategy_id"] == STRATEGY_ID
+    for field_name in ("display_name", "summary", "help_text", "source"):
+        assert set(first_strategy[field_name]) == {"en", "zh"}
+
+
+def test_schema_two_snapshot_counts_as_missing(snapshot_file_path):
+    write_snapshot(snapshot_file_path, schema_version=2)
+    assert web_server.web_server_get_dashboard_snapshot(STRATEGY_ID)["symbol_card_list"] == []

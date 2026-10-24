@@ -4,27 +4,31 @@ from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
+from stockboard_backend.localized_text import (
+    LocalizedText, localized_text_build_from_raw_value, localized_text_build_optional_from_raw_value,
+)
+
 AVAILABILITY_SET = {"automatic", "missing_data_source", "account_data", "user_answer", "trade_plan", "not_implemented"}
 
 
 @dataclass
 class RuleGroup:
     group_id: str
-    display_name: str
-    description: str
+    display_name: LocalizedText
+    description: LocalizedText
 
 
 @dataclass
 class RuleCatalogEntry:
     rule_id: str
-    description: str
+    description: LocalizedText
     default_weight: Optional[int] = None
     availability: Optional[str] = None
     indicator: Optional[str] = None
     operator: Optional[str] = None
     value: Any = None
     alias_of: Optional[str] = None
-    note: Optional[str] = None
+    note: Optional[LocalizedText] = None
 
     @property
     def group_id(self) -> str:
@@ -40,9 +44,18 @@ class RuleCatalog:
 def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str) -> RuleCatalog:
     with open(rule_catalog_file_path) as rule_catalog_file:
         raw = yaml.safe_load(rule_catalog_file)
-    entry_list = [RuleCatalogEntry(**raw_rule) for raw_rule in raw["rule_list"]]
+    entry_list = [RuleCatalogEntry(**{
+        **raw_rule,
+        "description": localized_text_build_from_raw_value(raw_rule.get("description"), "rule {} description".format(raw_rule["rule_id"])),
+        "note": localized_text_build_optional_from_raw_value(raw_rule.get("note"), "rule {} note".format(raw_rule["rule_id"])),
+    }) for raw_rule in raw["rule_list"]]
+    group_list = [RuleGroup(
+        group_id=raw_group["group_id"],
+        display_name=localized_text_build_from_raw_value(raw_group.get("display_name"), "group {} name".format(raw_group["group_id"])),
+        description=localized_text_build_from_raw_value(raw_group.get("description"), "group {} description".format(raw_group["group_id"])),
+    ) for raw_group in raw["rule_group_list"]]
     return RuleCatalog(
-        rule_group_list=[RuleGroup(**raw_group) for raw_group in raw["rule_group_list"]],
+        rule_group_list=group_list,
         rule_entry_by_id={entry.rule_id: entry for entry in entry_list},
     )
 

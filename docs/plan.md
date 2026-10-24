@@ -1,307 +1,225 @@
-# Plan: UI to Editor's Choice level (web) + platform-neutral API
+# Plan: bilingual interface (English default, Chinese with English underneath)
 
-Target: front-end score from 2.0 to at least 4.5 (strict Apple review standard), with very little code and no new dependencies.
-Executor: read this whole file, then `docs/design.md`, `docs/strategy.md`, `docs/indicator.md`. Work on branch `feature/strategy-dashboard`. Do the steps in order; each step ends with its own check.
+Branch: `feature/bilingual`. One commit per step. Quality bar: the page must still score at least 4.5 on the strict Apple review used so far.
+The previous plan (UI and API v1) is finished; it stays in git history (commit `216d1e5`).
 
 ---
 
-## 0. Confirmed requirements
+## 0. Requirements
 
-### 0.1 Fixed (do not change)
+### 0.1 From the user
 
 | ID | Requirement |
 |---|---|
-| F1 | Web only for now. No Liquid Glass, no iOS-specific layout. A native SwiftUI client may come later, so the API must not depend on the web page. |
-| F2 | Layout: narrow left sidebar (lists: strategy, market indicators, symbols), main area on the right is the strategy tree. |
-| F3 | Two independent results per symbol: pass (weight 5 veto) and score (0 to 100). |
-| F4 | Strategy tree shows gates 0, 1, 2; each rule row shows id, status, description, measured value. |
-| F5 | Single HTML file, vanilla JS and CSS, no framework, no chart library, no CDN, no web font. |
-| F6 | Python naming `module_verb_object`, no abbreviations. JS uses camelCase, also no abbreviations. |
-| F7 | Light and dark mode. **Light is the default**; the user can switch to dark. |
-| F8 | No new runtime dependency. (FastAPI's bundled CORS middleware is allowed; it ships with FastAPI.) |
+| L1 | Two languages: English and Chinese. |
+| L2 | English is the default. |
+| L3 | In Chinese mode, Chinese is the main text and the English text is shown too, in small gray type underneath. |
+| L4 | Every strategy, gate, rule and help text gets an English version; the Chinese version is kept. |
+| L5 | Language code: `zh` (not CH, which is Switzerland, nor CN, which is China as a country). |
+| L6 | Keep the 4.5 design standard. |
 
-### 0.2 Answers from the user
-
-| Question | Answer |
-|---|---|
-| Q1 colors | Claude app style (warm ivory, terracotta accent). Colors only. |
-| Q2 up/down | US convention: green up, red down. |
-| Q3 theme | Light default; dark selectable. |
-| Q4 Liquid Glass | Not on web. |
-| Q5 fonts | System font only (`-apple-system, system-ui`). |
-| Q6 motion | Yes, about 10 lines of CSS. |
-| Q7 stale | Data older than 60 minutes counts as stale. Fetch every 10 minutes (already the setting). |
-| Q8 time zone | Exchange time, America/New_York, labelled `ET`. |
-| Q9 phone | Responsive web (same page works on phone and desktop). No iOS navigation pattern. |
-| Q10 labels | Chinese: 通过 / 否决 / 未知. |
-| Q11 language | Chinese UI, but symbols and technical terms stay English (VIX, DTE, IV, RV30, GATE, SPX, bp). |
-| Q12 sparkline | Yes: the symbol's **price** trend. |
-| Q13 packaging | Not decided; out of scope. |
-| Q14 backend fixes | Include V6, V7, V8; executor decides details as written below. |
-
-### 0.3 Decisions made on the user's behalf (user said "decide freely")
+### 0.2 Decisions (made for the user, explained)
 
 | ID | Decision | Why |
 |---|---|---|
-| D1 | Rule rows use four labels: 通过 / 未通过 / 未知 / 不适用. The symbol and gate summary use the user's three: 通过 / 否决 / 未知. | A single failed weight 2 rule is not a veto; calling it 否决 would be wrong. |
-| D2 | Score is always an integer on screen (sidebar and main). | Removes the 91 vs 90.9 mismatch. Raw value stays in the API. |
-| D3 | Sparkline = last 60 trading days of daily close, no axes, colored by 60 day change. | Enough shape, tiny payload. |
-| D4 | Theme switch = one button in the sidebar header (sun/moon icon), choice stored in `localStorage` (wrapped in try/catch). | Light default plus manual dark, minimal code. |
-| D5 | Selected symbol is kept in the URL hash (`#AAPL`). | Survives reload, shareable, no storage needed. |
-| D6 | API moves to `/api/v1/...` with a documented JSON contract (`docs/api.md`). Old `/api/...` routes are removed (only our own page uses them). | Lets a future SwiftUI or iOS client rely on a stable contract. |
-| D7 | US market holidays are NOT handled in this plan. | Needs a holiday table; out of scope. Listed in section 4. |
-| D8 | No new test dependency: API tests call the endpoint functions directly instead of FastAPI `TestClient` (which needs `httpx`). | Keeps F8. |
+| D1 | Two modes, not three: **English** (English only) and **中文** (Chinese plus English underneath). | Matches L2 and L3 exactly. A Chinese-only mode is not requested. |
+| D2 | Codes `en` and `zh`; the page sets `<html lang="en">` or `<html lang="zh-Hans">`; every English line shown in Chinese mode carries `lang="en"`. | Standard BCP 47; screen readers switch voice correctly. |
+| D3 | Switch = segmented control `EN | 中文` in the sidebar header, between the title and the theme button. Choice stored in `localStorage` key `stockboard-language` (try/catch). Same control on the rules page. | One place, same as the theme switch; no reload needed. |
+| D4 | Localized text in data is an object `{en: "...", zh: "..."}` under the existing field name. Both keys are required. | One field, two languages; a SwiftUI client reads the same object. |
+| D5 | Snapshot and API `schema_version` goes from 2 to 3 because field types change from string to object. | The API contract says type changes bump the version. |
+| D6 | Where the English line appears (Chinese mode), see section 2.3. Status words, numbers, prices, times, buttons and the status bar are never doubled. | Doubling every word would make rows unreadable; icons and numbers are already language-neutral. |
+| D7 | Long help paragraphs: the English paragraph follows its Chinese paragraph in `--text-secondary` color at body size (15px), not 12px. | 12px is too small for paragraphs of running text; it stays gray so the hierarchy is clear. |
+| D8 | `<select>` options show the active language only. | Native `<select>` cannot show two lines; the selected strategy's English name appears in the main header. |
 
 ---
 
-## 1. Verified problems this plan must fix
+## 1. Glossary (fixed translations; every step must use these)
 
-| ID | Problem | Status |
-|---|---|---|
-| U1 | Font sizes out of control (12/15/28/30px found; 30px is the unstyled `h1`); spacing inconsistent | verified in browser |
-| U2 | Emoji used for status (✅❌❓➖), glued to numbers (`✅91`) | verified |
-| U3 | Update time only `10-23 15:52` in 12px; no date context, time zone, age; stale data looks fresh | verified |
-| V1 | Fetch failure shows nothing on the page | verified (simulated) |
-| V2 | Each 60 s refresh collapses opened `<details>` | verified |
-| V3 | Symbol rows are `div` with `tabIndex -1`, no role | verified |
-| V4 | Light mode contrast: `#00C805` ~2.3:1, `#D9A400` ~2.3:1, `#FF5000` ~3.3:1 (need 4.5:1 for text) | computed |
-| V5 | Score 91 in sidebar vs 90.9 in main | verified |
-| V6 | 10Y and HY show relative percent change; should be basis point change | verified |
-| V7 | Market open/closed not shown | code reading |
-| V8 | Symbols that failed to fetch silently disappear | code reading |
-| V9 | Fast clicking can show an older response | code reading |
-| V10 | No loading state during the first ~45 s | code reading |
-| V11 | Selection lost on reload | code reading |
-| V12 | "Data insufficient" shown only by gray color | verified |
+| 中文 | English |
+|---|---|
+| 策略 | Strategy |
+| 市场指标 | Market |
+| 标的 | Symbols |
+| 结论 | Verdict |
+| 分数 | Score |
+| 通过 / 未通过 / 否决 / 未知 / 不适用 | Pass / Fail / Veto / Unknown / N/A |
+| 数据缺失权重 X%（未知规则不计入分数） | Missing-data weight X% (unknown rules are left out of the score) |
+| 数据不足 | Insufficient data |
+| 到期窗口 X 天（最佳） · 本层分数 Y | Expiration X days (best) · Gate score Y |
+| 备选到期窗口 | Alternative expiration |
+| 开盘中 · 更新于 N 分钟前 | Market open · Updated N min ago |
+| 休市 · 最后更新 | Market closed · Last update |
+| 数据已过期 | Data is stale |
+| 连接断开，正在重试 | Disconnected, retrying |
+| 正在获取数据… | Loading data… |
+| 获取失败 | Unavailable |
+| 规则目录 | Rule catalog |
+| 编号 / 说明 / 默认权重 / 数据状态 / 使用它的策略 | ID / Rule / Weight / Availability / Used by |
+| 自动计算 / 缺少数据源 / 需要账户数据 / 需要你回答 / 交易计划项 / 尚未实现 | Automatic / No data source / Needs account data / Needs your answer / Trade plan / Not built yet |
+| 是 / 否 | Yes / No |
+| 宽松档 / 严格档 | loose tier / strict tier |
+| GATE, VIX, SPX, DTE, IV, RV30, FGI, HY, bp, Delta | unchanged in both languages |
 
 ---
 
-## 2. To-do list (in execution order)
+## 2. Design (add to `docs/design.md` as a "Language" section)
 
-Each item names the requirement it serves. Line budgets are hard limits.
+### 2.1 Tokens
 
-### Step 1. Design spec first — `docs/design.md` (serves Q1–Q11, U1, U2, V4)
-
-Rewrite `docs/design.md` completely with the tokens below. Every later step must use only these tokens.
-
-1.1 Colors (CSS custom properties on `:root`, dark values on `:root[data-theme="dark"]`). Claude-inspired, verified contrast against `--background`:
-
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `--background` | `#FAF9F5` | `#262624` | page |
-| `--surface` | `#FFFFFF` | `#30302E` | sidebar, hover, selected row |
-| `--text` | `#141413` | `#F5F4EE` | primary text |
-| `--text-secondary` | `#6B6A64` | `#A8A69D` | captions (must be at least 4.5:1) |
-| `--separator` | `#E8E6DC` | `#3D3D3A` | 1px lines |
-| `--accent` | `#C96442` | `#D97757` | selection bar, focus ring, theme button (not used for body text) |
-| `--positive` | `#17803D` | `#4ADE80` | up, 通过 (light ~4.8:1) |
-| `--negative` | `#B42318` | `#F87171` | down, 否决 / 未通过 (light ~6.2:1) |
-| `--caution` | `#8A5A00` | `#FBBF24` | score 60 to 74, stale warning (light ~5.6:1) |
-| `--unknown` | `--text-secondary` | same | 未知, 不适用 |
-
-Executor must re-check each text color pair with the WCAG formula and adjust the value (not the rule) if any pair is below 4.5:1.
-
-1.2 Type scale, system font, `font-variant-numeric: tabular-nums` on all numbers:
-
-| Token | Size / weight / line height | Use |
+| Class | Style | Use |
 |---|---|---|
-| `--font-caption` | 12px / 400 / 16px | labels, timestamps |
-| `--font-body` | 15px / 400 / 20px | rows, rule text |
-| `--font-title` | 20px / 600 / 24px | symbol name in main, section titles |
-| `--font-display` | 34px / 600 / 40px, letter-spacing -0.02em | score and pass result in main |
+| `.translation` | `display:block; font-size:12px; line-height:16px; color:var(--text-secondary); font-weight:400;` | English line under Chinese text |
+| `.translation-inline` | `font-size:12px; color:var(--text-secondary); margin-left:var(--space-1);` | English after a 12px caption label on the same line |
+| `.translation-paragraph` | `color:var(--text-secondary);` (15px body) | English help paragraph (D7) |
 
-No other sizes. Every heading element gets an explicit size (fixes the 30px `h1`).
+### 2.2 Segmented control `language-switch`
 
-1.3 Spacing: only 4, 8, 12, 16, 24, 32px (`--space-1` … `--space-6`). Radius: 8px rows, 12px containers. No shadows.
+Two buttons inside a 1px `--separator` rounded container (radius 8px), each at least 44px tall. Selected button: `--fill` background, `--text` color, `aria-pressed="true"`. Labels `EN` and `中文`. Width budget: title 110px + switch 88px + theme button 44px + gaps 16px + padding 32px = 290px, under the 300px sidebar.
 
-1.4 Status components (replace all emoji):
+### 2.3 Where the English line appears in Chinese mode
 
-| Status | Icon (inline SVG, 16px, `currentColor`) | Text | Color |
-|---|---|---|---|
-| rule pass | filled circle + check | 通过 | `--positive` |
-| rule fail | filled circle + cross | 未通过 | `--negative` |
-| summary veto | filled circle + cross | 否决 | `--negative` |
-| unknown | outline circle + "?" | 未知 | `--unknown` |
-| not applicable | short dash | 不适用 | `--unknown`, row opacity 0.45 |
-
-Icon and text always together in summaries (sidebar may show icon only but with `aria-label`). Gap between icon and text: 4px.
-
-1.5 Motion (whole budget about 10 CSS lines):
-- row hover/selected background: `transition: background-color 120ms ease`
-- main panel on symbol change: fade in + 4px rise, 160ms (`@keyframes` `panel-enter`)
-- refresh indicator dot: 1 s opacity pulse while a request is in flight
-- `@media (prefers-reduced-motion: reduce)` turns all of it off.
-
-1.6 Layout:
-- Desktop (>= 900px): grid `300px 1fr`; sidebar sticky, own scroll, `--surface` background, 1px right separator; main max width 880px, padding 32px.
-- Phone (< 900px): one column. Sidebar order: header, status bar, indicators as a horizontal scroll strip (chips), symbol list; main below. Selecting a symbol smooth-scrolls to main; main has a small "↑ 列表" link at top.
-- Components (only these): `status-bar`, `indicator-item`, `symbol-item`, `status-badge`, `sparkline`, `strategy-gate`, `strategy-rule-row`.
-
-1.7 Language: Chinese UI; symbols and terms in English (Q11). Status words from 1.4.
-
-Check: `docs/design.md` contains every token above and nothing says "Robinhood".
-
-### Step 2. Backend: snapshot data the new UI needs (serves V6, V7, V8, Q8, Q12)
-
-2.1 `stockboard_backend/refresh_scheduler.py`
-- Replace `"updated": time.strftime(...)` with `"generated_at"`: ISO 8601 in America/New_York with offset, e.g. `2026-10-23T15:52:19-04:00` (use `market_data.NEW_YORK_TIME_ZONE`).
-- Add `"schema_version": 2` to the snapshot.
-- Rename `"error_list"` to `"failed_symbol_list"` (V8). Also add to it any symbol whose per-symbol evaluation raised (wrap the executor call per symbol; today one exception would abort the whole snapshot).
-- In each symbol result add `"sparkline_close_price_list"`: last 60 daily closes, rounded to 2 decimals (Q12, D3).
-
-2.2 `stockboard_backend/indicator_calculation.py` (V6)
-- New function `indicator_calculation_calculate_latest_change_basis_points(value_series) -> Optional[float]`: `(last - previous) * 100`, rounded to 1 decimal. Input series is in percent points (FRED DGS10 and BAMLH0A0HYM2 both are).
-- In `strategy_evaluation.py`, rename `IndicatorValue.change_percent` to `change_value` and add `change_unit: Optional[str] = None` (`"percent"` or `"basis_points"`). Update every caller and test.
-- 10Y and HY use basis points; VIX, VXN, VVIX, prices use percent.
-
-2.3 Market card list (built in `refresh_scheduler_build_dashboard_snapshot`): each card has `indicator_id, display_name, is_higher_value_risky, value, change_value, change_unit`.
-
-2.4 Old snapshot files: `web_server` must treat a snapshot whose `schema_version` is not 2 as missing (return the empty snapshot and let the refresher rebuild). `refresh_scheduler_determine_whether_refresh_is_due` returns True when the file's `schema_version` is not 2.
-
-Check: `python -m stockboard_backend.refresh_scheduler --once` prints `generated_at` with `-04:00` or `-05:00`; the JSON has `sparkline_close_price_list` of length 60 for each symbol and `change_unit: "basis_points"` for 10Y and HY.
-
-### Step 3. Backend: platform-neutral API v1 (serves F1, D6, V7)
-
-3.1 `stockboard_backend/web_server.py`
-- Replace `@app.on_event("startup")` with a FastAPI `lifespan` context manager (`web_server_run_application_lifespan`).
-- Routes (all JSON, snake_case, `null` for unknown, enums as lower-case strings, times ISO 8601 with offset):
-
-| Method and path | Function | Returns |
+| Element | English shown? | How |
 |---|---|---|
-| `GET /` | `web_server_get_index_page` | the HTML file |
-| `GET /api/v1/strategies` | `web_server_get_strategy_list` | `{default_strategy_id, strategy_list:[{strategy_id, display_name}]}` |
-| `GET /api/v1/snapshot?strategy_id=` | `web_server_get_dashboard_snapshot` | see 3.2 |
-| `GET /api/v1/evaluations/{strategy_id}/{symbol}` | `web_server_get_strategy_evaluation_for_symbol` | the evaluation dict (unchanged shape) |
+| Sidebar section captions (策略, 市场指标, 标的) | yes | `.translation-inline` |
+| Strategy name in main header | yes | `.translation` under it |
+| Gate titles | yes | `.translation` under the title |
+| Rule descriptions (dashboard and rules page) | yes | `.translation` under the description |
+| Rule notes (rules page) | yes | `.translation` |
+| Rule group titles and descriptions (rules page) | yes | `.translation` / `.translation-inline` |
+| Help popover: title, summary | yes | `.translation` |
+| Help popover: paragraphs | yes | `.translation-paragraph` after each paragraph |
+| Result captions 结论 / 分数 | yes | `.translation-inline` |
+| Expiration window lines | yes | `.translation-inline` |
+| Explanation box on the rules page | yes | `.translation-paragraph` |
+| Status words, numbers, prices, percentages, times, symbols | no | language-neutral or too frequent |
+| Status bar, buttons, select options, aria-labels | no | one line only; aria in the active language |
 
-3.2 Snapshot response adds a `status` object computed at request time (V7):
+In English mode no `.translation` element is rendered at all.
 
-```json
-"status": {
-  "server_time": "2026-10-24T10:01:00-04:00",
-  "generated_at": "2026-10-23T15:52:19-04:00",
-  "market_is_open": false,
-  "refresh_interval_minutes": 10,
-  "stale_after_minutes": 60
-}
+### 2.4 Layout checks forced by longer English
+
+- Rule row status column: from 72px to 88px ("Unknown" with icon).
+- Strategy tree rule rows grow from 1 line to 2 lines in Chinese mode; accepted (it is the requested feature).
+- Indicator rows: English names already used (VIX…); `HY bp` becomes `HY spread` in both languages.
+
+---
+
+## 3. Data and backend
+
+### 3.1 Data format
+
+```yaml
+# config/rules.yaml
+rule_group_list:
+  - {group_id: A, display_name: {en: "A · #1 Sell Put five-layer framework", zh: "A · #1 Sell Put 五层决策框架"},
+     description: {en: "...", zh: "..."}}
+rule_list:
+  - {rule_id: A22, description: {en: "No earnings before expiration", zh: "到期前无财报"}, default_weight: 5, ...}
+  - {rule_id: A04, ..., note: {en: "...", zh: "..."}}
+# strategies/*.yaml
+display_name: {en: "Sell Put 4-in-1", zh: "Sell Put 四合一"}
+summary: {en: "...", zh: "..."}
+help: {en: "paragraphs\n\nseparated by blank lines", zh: "..."}
+gates: [{gate_id: gate_0_macro, display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}, ...}]
+# config/settings.yaml
+market_indicator_list: [{indicator_id: vix_level, display_name: {en: VIX, zh: VIX}, ...}]
+default_language: en
 ```
 
-plus `schema_version`, `strategy_id`, `max_unknown_weight_ratio`, `market_indicator_card_list`, `symbol_card_list` (each: `symbol, price, change_value, change_unit, is_pass, score_percent, unknown_weight_ratio, sparkline_close_price_list`), `failed_symbol_list`.
-`stale_after_minutes` comes from a new setting `stale_after_minutes: 60` in `config/settings.yaml` (add field to `ApplicationSettings`).
+### 3.2 Code
 
-3.3 CORS: new setting `allowed_origin_list: []` in `config/settings.yaml`; when non-empty, add FastAPI's built-in `CORSMiddleware` with those origins, GET only. Empty means no CORS (same-origin page and native apps do not need it).
+| File | Change |
+|---|---|
+| `stockboard_backend/localized_text.py` (new) | `LocalizedText` dataclass (`en`, `zh`); `localized_text_build_from_raw_value(raw_value, field_name) -> LocalizedText` raises `ValueError` naming the field when a language is missing or empty. |
+| `rule_catalog.py` | `description`, `note`, group `display_name`, `description` become `LocalizedText`. |
+| `strategy_evaluation.py` | `RuleDefinition.description`, `GateDefinition.display_name`, `StrategyDefinition.display_name/summary/help_text`, `RuleEvaluationResult.description`, `GateEvaluationResult.display_name` typed `LocalizedText` (dataclasses.asdict turns them into `{en, zh}`). |
+| `strategy_loader.py`, `settings_loader.py` | build `LocalizedText` for those fields; settings gains `default_language` (must be `en` or `zh`). |
+| `refresh_scheduler.py` | `SNAPSHOT_SCHEMA_VERSION = 3`; market card `display_name` is `{en, zh}`. |
+| `web_server.py` | strategies, rules and snapshot responses carry `{en, zh}` objects and `default_language`; old snapshots (v2) count as missing and are rebuilt. |
 
-3.4 New `docs/api.md`: one example response per endpoint, field table, the rule "fields are only added within a schema version; renames or removals bump `schema_version`".
+### 3.3 Tests (new or changed)
 
-3.5 Tests `tests/test_web_server.py` (D8): build a fake snapshot dict on disk in a temp directory (monkeypatch `refresh_scheduler.SNAPSHOT_FILE_PATH`), call the endpoint functions directly, assert: unknown strategy raises `HTTPException` 404; old `schema_version` returns the empty snapshot; `status.market_is_open` is a bool; `symbol_card_list` keeps watchlist order.
+- `tests/test_localized_text.py`: missing `zh`, empty `en`, non-dict value each raise with the field name in the message.
+- `tests/test_rule_catalog.py`, **completeness and quality test** over every group, rule, note, strategy name, summary, help and gate in the project:
+  - both `en` and `zh` are present and non-empty;
+  - `en` contains no CJK character (`[\u3400-\u9fff]`), so no untranslated Chinese leaks into English;
+  - `en` uses the glossary spellings: none of the off-glossary variants `loose grade`, `strict grade`, `loose level`, `strict level`, `Not applicable`, `not applicable` appears (forbidden-words list in the test; extend it when the glossary grows).
+- `tests/test_web_server.py`: strategies response has `{en, zh}`; `default_language == "en"`; a schema v2 snapshot counts as missing.
+- Existing tests updated for the new types; all must pass.
 
-Check: `pytest` all green; `curl localhost:8000/api/v1/snapshot` shows `status`.
+---
 
-### Step 4. Front end rewrite — `static/index.html` (serves U1–U3, V1–V5, V9–V12, Q6, Q10, Q12)
+## 4. Front end
 
-Hard budget: at most 320 lines including CSS and the SVG sprite. Rebuild from scratch following `docs/design.md`; reuse the existing fetch flow only.
-
-4.1 Structure
-
-```
-<svg hidden> <symbol id="icon-pass"/> <symbol id="icon-fail"/> <symbol id="icon-unknown"/> <symbol id="icon-not-applicable"/> <symbol id="icon-theme"/> </svg>
-<div class="layout">
-  <aside>
-    <header> StockBoard  [theme button] </header>
-    <div class="status-bar" role="status" aria-live="polite"></div>
-    <select id="strategy-select"></select>
-    <section> 市场指标  <ul id="indicator-list"></ul></section>
-    <section> 标的      <ul id="symbol-list"></ul></section>
-  </aside>
-  <main id="strategy-panel" tabindex="-1"></main>
-</div>
-```
-
-4.2 JS functions (each does one thing):
+### 4.1 Shared: `static/language.js` (served at `/language.js`; logic at most 50 lines, plus the `UI_TEXT` table) and `static/base.css`
 
 | Function | Job |
 |---|---|
-| `loadStrategyList()` | fetch `/api/v1/strategies`, fill select |
-| `loadDashboardSnapshot()` | fetch snapshot; on success render; on failure set connection error state (V1); always update status bar |
-| `renderStatusBar(status, connectionError)` | see 4.3 |
-| `renderIndicatorList(list)` | rows: name, value, change (`+3.0 bp` or `+1.23%`, Unicode minus `−`) colored with risk inversion |
-| `renderSymbolList(list, failedSymbolList)` | `<li><button class="symbol-item">`: symbol, sparkline, status icon, integer score, price, change; failed symbols as disabled rows "获取失败" (V8) |
-| `renderSparkline(closePriceList)` | returns `<svg viewBox="0 0 64 20">` with one `<polyline>`, stroke 1.5, color by first vs last value; empty string when fewer than 2 points |
-| `renderStatusBadge(status, isSummary)` | icon + text from design 1.4 |
-| `loadStrategyEvaluationForSymbol(symbol)` | fetch with a request counter; ignore any response whose counter is not the latest (V9) |
-| `renderStrategyTree(symbol, evaluation)` | header (symbol at title size), two display results 通过/否决/未知 and integer score, "数据不足" text tag when unknown ratio is above the threshold (V12), then gates |
-| `formatNumber(value)`, `formatChange(value, unit)`, `formatRelativeTime(isoText, serverTimeIsoText)`, `formatExchangeTime(isoText)` | formatting only, `Intl.NumberFormat("en-US")`, booleans as 是/否 |
-| `selectSymbol(symbol)` | set `location.hash`, update `aria-current`, load evaluation, on phone scroll main into view |
-| `handleSymbolListKeydown(event)` | ArrowUp/ArrowDown move focus and selection |
-| `applyTheme(themeName)` | set `data-theme` on `<html>`, store in localStorage inside try/catch |
+| `UI_TEXT` | object `{key: {en, zh}}` holding every fixed string: glossary terms, aria-labels, error messages, page titles |
+| `languageGetActive()` | stored choice (`localStorage`, try/catch) if valid, else `document.documentElement.dataset.defaultLanguage`, else `en` |
+| `languageApply(languageCode, onChange)` | sets `<html lang>` (`en` / `zh-Hans`), `document.title`, stores the choice, updates the switch's `aria-pressed`, calls `onChange` |
+| `languageText(key)` | fixed string in the active language |
+| `languageRenderText(localizedText)` | escaped primary text; in Chinese mode adds `<span class="translation" lang="en">` with the English |
+| `languageRenderInline(localizedText)` | same, with `.translation-inline` |
+| `languageRenderParagraphs(localizedText)` | splits on blank lines; Chinese mode pairs each Chinese paragraph with its English paragraph (`.translation-paragraph`) |
+| `languageRenderSwitch()` | markup of the `EN | 中文` segmented control |
 
-4.3 Status bar states (U3, V1, V7, Q7, Q8). Age = server_time − generated_at (do not trust the client clock), re-rendered every 30 s locally:
+Precedence: a stored user choice beats `default_language` from settings, which beats `en`.
+Numbers, prices and percentages keep `Intl.NumberFormat("en-US")` in both languages (US market data). Times keep `ET`.
 
-| Condition | Text | Color |
-|---|---|---|
-| no snapshot yet | 正在获取数据… (pulse dot) | `--text-secondary` |
-| fetch failed | 连接断开，正在重试 | `--negative` |
-| market open, age ≤ 60 min | 开盘中 · 更新于 N 分钟前 | `--text-secondary`, green dot |
-| market open, age > 60 min | 数据已过期 · 最后更新 HH:MM ET | `--caution` |
-| market closed | 休市 · 最后更新 MM/DD HH:MM ET | `--text-secondary` |
+### 4.2 Dashboard (`static/index.html`, at most 380 lines)
 
-`title` attribute on the bar shows the full time, e.g. `2026-10-23 15:52:19 ET`.
+- Replace every hard-coded Chinese string with `languageText(key)` or a render helper; nothing in Chinese stays in the HTML except inside `UI_TEXT`.
+- Add the switch to the sidebar header.
+- On language change: re-render sidebar lists, status bar, main panel and the help popover **from data already in memory** (no fetch); keep selected symbol, scroll position and whether the popover is open.
+- `renderedEvaluationKey` includes the active language, so the "skip identical re-render" shortcut cannot keep the old language on screen.
+- `formatAge`, `formatMeasuredValue` (Yes/No) and the window labels use the active language.
 
-4.4 Refresh without disruption (V2): before re-rendering the main panel, remember which `<details>` (by window label) are open and the scroll position; restore them after. Skip re-rendering entirely when the evaluation JSON string is unchanged.
+### 4.3 Rules page (`static/rules.html`, at most 140 lines)
 
-4.5 Initial symbol: `location.hash` if it is in the list, else the first symbol (V11).
-
-4.6 Loading and empty states (V10): sidebar shows three placeholder rows in `--separator` color while the first snapshot is missing; main shows "选择左侧的标的查看策略树".
-
-4.7 Accessibility: every icon-only element has `aria-label`; `:focus-visible` ring 2px `--accent` with 2px offset; symbol list is `role="listbox"`-free plain list of buttons with `aria-current="true"` on the selected one; main has `aria-live="polite"` off (only status bar is live).
-
-Check: see section 3.
-
-### Step 5. Docs and cleanup
-
-5.1 Update `docs/indicator.md`: 10Y and HY change is in basis points.
-5.2 Update `README.md`: API is `/api/v1`, link `docs/api.md`, mention theme switch.
-5.3 Update `.claude/skills/stockboard-design/SKILL.md` description: "Claude-style warm palette" instead of "Robinhood-style".
-5.4 Delete the old `data/latest_snapshot.json` once so the new schema is generated.
+Same switch and helpers; availability labels, legend, column headers, filter options, explanation box, summary line, error message and `<title>` from `UI_TEXT`; group, rule and note text via the render helpers.
 
 ---
 
-## 3. Verification (executor must do all of these and report results)
+## 5. Steps and commits
 
-1. `.venv/bin/python -m pytest tests -q` all pass (existing 18 plus new).
-2. `.venv/bin/python -m stockboard_backend.refresh_scheduler --once` succeeds; inspect JSON fields from Step 2.
-3. Start the server: `.venv/bin/python -m uvicorn stockboard_backend.web_server:app --port 8000`. Note: the app's Browser pane preview uses a stale launch config from the old scratch folder; start the server from Bash and navigate the pane to `http://localhost:8000/?v=N` (bump N to beat the cache).
-4. In the browser at 1280×800 and 375×812, light and dark:
-   - only 12/15/20/34px font sizes exist (run `[...new Set([...document.querySelectorAll('body *')].map(e=>getComputedStyle(e).fontSize))]`)
-   - no emoji anywhere in `document.body.innerText`
-   - status bar shows 休市 or 开盘中 with ET time
-   - sparkline visible on every symbol row
-   - Tab reaches symbol rows; ArrowDown changes selection; reload keeps the selected symbol (hash)
-   - open an "其他窗口" panel, call `loadDashboardSnapshot()` from the console, panel stays open
-   - override `window.fetch` to reject, call `loadDashboardSnapshot()`, status bar shows 连接断开
-   - `prefers-reduced-motion` emulation removes the animations
-5. Contrast: compute every text color pair from `docs/design.md` with the WCAG formula; all at least 4.5:1 (captions included).
-6. `wc -l static/index.html` at most 320.
-7. Commit on `feature/strategy-dashboard` with a message per step; do not push without the user's OK.
+Each commit leaves the tests green. The page may show `[object Object]` between steps 3 and 6; the branch is only merged after step 8.
+
+1. Docs: `docs/language.md` (glossary, section 1 moves there; rules for writing both languages) and the Language section of `docs/design.md`. Commit.
+2. `stockboard_backend/localized_text.py` and its tests (not used yet). Commit.
+3. Rule catalog: convert `config/rules.yaml` to `{en, zh}` **with the English written in the same commit**, update `rule_catalog.py` and catalog tests. Commit.
+4. Strategies and settings: convert the 4 strategy files (names, summaries, help, gates) and `config/settings.yaml` with English in the same commit; update `strategy_evaluation.py`, loaders, `refresh_scheduler.py` (schema 3), `web_server.py`; completeness test. Commit.
+5. `static/language.js` and the `base.css` language styles; route `/language.js`. Commit.
+6. Dashboard. Commit.
+7. Rules page. Commit.
+8. Docs: `docs/api.md` (objects, schema 3, `default_language`), `docs/strategy.md` (both languages required), `.claude/skills/stockboard-strategy/SKILL.md` (both languages required, link to `docs/language.md`), `README.md`. Commit.
+9. Verification (section 6), independent review, score. Fix commits if needed.
 
 ---
 
-## 4. Out of scope (recorded so nobody adds it)
+## 6. Verification
 
-- Liquid Glass, blur, iOS navigation stack, SwiftUI client, App Store packaging.
-- US market holiday calendar (refresher may run on holidays; harmless).
-- Login protection (needed before any public deployment).
-- Fear and Greed data source (A08/A09 stay unknown).
-- Charts beyond the sparkline.
+1. `pytest` all pass, including the completeness and quality test.
+2. English mode, both pages: no CJK character in `document.body.innerText` except the switch label `中文`.
+3. Chinese mode: every element marked "yes" in 2.3 has a `.translation`, `.translation-inline` or `.translation-paragraph` with `lang="en"`, and the English matches the data (spot-check 10 rules against `config/rules.yaml`).
+4. Contrast audit in both themes, both languages, both pages: every text element at least 4.5:1.
+5. Font sizes 12/15/20/34, weights 400/600, tap targets at least 44px, no horizontal overflow at 375, 1024 and 1512px, in both languages.
+6. Switching language: no network request (checked in the network log), selected symbol, scroll position and open popover kept, `<html lang>` and `document.title` change.
+7. Reload keeps the choice; a fresh browser (storage cleared) starts in English.
+8. Line budgets: `index.html` at most 380, `rules.html` at most 140, `language.js` logic at most 50 (the `UI_TEXT` table, one string pair per line, is not counted).
 
-## 5. Expected score after this plan
+Execution note: the first budget of 70 lines for all of `language.js` counted the text table as code; with about 55 string pairs it could not hold. Moving the table to a JSON file would add an async load and a flash of English, so the budget was split instead.
 
-| Area | Now | Target |
+---
+
+## 7. Plan review
+
+| Version | Score | Deductions |
 |---|---|---|
-| Information architecture | 3.0 | 4.5 |
-| Typography and spacing | 2.0 | 4.5 |
-| Color and contrast | 1.5 | 4.5 |
-| Status communication | 1.5 | 5.0 |
-| Data trust (freshness, errors) | 1.0 | 5.0 |
-| Interaction and accessibility | 1.5 | 4.5 |
-| Platform consistency | 2.0 | 4.0 (web ceiling; native client needed for 5) |
-| **Overall** | **2.0** | **4.5** |
+| Draft | 4.0 | P1 step order broke the build between commits; P2 no translation quality check; P3 language switch did not cover the open popover and the render cache; P4 page title, error messages, number format and default precedence unspecified; P5 future strategy authors not told to write both languages; P6 no code size limits |
+| Revised (this file) | 5.0 | P1 data and English land in the same commit per file group (steps 3, 4); P2 completeness plus no-CJK-in-English plus forbidden-words test; P3 explicit in 4.2; P4 in 4.1 and 4.3; P5 step 8 updates the authoring guide and the skill; P6 line budgets in 4.2, 4.3, 4.1 and section 6 |
+
+Residual risks (not deductions, accepted): rule rows are taller in Chinese mode (requested feature); translations are mine and should get a read-through from the user after merge.
+
+
+Change after review: the user asked for the language control to look exactly like the theme button, so the `EN | 中文` segmented control (D3, 2.2) became a single globe icon button sharing the `.icon-button` style; one click toggles the language.

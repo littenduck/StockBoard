@@ -1,30 +1,41 @@
 strategy_id: trend_following_golden_cross
-display_name: 趋势跟踪（黄金交叉）
-source: "经典 50/200 日均线交叉规则；参考 Quantified Strategies 对 S&P 500 的回测与 thinkorswim Golden Cross Breakouts"
+display_name: {en: "Trend following (golden cross)", zh: "趋势跟踪（黄金交叉）"}
+source: {en: "Classic 50/200-day moving average cross; see the Quantified Strategies S&P 500 backtest and thinkorswim Golden Cross Breakouts", zh: "经典 50/200 日均线交叉规则；参考 Quantified Strategies 对 S&P 500 的回测与 thinkorswim Golden Cross Breakouts"}
 thresholds: {max_unknown_weight_ratio: 0.20}
-summary: "只在长期上升趋势里持有：50 日均线在 200 日均线之上，价格站在 50 日线上方，市场整体也在上升趋势中。"
-help: |
-  这是最常见的趋势跟踪规则。50 日均线上穿 200 日均线叫「黄金交叉」，表示中期趋势转强；只要 50 日线保持在 200 日线之上，就视为仍处在上升趋势中。
+summary:
+  en: "Hold only in a long-term uptrend: the 50-day average is above the 200-day average, the price is above the 50-day average, and the whole market is trending up."
+  zh: "只在长期上升趋势里持有：50 日均线在 200 日均线之上，价格站在 50 日线上方，市场整体也在上升趋势中。"
+help:
+  en: |
+    This is the most common trend-following rule. When the 50-day average crosses above the 200-day average it is called a golden cross and signals a stronger medium-term trend; as long as the 50-day stays above the 200-day, the uptrend is considered intact.
 
-  它的优点是能让你在牛市里一直持有、在熊市里离场；缺点是均线有滞后，震荡市里会频繁给出错误信号。
+    Its strength is keeping you in during bull markets and out during bear markets; its weakness is lag, which causes frequent false signals in sideways markets.
 
-  评估顺序：GATE 0 市场环境（SPX 在 200 日线上方、VIX 不处于恐慌区）→ GATE 1 趋势确认（50 日线高于 200 日线是一票否决条件，价格高于 50 日线和 200 日线）→ GATE 2 入场时机（RSI(14) 在 40-70 之间不过热，距 52 周高点不超过 15%）。
+    Order of evaluation: GATE 0 market (SPX above its 200-day average, VIX not in panic) → GATE 1 trend (50-day above 200-day is the veto rule, price above the 50-day and 200-day averages) → GATE 2 timing (RSI(14) between 40 and 70, not overheated; within 15% of the 52-week high).
 
-  常见的离场规则是收盘跌破 50 日线，或 50 日线下穿 200 日线（死亡交叉）。本页面只做筛选，不给出离场信号。不构成投资建议。
+    Common exits are a close below the 50-day average, or the 50-day crossing below the 200-day (death cross). This page screens only; it gives no exit signals. Not investment advice.
+  zh: |
+    这是最常见的趋势跟踪规则。50 日均线上穿 200 日均线叫「黄金交叉」，表示中期趋势转强；只要 50 日线保持在 200 日线之上，就视为仍处在上升趋势中。
+
+    它的优点是能让你在牛市里一直持有、在熊市里离场；缺点是均线有滞后，震荡市里会频繁给出错误信号。
+
+    评估顺序：GATE 0 市场环境（SPX 在 200 日线上方、VIX 不处于恐慌区）→ GATE 1 趋势确认（50 日线高于 200 日线是一票否决条件，价格高于 50 日线和 200 日线）→ GATE 2 入场时机（RSI(14) 在 40-70 之间不过热，距 52 周高点不超过 15%）。
+
+    常见的离场规则是收盘跌破 50 日线，或 50 日线下穿 200 日线（死亡交叉）。本页面只做筛选，不给出离场信号。不构成投资建议。
 gates:
   - gate_id: gate_0_market
-    display_name: "GATE 0 市场环境"
+    display_name: {en: "GATE 0 Market", zh: "GATE 0 市场环境"}
     rules:
       - {rule_id: Z18, weight: 4}
       - {rule_id: T01, weight: 2}
   - gate_id: gate_1_trend
-    display_name: "GATE 1 趋势确认"
+    display_name: {en: "GATE 1 Trend", zh: "GATE 1 趋势确认"}
     rules:
       - {rule_id: T02, weight: 5}
       - {rule_id: T03, weight: 4}
       - {rule_id: Z20, weight: 3}
   - gate_id: gate_2_timing
-    display_name: "GATE 2 入场时机"
+    display_name: {en: "GATE 2 Timing", zh: "GATE 2 入场时机"}
     rules:
       - {rule_id: T04, weight: 3}
       - {rule_id: T05, weight: 2}

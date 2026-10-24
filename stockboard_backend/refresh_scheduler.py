@@ -18,7 +18,7 @@ MARKET_GAUGE_SYMBOL_LIST = ["^VIX", "^VXN", "^VVIX", "^VIX3M", "^GSPC"]
 HISTORY_PERIOD = "1y"
 SYMBOL_WORKER_COUNT = 4
 POLL_SECONDS = 60
-SNAPSHOT_SCHEMA_VERSION = 2
+SNAPSHOT_SCHEMA_VERSION = 3
 SPARKLINE_TRADING_DAY_COUNT = 60
 
 
@@ -131,7 +131,7 @@ def refresh_scheduler_build_dashboard_snapshot(
     for indicator_setting in settings.market_indicator_list:
         indicator_value = shared_indicator_value_by_id.get(indicator_setting.indicator_id)
         market_indicator_card_list.append({
-            "indicator_id": indicator_setting.indicator_id, "display_name": indicator_setting.display_name,
+            "indicator_id": indicator_setting.indicator_id, "display_name": dataclasses.asdict(indicator_setting.display_name),
             "is_higher_value_risky": indicator_setting.is_higher_value_risky,
             "value": None if indicator_value is None else indicator_value.value,
             "change_value": None if indicator_value is None else indicator_value.change_value,

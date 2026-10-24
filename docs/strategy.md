@@ -6,22 +6,29 @@ A strategy is one YAML file in `strategies/`. The app loads every file in that f
 
 ```yaml
 strategy_id: sell_put_four_in_one        # unique, snake_case
-display_name: Sell Put 四合一
+display_name: {en: "Sell Put 4-in-1", zh: "Sell Put 四合一"}
 source: "where this strategy came from"
 thresholds: {max_unknown_weight_ratio: 0.20}
-summary: "one sentence shown at the top of the help popover"
-help: |
-  Longer explanation. Blank lines separate paragraphs.
-  Shown when the user clicks the question mark next to the strategy name.
+summary: {en: "one sentence shown at the top of the help popover", zh: "..."}
+help:
+  en: |
+    Longer explanation. Blank lines separate paragraphs.
+    Shown when the user clicks the question mark next to the strategy name.
+  zh: |
+    中文说明，段落数必须和英文一样。
 gates:                                    # evaluated in order, top to bottom
   - gate_id: gate_0_macro
-    display_name: "GATE 0 宏观/情绪开关"
+    display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}
     rules:
       - {rule_id: A07, weight: 2, variant_group: ten_year_level}
       - {rule_id: A02, weight: 4, variant_group: ten_year_level}
 ```
 
 A strategy only references rules. Every rule is defined once in `config/rules.yaml` (description, indicator, operator, threshold, default weight, availability). A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `default_weight`) and an optional `variant_group`. Only rules with `availability: automatic` can be used; the loader refuses copies (`alias_of`) and rules without an indicator.
+
+## Languages
+
+Every text a person reads (`display_name`, `source`, `summary`, `help`, gate `display_name`, and rule text in `config/rules.yaml`) is `{en, zh}`. Both are required, English must not contain Chinese characters, and help paragraphs must pair up. The app refuses to start otherwise; `pytest` checks it too. Glossary: `docs/language.md`.
 
 ## Rule ids
 

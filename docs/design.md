@@ -45,7 +45,7 @@ Font weights: 400 and 600 only.
 
 ## Status
 
-No emoji anywhere. Status = inline SVG icon (16px, `currentColor`) plus Chinese text.
+No emoji anywhere. Status = icon (16px, `currentColor`) plus text. All icons are Tabler Icons 3.49.0 (MIT), taken unchanged from the official npm package and bundled into `static/icons.svg` by `scripts/build_icons.py`. Pages reference them as `/icons.svg#icon-name`. Outline icons render at 1.5px. Never hand-draw an icon: if a needed icon is missing from Tabler, pick the closest Tabler icon.
 
 | Status | Icon | Text | Color |
 |---|---|---|---|
@@ -88,3 +88,18 @@ Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places car
 ## Language
 
 Chinese UI. Symbols and technical terms stay English: VIX, SPX, DTE, IV, RV30, GATE, bp. Times are exchange time, labelled `ET`.
+
+## Language
+
+English is the default; Chinese mode shows Chinese with the English underneath. Glossary and writing rules: `docs/language.md`.
+
+| Class | Style | Use |
+|---|---|---|
+| `.translation` | block, 12px / 16px, `--text-secondary`, weight 400 | English line under Chinese text |
+| `.translation-inline` | 12px, `--text-secondary`, 4px left margin | English after a 12px caption on the same line |
+| `.translation-paragraph` | 15px body, `--text-secondary` | English help paragraph after its Chinese paragraph |
+| `.icon-button` | 44px square, radius 8px, `--text-secondary` icon, `--fill` on hover; used for the theme button (half-filled circle) and the language button (globe). The language button (Tabler "language" icon, 中英文 glyph) toggles English and Chinese; its aria-label and tooltip say what a click does (Switch to Chinese / 切换到英文) | sidebar header, rules page header |
+
+English appears under: sidebar section captions, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result captions, expiration window lines, the rules page explanation.
+Never doubled: status words, numbers, prices, percentages, times, symbols, the status bar, buttons, select options, aria-labels.
+`<html lang>` is `en` or `zh-Hans`; every English line in Chinese mode carries `lang="en"`.

@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>规则目录 · StockBoard</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23C96442'/%3E%3Cpath d='M7 21l6-6 4 4 8-9' fill='none' stroke='%23FAF9F5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>Rule catalog · StockBoard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/base.css">
 <style>
   main { max-width:960px; margin:0 auto; padding:var(--space-6); }
-  .back-link { display:inline-block; padding:14px 0; margin:-14px 0 var(--space-2); color:var(--text-secondary); text-decoration:none; }
+  .top-row { display:flex; justify-content:space-between; align-items:center; margin:-14px 0 var(--space-2); }
+  .back-link { display:inline-block; padding:14px 0; color:var(--text-secondary); text-decoration:none; }
+  .rule-note { display:block; margin-top:var(--space-1); }
   .back-link:hover { color:var(--text); }
   .page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
     padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
@@ -24,6 +26,7 @@
   .rule-row.is-target { background:var(--fill); border-radius:8px; box-shadow:inset 3px 0 var(--accent); }
   .rule-row > .caption { line-height:20px; }
   .rule-row.is-alias { color:var(--text-secondary); }
+  .rule-row.is-alias a { padding:15px 4px; margin:-15px -4px; }
   .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
   .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); }
   .usage span { padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; white-space:nowrap; }
@@ -36,81 +39,99 @@
   }
 </style>
 </head>
-<body>
+<body data-title-key="rules_title">
 <main>
-  <a class="back-link caption" href="/">← 返回看板</a>
+  <div class="top-row"><a class="back-link caption" id="back-link" href="/"></a>
+    <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
   <header class="page-header">
-    <h1 class="display">规则目录</h1>
+    <h1 class="display" id="page-heading"></h1>
     <p class="caption" id="summary"></p>
   </header>
-  <section class="explanation">
-    <p><span class="strong">编号规则：</span>字母加两位数字。字母表示规则来自哪一组：A 到 F 和 Z 来自 Notion「个股期权评分卡」的六个策略和公共补充层，T、R、M 是后来为股票策略新增的。同一个编号在所有策略里指的是同一条规则。</p>
-    <p>每个策略只挑选它需要、并且能自动计算的规则，所以策略树里同一层的编号不连续。同一层里如果先出现宽松档（如 A07「10Y &lt; 5.0%」）再出现严格档（如 A02「10Y &lt; 4.5%」），是因为两者属于同一个变体组，只计算通过的最严格那一档。</p>
-    <p class="caption">数据状态：</p>
-    <ul class="legend caption" id="legend"></ul>
-  </section>
+  <section class="explanation" id="explanation"></section>
   <div class="filter-row">
-    <label class="caption" for="filter-select">显示</label>
-    <select id="filter-select">
-      <option value="all">全部规则</option>
-      <option value="used">已被策略使用的规则</option>
-      <option value="automatic">可以自动计算的规则</option>
-    </select>
+    <label class="caption" for="filter-select" id="filter-label"></label>
+    <select id="filter-select"><option value="all"></option><option value="used"></option><option value="automatic"></option></select>
   </div>
-  <div id="rule-group-list"><p class="caption">正在读取规则…</p></div>
+  <div id="rule-group-list"><p class="caption" id="loading-rules"></p></div>
 </main>
+<script src="/language.js"></script>
 <script>
-const AVAILABILITY_STYLE = {
-  automatic: { text:'自动计算', color:'positive', explanation:'用看板已经抓取的数据就能判断' },
-  missing_data_source: { text:'缺少数据源', color:'caution', explanation:'需要暂时没有稳定免费来源的数据，如 FGI、IV 百分位、新闻、基本面' },
-  account_data: { text:'需要账户数据', color:'muted', explanation:'需要券商账户的净值、现金、持仓或期权权限' },
-  user_answer: { text:'需要你回答', color:'muted', explanation:'只有你能回答，如是否愿意长期持有' },
-  trade_plan: { text:'交易计划项', color:'muted', explanation:'是下单后的计划（止盈、止损），不是筛选条件' },
-  not_implemented: { text:'尚未实现', color:'muted', explanation:'原则上可以计算，还没有做' },
-};
-const escapeText = text => String(text ?? '').replace(/[&<>"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[character]);
-let ruleCatalog = null;
+const AVAILABILITY_COLOR = { automatic:'positive', missing_data_source:'caution', account_data:'muted', user_answer:'muted', trade_plan:'muted', not_implemented:'muted' };
+const escapeText = languageEscape;
+const primaryText = localizedText => localizedText[languageGetActive()];
+let ruleCatalog = null, loadFailed = false;
 
 function renderRuleRow(rule) {
   if (rule.alias_of) {
     return `<div class="rule-row is-alias" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
-      <span>${escapeText(rule.description)} <a class="caption" href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">同 ${rule.alias_of}</a></span><span></span></div>`;
+      <span>${languageRenderText(rule.description)} <a class="caption" href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">${escapeText(languageText('same_as', { id:rule.alias_of }))}</a></span><span></span></div>`;
   }
-  const style = AVAILABILITY_STYLE[rule.availability];
   return `<div class="rule-row" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
-    <span>${escapeText(rule.description)}${rule.note ? `<br><span class="caption">${escapeText(rule.note)}</span>` : ''}</span>
+    <span>${languageRenderText(rule.description)}${rule.note ? `<span class="caption rule-note">${languageRenderText(rule.note)}</span>` : ''}</span>
     <span class="caption">W${rule.default_weight}</span>
-    <span class="rule-meta caption"><span class="${style.color}">${style.text}</span>
-      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<span>${escapeText(usage.display_name)} · W${usage.weight}</span>`).join('') : '未被使用'}</span></span></div>`;
+    <span class="rule-meta caption"><span class="${AVAILABILITY_COLOR[rule.availability]}">${escapeText(languageText(rule.availability))}</span>
+      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<span>${escapeText(primaryText(usage.display_name))} · W${usage.weight}</span>`).join('') : escapeText(languageText('not_used'))}</span></span></div>`;
 }
 
-function renderRuleCatalog() {
+function renderStaticText() {
+  document.getElementById('back-link').textContent = languageText('back_to_dashboard');
+  document.getElementById('page-heading').innerHTML = languageRenderText(languageLocalize('rule_catalog'));
+  document.getElementById('filter-label').textContent = languageText('show');
+  [...document.getElementById('filter-select').options].forEach(option =>
+    option.textContent = languageText({ all:'all_rules', used:'used_rules', automatic:'automatic_rules' }[option.value]));
+  document.getElementById('explanation').innerHTML = languageRenderParagraphs(languageLocalize('id_explanation'))
+    + languageRenderParagraphs(languageLocalize('gap_explanation'))
+    + `<p class="caption">${languageRenderText(languageLocalize('availability'), true)}</p><ul class="legend caption">`
+    + Object.keys(AVAILABILITY_COLOR).map(key => `<li><span class="${AVAILABILITY_COLOR[key]}">${escapeText(languageText(key))}</span>: ${escapeText(languageText(key + '_explanation'))}</li>`).join('') + '</ul>';
+  const loading = document.getElementById('loading-rules');
+  if (loading) loading.textContent = languageText('loading_rules');
+}
+
+function renderSummary() {
+  if (!ruleCatalog) return;
+  const ruleList = ruleCatalog.group_list.flatMap(group => group.rule_list).filter(rule => !rule.alias_of);
+  document.getElementById('summary').textContent = languageText('rule_summary', { total:ruleList.length,
+    automatic:ruleList.filter(rule => rule.availability === 'automatic').length, used:ruleList.filter(rule => rule.used_by.length).length });
+}
+
+function handleLanguageChange() {
+  renderStaticText();
+  if (loadFailed) { renderLoadFailure(); return; }
+  if (ruleCatalog) { renderSummary(); renderRuleCatalog(false); }
+}
+
+function renderLoadFailure() {
+  document.getElementById('rule-group-list').innerHTML = `<p class="caption negative">${escapeText(languageText('rules_failed'))}</p>`;
+}
+
+function renderRuleCatalog(shouldScrollToTarget = true) {
   const filter = document.getElementById('filter-select').value;
   const keepRule = rule => filter === 'all' || (filter === 'used' ? rule.used_by.length > 0 : rule.availability === 'automatic');
   document.getElementById('rule-group-list').innerHTML = ruleCatalog.group_list.map(group => {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
-    return `<section class="rule-group"><header><h2 class="title">${escapeText(group.display_name)}</h2><p class="caption">${escapeText(group.description)}</p></header>
-      <div class="rule-row column-header caption"><span>编号</span><span>说明</span><span>默认权重</span><span class="rule-meta"><span>数据状态</span><span>使用它的策略</span></span></div>
+    return `<section class="rule-group"><header><h2 class="title">${languageRenderText(group.display_name)}</h2><p class="caption">${languageRenderText(group.description)}</p></header>
+      <div class="rule-row column-header caption"><span>${escapeText(languageText('column_id'))}</span><span>${escapeText(languageText('column_rule'))}</span><span>${escapeText(languageText('column_weight'))}</span>
+        <span class="rule-meta"><span>${escapeText(languageText('availability'))}</span><span>${escapeText(languageText('column_used_by'))}</span></span></div>
       ${ruleList.map(renderRuleRow).join('')}</section>`;
   }).join('');
   const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-  if (target) { target.classList.add('is-target'); target.scrollIntoView({ block:'center' }); }
+  if (target) { target.classList.add('is-target'); if (shouldScrollToTarget) target.scrollIntoView({ block:'center' }); }
 }
 
 async function loadRuleCatalog() {
   ruleCatalog = await (await fetch('/api/v1/rules')).json();
-  const ruleList = ruleCatalog.group_list.flatMap(group => group.rule_list).filter(rule => !rule.alias_of);
-  document.getElementById('summary').textContent =
-    `共 ${ruleList.length} 条规则 · 可自动计算 ${ruleList.filter(rule => rule.availability === 'automatic').length} 条 · 被策略使用 ${ruleList.filter(rule => rule.used_by.length).length} 条`;
-  document.getElementById('legend').innerHTML = Object.values(AVAILABILITY_STYLE).map(style =>
-    `<li><span class="${style.color}">${style.text}</span>：${style.explanation}</li>`).join('');
+  languageApplyServerDefault(ruleCatalog.default_language, handleLanguageChange);
+  renderSummary();
   renderRuleCatalog();
 }
 
 try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
-document.getElementById('filter-select').onchange = renderRuleCatalog;
-loadRuleCatalog().catch(() => { document.getElementById('rule-group-list').innerHTML = '<p class="caption negative">读取规则失败，请确认服务正在运行。</p>'; });
+languageInitialize('en');
+languageBindSwitch(handleLanguageChange);
+renderStaticText();
+document.getElementById('filter-select').onchange = () => renderRuleCatalog(false);
+loadRuleCatalog().catch(() => { loadFailed = true; renderLoadFailure(); });
 </script>
 </body>
 </html>
