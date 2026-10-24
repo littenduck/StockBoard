@@ -38,7 +38,7 @@ No other sizes. Every heading element has an explicit size.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius tokens: `--radius-control` 8px (everything clickable, plus chips), `--radius-panel` 12px (boxes). Hit size token: `--hit-size` 44px. No shadows except the 3px accent bar on a selected row. Font weights: 400 and 600 only.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius tokens: `--radius-control` 8px (everything clickable, plus chips), `--radius-panel` 12px (boxes). Hit size token: `--hit-size` 44px. No shadows. Font weights: 400 and 600 only.
 
 ## Status
 
@@ -77,7 +77,7 @@ One shape language. Everything the user can click shares one radius, one hover a
 | Interactive elements | radius `--radius-control`; min height `--hit-size`; no negative margins anywhere |
 | Hover | background `--fill`; text becomes `--text`. Same for icon button, interactive row, link hit area |
 | Keyboard focus | 2px `--accent` outline, offset 2px, follows the element's own radius (`:focus-visible` never sets a radius); rows use `outline-offset: -2px` so the ring is not clipped |
-| Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, from the URL hash): `--fill` plus `box-shadow: inset 3px 0 var(--accent)`. A darker fill is not used: secondary text would fall below 4.5:1 |
+| Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, from the URL hash): `--fill` plus a straight accent pill, 3px wide and 16px tall, centered on the row's left edge (`::before`). It is a separate shape, not an inset shadow, so it never bends with the row's rounded corner. A darker fill is not used: secondary text would fall below 4.5:1 |
 | Disabled or failed | no opacity (contrast); text becomes `--text-secondary` |
 | Field (`select`) | a `span.field` wraps the `select` and a Tabler chevron: 1px `--separator` border, `--surface` background on every page, radius control, 44px tall. The browser's own arrow is turned off; the chevron sits 12px from the right edge. Keyboard focus rings the whole field |
 | Row | margin `0 var(--space-2)`, padding `var(--space-2)`, radius control |
