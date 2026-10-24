@@ -207,7 +207,7 @@ function renderStaticText() {
   document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'));
   document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'));
   document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'));
-  document.getElementById('catalog-link').textContent = languageText('rule_catalog');
+  document.querySelector('#catalog-link small').textContent = languageText('rule_catalog');
   document.getElementById('theme-button').setAttribute('aria-label', languageText('switch_theme'));
   const hint = document.getElementById('select-symbol-hint');
   if (hint) hint.textContent = languageText('select_symbol');
