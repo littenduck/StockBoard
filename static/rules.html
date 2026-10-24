@@ -12,16 +12,16 @@
   .page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
     padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
   #explanation { margin-bottom:var(--space-5); }
-  #explanation p + p, #explanation p + ul { margin-top:var(--space-2); }
   .legend { display:flex; flex-wrap:wrap; gap:var(--space-1) var(--space-4); }
   .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
   .rule-group { margin-bottom:var(--space-6); }
   .rule-group > header { margin-bottom:var(--space-2); }
   .rule-group .row { display:grid; grid-template-columns:48px 1fr 64px minmax(0, 320px); gap:var(--space-3); align-items:start; margin:0;
     border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
-  .rule-group .row > .caption { line-height:20px; }
+  .rule-group .row > small { line-height:20px; }
   .rule-group .row[data-alias] { color:var(--text-secondary); }
-  .rule-group .row p { margin-top:var(--space-1); }
+  .rule-group .row > div > small { display:block; margin-top:var(--space-1); }
+  .rule-group > header > small { display:block; }
   .rule-group > header + .row { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
   .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
   .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); }
@@ -35,18 +35,18 @@
 </head>
 <body data-title-key="rules_title">
 <main>
-  <div class="top-row"><a class="link caption hit" id="back-link" href="/"></a>
+  <div class="top-row"><small><a id="back-link" href="/"></a></small>
     <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
   <header class="page-header">
-    <h1 class="display" id="page-heading"></h1>
-    <p class="caption" id="summary"></p>
+    <h1 id="page-heading"></h1>
+    <small id="summary"></small>
   </header>
-  <section class="panel" id="explanation"></section>
+  <section class="box" id="explanation"></section>
   <div class="filter-row">
-    <label class="caption" for="filter-select" id="filter-label"></label>
+    <small><label for="filter-select" id="filter-label"></label></small>
     <span class="field"><select id="filter-select"><option value="all"></option><option value="used"></option><option value="automatic"></option></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
   </div>
-  <div id="rule-group-list"><p class="caption" id="loading-rules"></p></div>
+  <div id="rule-group-list"><small id="loading-rules"></small></div>
 </main>
 <script src="/language.js"></script>
 <script>
@@ -57,14 +57,14 @@ let ruleCatalog = null, loadFailed = false;
 
 function renderRuleRow(rule) {
   if (rule.alias_of) {
-    return `<div class="row" data-alias id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
-      <span>${languageRenderText(rule.description)} <a class="link caption hit" href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">${escapeText(languageText('same_as', { id:rule.alias_of }))}</a></span><span></span></div>`;
+    return `<div class="row" data-alias id="rule-${rule.rule_id}"><small>${rule.rule_id}</small>
+      <span>${languageRenderText(rule.description)} <small><a href="#rule-${rule.alias_of}" onclick="document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target')); document.getElementById('rule-${rule.alias_of}').classList.add('is-target');">${escapeText(languageText('same_as', { id:rule.alias_of }))}</a></small></span><span></span></div>`;
   }
-  return `<div class="row" id="rule-${rule.rule_id}"><span class="caption">${rule.rule_id}</span>
-    <div>${languageRenderText(rule.description)}${rule.note ? `<p class="caption">${languageRenderText(rule.note)}</p>` : ''}</div>
-    <span class="caption">W${rule.default_weight}</span>
-    <span class="rule-meta caption"><span class="${AVAILABILITY_COLOR[rule.availability]}">${escapeText(languageText(rule.availability))}</span>
-      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<span class="chip">${escapeText(primaryText(usage.display_name))} · W${usage.weight}</span>`).join('') : escapeText(languageText('not_used'))}</span></span></div>`;
+  return `<div class="row" id="rule-${rule.rule_id}"><small>${rule.rule_id}</small>
+    <div>${languageRenderText(rule.description)}${rule.note ? `<small>${languageRenderText(rule.note)}</small>` : ''}</div>
+    <small>W${rule.default_weight}</small>
+    <small class="rule-meta"><span class="${AVAILABILITY_COLOR[rule.availability]}">${escapeText(languageText(rule.availability))}</span>
+      <span class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<small class="box">${escapeText(primaryText(usage.display_name))} · W${usage.weight}</small>`).join('') : escapeText(languageText('not_used'))}</span></small></div>`;
 }
 
 function renderStaticText() {
@@ -75,8 +75,8 @@ function renderStaticText() {
     option.textContent = languageText({ all:'all_rules', used:'used_rules', automatic:'automatic_rules' }[option.value]));
   document.getElementById('explanation').innerHTML = languageRenderParagraphs(languageLocalize('id_explanation'))
     + languageRenderParagraphs(languageLocalize('gap_explanation'))
-    + `<p class="caption">${languageRenderText(languageLocalize('availability'))}</p><ul class="legend caption">`
-    + Object.keys(AVAILABILITY_COLOR).map(key => `<li><span class="${AVAILABILITY_COLOR[key]}">${escapeText(languageText(key))}</span>: ${escapeText(languageText(key + '_explanation'))}</li>`).join('') + '</ul>';
+    + `<small>${languageRenderText(languageLocalize('availability'))}</small><ul class="legend">`
+    + Object.keys(AVAILABILITY_COLOR).map(key => `<li><small><span class="${AVAILABILITY_COLOR[key]}">${escapeText(languageText(key))}</span>: ${escapeText(languageText(key + '_explanation'))}</small></li>`).join('') + '</ul>';
   const loading = document.getElementById('loading-rules');
   if (loading) loading.textContent = languageText('loading_rules');
 }
@@ -95,7 +95,7 @@ function handleLanguageChange() {
 }
 
 function renderLoadFailure() {
-  document.getElementById('rule-group-list').innerHTML = `<p class="caption negative">${escapeText(languageText('rules_failed'))}</p>`;
+  document.getElementById('rule-group-list').innerHTML = `<small class="negative">${escapeText(languageText('rules_failed'))}</small>`;
 }
 
 function renderRuleCatalog(shouldScrollToTarget = true) {
@@ -104,9 +104,9 @@ function renderRuleCatalog(shouldScrollToTarget = true) {
   document.getElementById('rule-group-list').innerHTML = ruleCatalog.group_list.map(group => {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
-    return `<section class="rule-group"><header><h2 class="title">${languageRenderText(group.display_name)}</h2><p class="caption">${languageRenderText(group.description)}</p></header>
-      <div class="row caption"><span>${escapeText(languageText('column_id'))}</span><span>${escapeText(languageText('column_rule'))}</span><span>${escapeText(languageText('column_weight'))}</span>
-        <span class="rule-meta"><span>${escapeText(languageText('availability'))}</span><span>${escapeText(languageText('column_used_by'))}</span></span></div>
+    return `<section class="rule-group"><header><h2>${languageRenderText(group.display_name)}</h2><small>${languageRenderText(group.description)}</small></header>
+      <div class="row"><small>${escapeText(languageText('column_id'))}</small><small>${escapeText(languageText('column_rule'))}</small><small>${escapeText(languageText('column_weight'))}</small>
+        <small class="rule-meta"><span>${escapeText(languageText('availability'))}</span><span>${escapeText(languageText('column_used_by'))}</span></small></div>
       ${ruleList.map(renderRuleRow).join('')}</section>`;
   }).join('');
   const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
