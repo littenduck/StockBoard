@@ -79,7 +79,7 @@ One shape language. Everything the user can click shares one radius, one hover a
 | Keyboard focus | 2px `--accent` outline, offset 2px, follows the element's own radius (`:focus-visible` never sets a radius); rows use `outline-offset: -2px` so the ring is not clipped |
 | Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, from the URL hash): `--fill` plus `box-shadow: inset 3px 0 var(--accent)`. A darker fill is not used: secondary text would fall below 4.5:1 |
 | Disabled or failed | no opacity (contrast); text becomes `--text-secondary` |
-| Field (`select`) | 1px `--separator` border, `--surface` background on every page, radius control, padding `--space-3` |
+| Field (`select`) | a `span.field` wraps the `select` and a Tabler chevron: 1px `--separator` border, `--surface` background on every page, radius control, 44px tall. The browser's own arrow is turned off; the chevron sits 12px from the right edge. Keyboard focus rings the whole field |
 | Row | margin `0 var(--space-2)`, padding `var(--space-2)`, radius control |
 | Panel | radius panel, `--surface`, 1px `--separator` border, padding `--space-4` or `--space-5` |
 | Chip | radius control, 1px `--separator` border, padding `0 var(--space-2)`, caption type; height comes from line height, never fixed |

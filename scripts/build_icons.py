@@ -27,6 +27,7 @@ ICON_SOURCE_BY_SYMBOL_ID = {
     "icon-close": ("outline", "x"),
     "icon-theme": ("outline", "circle-half-2"),
     "icon-language": ("outline", "language"),
+    "icon-chevron": ("outline", "chevron-down"),
 }
 FAVICON_SOURCE = ("outline", "chart-line")
 
