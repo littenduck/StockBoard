@@ -1,168 +1,137 @@
-# Plan: one shape language for every control, row and surface
+# Plan: type that renders like Markdown, fewer components
 
-Branch: `feature/ui-consistency` (from `main` at `e8b09cd`). One commit per step. Quality bar: the page must keep scoring at least 4.5 on the strict Apple review, and the audit in section 7 must pass.
-Previous plans (UI and API v1, bilingual interface) are in git history.
+Branch: `feature/ui-consistency` (PR #3, not merged yet). This plan builds on the shared styles already on that branch and adds commits to it; no new branch.
+Execution: each step below is written to be run by a fresh Haiku subagent that reads only this file plus the brief; the main session checks diff, tests and the audit in section 7 after every step.
+Earlier plans (UI and API v1, bilingual, one shape language) are in git history.
 
 ---
 
 ## 1. The problem, verified
 
-The user reported: small buttons, the dropdown, the market indicator box and the highlighted symbol row do not share a style (some rounded, some square), and the help circle next to the strategy is round on hover while everything else is square. All measured in the running page (dark theme, 1512px wide):
+Measured in the running page (Chinese mode, strategy help popover):
 
-| Claim | Verdict | Evidence (computed style) |
-|---|---|---|
-| Help button is round, other buttons are square | **True** | `.help-button` radius `50%`; `.icon-button` (theme, language) radius `8px`. Same size (44px), same job, same hover color, two shapes |
-| Dropdown differs from the rest | **True** | `select`: 8px radius **with** a 1px border; icon buttons: 8px radius **no** border, no background until hover |
-| Selected symbol row differs | **True** | Selected row: radius `0px`, full width (299px, touches the sidebar edge), accent bar made with `box-shadow: inset 3px 0`. Rules page highlighted row (same meaning): radius `8px` + same bar. Same state, two shapes |
-| Market indicator box differs | **True** | Desktop: plain rows, no background, radius `0px`. Phone (`max-width: 899px`): bordered chips with radius `12px`. The same element has two shapes, and the chip radius (12) matches no other chip (tag and usage chips use 8) |
-| Colors differ | **Partly true** | Select background is `--background` on the dashboard (`rgb(38,38,36)`) but `--surface` on the rules page (`rgb(48,48,46)`). Hover and selected rows share the same fill, so a hovered row looks selected |
+| Element in the popover | Size | Weight | What it is |
+|---|---|---|---|
+| Title "Sell Put 四合一" | 20px | 600 | `h2.title` |
+| English under the title | **12px** | 400 | `span.translation` |
+| Summary sentence | 15px | **600** | `p.strong` |
+| English under the summary | **12px** | 400 | `span.translation` |
+| Each body paragraph | 15px | 400 | `p` |
+| English under each body paragraph | **15px** | 400, gray | `p.translation-paragraph` |
+| Source line | 12px | 400, gray | `p.caption` |
 
-**Additional faults found while auditing (the user did not mention them):**
+So the English line is 12px under the title and summary but 15px under the paragraphs, and the first sentence of the body is bold. All of that is what the user saw.
 
-| # | Fault | How it was found |
-|---|---|---|
-| F1 | `:focus-visible { border-radius: 8px }` in `base.css` changes the shape of any element whose own class sets no radius (symbol rows are `0px`, so they become rounded only while keyboard-focused) | Code reading. Could **not** be reproduced in the browser tool: script focus does not enter the keyboard-focus state |
-| F2 | Five different hacks to reach a 44px tap area: negative margins on `.help-button`, `.back-link`, `.rule-link`, `.catalog-link`, alias links, plus `padding: 14px/15px` | CSS |
-| F3 | Five link styles: `.rule-link` (no underline, underline on hover), `.catalog-link` (always underlined), `.back-link` (gray), `.sidebar-footer-link` (gray with top border), alias link (small gray) | CSS |
-| F4 | `.strategy-gate > header .icon` masks the vertical line with `background` + `border-radius: 50%` (a hack) | CSS |
-| F5 | `.strategy-name` re-implements `.strong` (15px/600) as its own class | CSS |
-| F6 | 42 distinct CSS classes on one dashboard render, many one-off | `distinctClasses` = 42 |
-| F7 | Magic numbers outside the token scale: 14px, 15px, 36px, -24px, 22px chip height | CSS |
-| F8 | Placeholder rows are 8px rounded while the rows they stand in for are square | CSS |
+**Root causes**
+1. Three different styles for the same job (English companion): `translation` (12px block), `translation-inline` (12px, same line), `translation-paragraph` (15px block). I added the 15px one on purpose for readability; it breaks consistency.
+2. Text roles are spread over four classes (`caption`, `title`, `display`, `strong`) that are also applied to arbitrary tags, so the same tag looks different on different pages. Usage today: `caption` 39 times, `display` 31, `title` 18, `strong` 8, `link` 16.
+3. The type vocabulary does not match anything a reader already knows.
 
 ---
 
-## 2. Three style options
+## 2. The new type system: plain HTML tags, rendered like Markdown
 
-All keep the Claude palette, system font and the 4-size type scale. They differ in shape rules.
+No text classes. The tag decides the look. Five text elements, four sizes:
 
-### Option 1: one control radius, inset rounded rows (recommended) — 4.7 / 5
+| Markdown | HTML tag | Size / weight / line | Used for |
+|---|---|---|---|
+| `#` H1 | `h1` | 28 / 600 / 32, letter-spacing -0.02em | symbol name, page title, the big verdict and score figures |
+| `##` H2 | `h2` | 20 / 600 / 24 | app name, popover title, rule group titles |
+| `###` H3 | `h3` | 15 / 600 / 20 | gate titles, strategy name, the summary sentence |
+| body | `p`, `li` | 15 / 400 / 20 | everything else that is read |
+| small | `small` | 12 / 400 / 16, `--text-secondary` | labels, timestamps, notes, **every English companion** |
+| bold | `strong` | weight 600, same size as its parent | emphasis inside a line |
+| link | `a` | see below | all links |
 
-- Every clickable thing shares **one radius (8px)**: icon buttons (including help and close), select, list rows, links' hover area.
-- List rows are **inset** (8px side margin) with 8px corners; hover = `--fill`; selected = `--fill` + the 3px accent bar (the rules page already looks like this).
-- Panels (popover, explanation box) use 12px; chips use 8px.
-- Circles only for things that are not clickable: status dot, gate marker, sparkline end.
-- Matches Apple's current sidebar look (inset rounded selection) and the Claude app. Fewest rules.
+Sizes in use: **28, 20, 15, 12** (was 34, 20, 15, 12). Weights: 400 and 600.
 
-| Criterion (1 to 5) | Score |
-|---|---|
-| Looks unified | 5.0 |
-| Fits Claude and Apple | 4.8 |
-| Code simplicity (fewest rules) | 4.8 |
-| Accessibility (44px targets, focus ring follows the shape) | 4.7 |
-| Migration effort and risk (rows lose 16px width) | 4.2 |
-| **Overall** | **4.7** |
+**The one English rule (no exceptions):** in Chinese mode the English text is `<small lang="en">`, always on its own line directly under the Chinese line it translates, always 12px gray. That covers titles, labels, rule descriptions and **every help paragraph**. Delete `translation`, `translation-inline`, `translation-paragraph`.
 
-### Option 2: role-based shapes (circle for icon-only, rounded rectangle for text) — 4.0 / 5
+**Links:** one style. Gray `--text-secondary`, no underline; hover and keyboard focus turn it `--text` and underline it. Inside a paragraph or list item (`p a`, `li a`) a link is always `--text` and underlined, like Markdown. The 44px hit area is built into every `a` (pseudo-element), so the `hit` class goes away. `link`, `link-emphasis` and `hit` are deleted.
 
-- Icon-only buttons are circles (like an iOS toolbar), selects and rows 8px, panels 12px.
-- Principled, but the user's complaint is exactly "some round, some square"; this keeps two shapes on screen. Three radii plus a circle rule to remember.
+**Vertical rhythm** (one rule, inside any `.box`, the popover and the explanation box): `.box > * + * { margin-top: 12px }`, `.box > h2 + * { margin-top: 8px }`, and an English companion hugs its line: `small[lang="en"] { margin-top: 4px }`. A paragraph that follows an English companion gets the normal 12px, so Chinese and English pairs read as units.
 
-| Criterion | Score |
-|---|---|
-| Looks unified | 3.2 |
-| Fits Claude and Apple | 4.3 |
-| Code simplicity | 4.0 |
-| Accessibility | 4.5 |
-| Migration effort and risk | 4.0 |
-| **Overall** | **4.0** |
-
-### Option 3: flat and square, full-width rows (what the sidebar rows do now) — 3.1 / 5
-
-- Radius 0 everywhere except status dots; rows full-bleed; separators and the accent bar carry the structure (Robinhood / terminal style).
-- Very few rules, but it contradicts the warm Claude look the user chose and Apple's rounded controls; the select and buttons would also have to lose their rounding.
-
-| Criterion | Score |
-|---|---|
-| Looks unified | 4.5 |
-| Fits Claude and Apple | 2.0 |
-| Code simplicity | 4.5 |
-| Accessibility | 3.5 |
-| Migration effort and risk | 2.5 (redo the work done in earlier rounds) |
-| **Overall** | **3.1** |
-
-**Chosen: Option 1.**
+**Sidebar and header labels** (Strategy, Market, Symbols, Verdict, Score, Missing-data note) become plain `small`; in Chinese mode their English is the `<small lang="en">` line under them. Cost: three sidebar labels and two header labels grow by one 16px line in Chinese mode.
 
 ---
 
-## 3. Decisions (made on the user's behalf; say if any is wrong)
+## 3. Components after the cleanup (the list the user asked for)
+
+| Family | What exists | Count |
+|---|---|---|
+| **Text** | tags only: `h1` `h2` `h3` `p` `li` `small` `strong` `a`, plus the four color modifiers `.positive` `.negative` `.caution` `.muted` | 8 tags, 4 modifiers |
+| **Control** | `.icon-button` (theme, language, help, close), `.field` (select with chevron) | 2 |
+| **List row** | `.row` (hover, selected with accent pill, static) | 1 |
+| **Box** | `.box`: bordered, 8px, `--surface`. It is the popover, the explanation box, and (as `small.box`) the small tags and chips | 1 |
+| **Mark** | `.status-badge` (icon plus word), `.status-dot`, `.sparkline` | 3 |
+
+That is **7 element classes** (was 14), with the 12px panel radius dropped: **one radius, 8px**, for everything (`--radius-panel` is deleted).
+Layout-only containers stay but are not components: the page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.legend`, `.usage`, `.rule-meta`.
+Target: **18 or fewer distinct classes on a dashboard render** (28 now) and **14 or fewer on the rule catalog page** (22 now).
+
+---
+
+## 4. Old to new mapping (use exactly this)
+
+| Old | New |
+|---|---|
+| `h1.title`, `h2.title` | `h2` (app name, popover title, rule group title) |
+| `h2.display` (symbol name), `h1.display` (rules page title) | `h1` |
+| `p.display` (verdict, score figures) | `h1` inside `.result-row` |
+| `.caption` on `span`, `p`, `h2`, `a`, `label`, `summary` | `small` (tag changed), links keep `a` |
+| `.strong` | `strong` tag, or `h3` when it is a title (gate title, strategy name, summary sentence) |
+| `.translation` (block) | `<small lang="en">` |
+| `.translation-inline` | `<small lang="en">` (now also a separate line) |
+| `.translation-paragraph` | `<small lang="en">` |
+| `.link`, `.link-emphasis`, `.hit` | plain `a` |
+| `.panel` | `.box` |
+| `.chip` | `<small class="box">` |
+| `.gate-marker` | style the gate header's `svg` structurally: `.strategy-gate > header > svg` |
+| `.detail-note` | `<small>` (structural selector) |
+| `--radius-panel`, `--font-*` leftovers | delete |
+
+Kept unchanged: `.icon-button`, `.field`, `.row`, `.status-badge`, `.status-dot`, `.sparkline`, `.icon`, color modifiers, `.is-target`, `aria-current`, `data-status`.
+
+---
+
+## 5. Decisions (made for the user; say if any is wrong)
 
 | ID | Decision | Why |
 |---|---|---|
-| D1 | Radii: `--radius-control: 8px` (buttons, select, rows, chips), `--radius-panel: 12px` (popover, explanation box). Circle (`50%`) only for non-interactive marks | One interactive shape |
-| D2 | Selected row = `--fill` plus the 3px accent bar; hover = `--fill` only. **No new color token** | A darker "selected" fill was tested and rejected: secondary text drops below 4.5:1 (light `#EBE9E0` 4.46, `#E8E6DC` 4.34; dark `#41413E` 4.20, `#44443F` 4.01) |
-| D3 | The mobile indicator strip uses the same `.chip` (8px), not 12px | One chip |
-| D4 | Select background is always `--surface` (dashboard and rules page) | It is a field, not part of the page; `--surface` separates it on both backgrounds |
-| D5 | Replace every negative-margin tap area with one `.hit` rule (section 5) | One mechanism |
-| D6 | One link style: text color `--text-secondary`, becomes `--text` with underline on hover and keyboard focus; `.link-emphasis` variant only for the popover link (always underlined, `--text`) | 5 styles become 1 plus 1 variant |
-| D7 | `:focus-visible` keeps the outline but no longer sets `border-radius`; outline follows each element's own radius | Fixes F1 |
-| D8 | Class count on a dashboard render must drop from 42 to 28 or fewer | F6 |
-
----
-
-## 4. Inventory of every element, grouped into five families
-
-All visible things on both pages, and the family each belongs to:
-
-| Family | Variants (fewest possible) | Elements that become it today |
-|---|---|---|
-| **Text** | 4 sizes (`caption` 12, `body` 15, `title` 20, `display` 34), weight `strong`, color (`positive`, `negative`, `caution`, `muted`), `link` | page titles, captions, section titles, values, scores, descriptions, links (all 5 kinds), `strategy-name` |
-| **Control** (clickable, 44px tall, 8px, same hover and focus) | `icon-button`, `field` (select) | theme button, language button, help button, popover close button, strategy select, rules filter select |
-| **Row** (list line, inset 8px, hover `--fill`, selected `--fill` + bar) | `row` (static), `row is-selected` | symbol item, indicator item, rule row, rule-catalog rule row (highlighted via URL hash), sidebar footer link |
-| **Surface** (boxed) | `panel` (12px, `--surface`, 1px border), `chip` (8px, 1px border, caption text) | popover, explanation box, tag "Insufficient data", usage chips, mobile indicator chips, loading placeholders (use `.row` height, `--separator` fill) |
-| **Mark** (not clickable, content graphic) | `status-badge` (icon + word), `status-dot`, `sparkline`, `gate-marker` | pass/fail/unknown badges, market status dot, price sparkline, gate title icon |
-
-Not counted as families (layout only): the sidebar and main grid, `detail-header`, `result-row`, `strategy-gate` tree line, 1px `--separator` dividers.
-
-**Result: 5 families, 14 classes** (`caption title display strong link icon-button field row panel chip status-badge sparkline status-dot`) plus the existing color modifiers and layout containers. That replaces 42 one-off classes.
-
-Tokens added to `base.css` (no new colors): `--radius-control: 8px; --radius-panel: 12px; --hit-size: 44px;`.
-
----
-
-## 5. Specification (add to `docs/design.md` as "Shape and states")
-
-| Rule | Value |
-|---|---|
-| Interactive elements | radius `--radius-control`; min height `--hit-size` (44px); no negative margins |
-| Hover | background `--fill`; text becomes `--text`. Same for icon button, row, link hit area, select |
-| Focus (keyboard) | 2px `--accent` outline, offset 2px, **follows the element's own radius**; rows use `outline-offset: -2px` so the ring is not clipped |
-| Selected | `row.is-selected`: `--fill` + `box-shadow: inset 3px 0 var(--accent)`; `aria-current="true"` stays |
-| Disabled / failed | `opacity` is not used (contrast); text becomes `--text-secondary` |
-| Field | 1px `--separator` border, `--surface` background, radius control, padding `--space-3`, chevron from the browser |
-| Row | `margin: 0 var(--space-2)`, `padding: var(--space-2) var(--space-2)`, radius control |
-| Panel | radius panel, `--surface`, 1px `--separator` border, padding `--space-4` or `--space-5` |
-| Chip | radius control, 1px `--separator` border, padding `0 var(--space-2)`, caption type, **height from line-height (16px) plus 2px border plus 4px padding, no fixed height** |
-| Hit area (`.hit`) | `position: relative` and a `::after` pseudo-element that extends the clickable area to 44px without changing layout (replaces every negative-margin hack) |
-| Circles | only `status-dot` (8px), `gate-marker`, and the sparkline; never on something clickable |
+| D1 | Four sizes (28, 20, 15, 12), not three | Markdown's rendered minimum is H1, H2, body, small; H3 is bold body. A three-size version would make the popover title 15px semibold, which is too weak |
+| D2 | The 34px display size goes down to 28 | One H1 for page title, symbol name and the big figures |
+| D3 | English companion is always 12px, even for long help paragraphs | The user's complaint is exactly mixed sizes; one rule is worth some reading comfort. Contrast of `--text-secondary` on `--surface` is 5.4 to 6.2:1 |
+| D4 | English always under the Chinese, even for short labels | No inline exception to remember |
+| D5 | One radius (8px) | Fewer tokens, one shape |
+| D6 | Big figures use `h1` | The scheme has no separate "number" style; the label above each figure is `small` |
 
 ---
 
 ## 6. Steps and commits
 
-1. **Spec.** Add "Shape and states" and the family table (sections 4 and 5) to `docs/design.md`; update the component table there. Commit.
-2. **Base styles.** In `static/base.css`: radius and hit tokens; `.link`, `.row`, `.panel`, `.chip`, `.field`; `.hit`; focus rule fixed (D7); `.icon-button` moved onto the shared control rules. Commit.
-3. **Dashboard.** Move `.help-button` and the popover close button onto `.icon-button` (delete `.help-button`); select onto `.field`; symbol, indicator and sidebar footer rows onto `.row` (selected row uses `is-selected`); popover onto `.panel`; mobile indicator chips and the tag onto `.chip`; placeholders to row height; the five link kinds to `.link`; gate marker to a named `.gate-marker`; `.strategy-name` onto `.strong`. Delete dead CSS. Commit.
-4. **Rules page.** Select to `.field` with the shared background; explanation box to `.panel`; usage chips to `.chip`; rule rows and the highlighted row to `.row`; alias and back links to `.link`. Delete dead CSS. Commit.
-5. **Docs.** Update `README.md` and `.claude/skills/stockboard-design/SKILL.md` (use only the families in `docs/design.md`). Commit.
-6. **Audit** (section 7), independent review, score. Fix commits if needed.
+Step 1 is documentation, step 2 is additive (nothing breaks), steps 3 to 5 migrate, step 6 deletes the old classes. The page works after every step.
+
+1. **Docs.** Rewrite the Type section of `docs/design.md` and the Elements section to sections 2 and 3 of this file; update `docs/language.md` (English companion rule); update `.claude/skills/stockboard-design/SKILL.md` (text is plain tags; no text classes). Commit.
+2. **Add tag styles.** In `static/base.css` add (do not delete anything yet): `h1`, `h2`, `h3`, `small`, `small[lang="en"]`, `strong`, `a` (including the hover, focus, `p a` and `li a` rules and a `a::after` 44px hit area), `.box` and the `.box` rhythm rules. Move the heading resets so a bare `h1` to `h3` gets its size. Commit. (Classed elements keep their old look because class selectors outrank tags.)
+3. **Language helpers.** In `static/language.js`: `languageRenderText(localizedText)` returns the primary text plus `<small lang="en">` in Chinese mode (remove the `isInline` argument); `languageRenderParagraphs` returns `<p>zh</p><small lang="en">en</small>` pairs; remove `translation-paragraph`. Update every call site in `static/index.html` and `static/rules.html` that passed `true`. Commit.
+4. **Dashboard.** Migrate `static/index.html` with the mapping in section 4: markup in the HTML and in every JS template string, and the page CSS (delete rules for removed classes; add structural selectors where needed). Commit.
+5. **Rule catalog.** Same for `static/rules.html`. Commit.
+6. **Delete.** Remove from `static/base.css`: `.caption`, `.title`, `.display`, `.strong`, `.translation`, `.translation-inline`, `.translation-paragraph`, `.link`, `.link-emphasis`, `.hit`, `.panel`, `.chip`, `--radius-panel`, and their old `h1, h2, h3, h4, p, ul` size resets. `grep` must find none of these names in `static/`. Commit.
+7. **Audit** (section 7), independent review and score. Fix commits if needed.
+
+Parallel: steps 4 and 5 touch different files and may run at the same time after step 3. Everything else is sequential.
 
 ---
 
-## 7. Acceptance audit (all must pass; each measured with computed styles in the browser, both themes, both languages, widths 375, 1024 and 1512)
+## 7. Acceptance audit (computed styles in the browser, both themes, both languages, widths 375, 1024, 1512, both pages)
 
-1. Every interactive element with a box (`button`, `select`, rows that are buttons or links) has `border-radius` exactly `8px`; no interactive element has `50%`. Inline text links have no box (hover only underlines), so they are exempt.
-2. Every panel has `12px`; every chip has `8px`.
-3. The help button and the theme button have identical computed `border-radius`, size, hover color and focus ring shape.
-4. Select background is identical on the dashboard and the rules page.
-5. Hovered row and selected row differ (selected has the accent bar).
-6. Selected sidebar row and highlighted rules-page row have identical radius and bar.
-7. No negative `margin` on any interactive element or row (`grep -c "margin:-"` is 0 in `static/`). The three gate headers that sit on the tree line use `margin-left:-24px` for tree geometry; they are not clickable.
-8. Distinct classes on a dashboard render: 28 or fewer (was 42).
-9. Contrast at least 4.5:1 for every text element, including text on `--fill` rows; both pages, both themes, both languages.
-10. Tap targets at least 44px (an element with the `.hit` class counts when its `::after` is 44px); no horizontal overflow at 375, 1024, 1512.
-11. Keyboard focus ring does not change the element's shape: no `:focus-visible` rule sets `border-radius`, and rows use an inset ring. (Checked in the stylesheet; script focus cannot enter the keyboard-focus state in the browser tool.)
-12. All 44 existing tests still pass; line budgets: `index.html` at most 380, `rules.html` at most 140 (they should shrink).
+1. Font sizes found on screen are exactly {28px, 20px, 15px, 12px}; weights exactly {400, 600}.
+2. In Chinese mode every element with `lang="en"` is 12px, gray (`--text-secondary`), weight 400 and `display: block`; the strategy help popover has no English at any other size.
+3. `grep -rn` for `caption|title|display|strong|translation|link-emphasis|\bhit\b|\.panel|\.chip` as CSS class names finds nothing in `static/` (the tags `strong` and `small` are fine).
+4. Distinct classes: dashboard 18 or fewer (popover open), rule catalog 14 or fewer.
+5. In the popover the order is: `h2` title, its English `small`, `h3` summary, its English `small`, then `p` / `small` pairs, then a `small` source line, then the link. Sizes follow section 2 and every `p` pair has the same spacing.
+6. Every earlier acceptance item still passes: interactive radius 8px and none round; contrast at least 4.5:1 on every text element; tap targets at least 44px (a link counts through its `::after`); no horizontal overflow; selected row and URL-highlighted row identical; no negative margin on any interactive element or row.
+7. 44 tests pass; line budgets: `index.html` at most 354, `rules.html` at most 131 (they should shrink), `base.css` at most 70.
 
 ---
 
@@ -170,30 +139,7 @@ Tokens added to `base.css` (no new colors): `--radius-control: 8px; --radius-pan
 
 | Version | Score | Deductions |
 |---|---|---|
-| Draft | 4.2 | R1 first idea added a darker "selected" color; it breaks the 4.5:1 text contrast (measured); R2 `:focus-visible` shape change was unnoticed; R3 no acceptance checks for the families; R4 chips had a fixed 22px height |
-| This file | 4.8 | R1 selected uses fill plus bar, no new token (D2); R2 D7; R3 section 7; R4 chip height from line-height. Remaining deductions: F1 could not be reproduced in the browser (found by code reading only); inset rows lose 16px of width, which may wrap long Chinese plus English rows on the symbol list (checked in step 3 at 300px) |
+| Draft | 4.1 | P1 steps would have broken the page between commits (delete before migrate); P2 the English rule had a hidden exception for paragraphs; P3 no acceptance check for the English size; P4 links needed an always-underlined variant for the popover |
+| This file | 4.7 | P1 additive then migrate then delete (section 6); P2 D3; P3 audit item 2; P4 `p a`/`li a` rule. Remaining deductions: four sizes, not three (D1); English at 12px under long paragraphs is smaller than ideal (D3); the big figures are `h1` elements, which is not strictly semantic (D6); Chinese mode adds a line under each label (D4) |
 
-Open points for the user: (a) keep the accent bar on the selected row (D2) or use fill only; (b) hover color equal to selected fill is accepted because the bar tells them apart.
-
----
-
-## 9. Result
-
-Audit run in the browser at 375, 1024 and 1512px, both themes, both languages, both pages (script reads computed styles):
-
-| Item | Dashboard | Rule catalog |
-|---|---|---|
-| 1 Interactive radius is 8px, none round | pass (12 combinations) | pass (12) |
-| 2 Panels 12px, chips 8px | panel 12px | panel 12px, chips 8px |
-| 3 Help and theme buttons identical (radius, size, color) | pass | n/a |
-| 4 Select background the same on both pages | `rgb(255,255,255)` in light | same |
-| 5 and 6 Selected row: 8px radius, fill, accent bar; unselected has no bar; same on both pages | pass | pass (URL-highlighted row identical) |
-| 7 Negative margins | 3 (gate tree headers, not clickable) | 0 |
-| 8 Distinct classes (was 42) | 28 | 22 |
-| 9 Contrast at least 4.5:1 | 0 failures out of 256 to 315 text elements per combination | 0 failures out of 638 to 836 |
-| 10 Tap targets at least 44px, no overflow | pass after a fix (see below) | pass |
-| 11 Focus ring keeps shape | stylesheet check pass | pass |
-| 12 Tests and line budgets | 44 passed; `index.html` 354 (was 379), `rules.html` 131 (was 137) | |
-
-One real defect found by the audit and fixed in the same step: the sidebar footer row was 32px tall; interactive rows now have `min-height: var(--hit-size)`.
-One defect in the audit script itself (it ignored the `.hit` pseudo-element height) was fixed before the final run.
+Open points for the user: (a) four sizes or three; (b) keep English at 12px under long paragraphs, or allow a 15px exception (the old behavior); (c) English under short labels, or inline.
