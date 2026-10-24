@@ -38,8 +38,8 @@
   .result-row small.box { margin-left:var(--space-1); }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
   .strategy-gate:last-child { border-left-color:transparent; }
-  .strategy-gate > header { display:flex; align-items:flex-start; gap:var(--space-2); margin:0 0 var(--space-2) -24px; }
-  .strategy-gate > header > svg { background:var(--background); border-radius:50%; margin-top:2px; }
+  .strategy-gate > header { position:relative; display:flex; align-items:flex-start; gap:var(--space-2); margin-bottom:var(--space-2); }
+  .strategy-gate > header > svg { position:absolute; left:-24px; top:2px; background:var(--background); border-radius:50%; }
   .strategy-gate > header > small { margin-top:2px; white-space:nowrap; }
   .strategy-gate > header h3 { min-width:0; }
   .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); }
