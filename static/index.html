@@ -16,7 +16,7 @@
   .status-bar { display:flex; align-items:center; gap:var(--space-2); margin:var(--space-2) var(--space-4) var(--space-4); }
   .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
   aside .field { width:calc(100% - var(--space-6)); margin:0 var(--space-4); }
-  aside > small, .result-row > div > small, .strategy-gate > small { display:block; }
+  aside > small, .strategy-gate > small { display:block; }
   aside > small { margin:var(--space-5) var(--space-4) var(--space-2); }
   #indicator-list > .row { display:grid; grid-template-columns:1fr auto 72px; align-items:baseline; column-gap:var(--space-3); padding:var(--space-1) var(--space-2); }
   #indicator-list > .row > :nth-child(n+2) { text-align:right; }
@@ -33,7 +33,9 @@
     padding-bottom:var(--space-5); margin-bottom:var(--space-6); border-bottom:1px solid var(--separator); }
   .detail-header > small { flex-basis:100%; text-align:right; }
   .result-row { display:flex; gap:var(--space-6); }
-  .result-row h1 { display:flex; align-items:center; gap:var(--space-2); }
+  .result-row > div { display:grid; grid-template-columns:auto auto; justify-content:start; align-items:baseline; }
+  .result-row h1 { grid-column:1 / -1; display:flex; align-items:center; gap:var(--space-2); }
+  .result-row small.box { margin-left:var(--space-1); }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
   .strategy-gate:last-child { border-left-color:transparent; }
   .strategy-gate > header { display:flex; align-items:flex-start; gap:var(--space-2); margin:0 0 var(--space-2) -24px; }
@@ -313,7 +315,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
       <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></small>` : ''}</div>
     <div class="result-row">
       <div><small>${languageRenderText(languageLocalize('verdict'))}</small><h1>${renderStatusBadge(summaryStatus(evaluation.is_pass))}</h1></div>
-      <div><small>${languageRenderText(languageLocalize('score'))}${isInsufficient ? ` <small class="box">${escapeText(languageText('insufficient_data'))}</small>` : ''}</small>
+      <div><small>${languageRenderText(languageLocalize('score'))}</small>${isInsufficient ? `<small class="box">${escapeText(languageText('insufficient_data'))}</small>` : ''}
         <h1 class="${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</h1></div>
       </div><small>${escapeText(languageText('missing_weight', { percent:Math.round(evaluation.unknown_weight_ratio * 100) }))}</small>
     </header>${gates}`;
