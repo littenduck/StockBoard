@@ -1,6 +1,6 @@
 # StockBoard
 
-A personal stock dashboard. The left sidebar lists market indicators (VIX, VXN, VVIX, 10Y, HY spread) and symbols, each with a **pass** result, a **score** and a price sparkline. Select a symbol to see its strategy tree on the right, gate by gate and rule by rule. A status bar shows whether the market is open and how old the data is. Light theme by default; the button next to the title switches to dark.
+A personal stock dashboard. The left sidebar lists market indicators (VIX, VXN, VVIX, 10Y, HY spread) and symbols, each with a **pass** result, a **score** and a price sparkline. Select a symbol to see its strategy tree on the right, gate by gate and rule by rule. A status bar shows whether the market is open and how old the data is. English by default; the EN | 中文 switch shows Chinese with the English underneath. Light theme by default; the button next to it switches to dark.
 
 ## Run
 
@@ -26,9 +26,10 @@ Test: `.venv/bin/python -m pytest tests`
 | `strategies/*.yaml` | strategies: gates, rules, weights (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, status badges, layout) |
 | `docs/indicator.md` | every indicator, its meaning and source |
+| `docs/language.md` | English and Chinese glossary and writing rules |
 | `docs/strategy.md` | strategy file format, scoring, pass veto |
 | `stockboard_backend/` | Python package, one module per job, function names are `module_verb_object` |
-| `static/index.html`, `static/rules.html`, `static/base.css` | dashboard, rule catalog page (`/rules`), shared design tokens |
+| `static/index.html`, `static/rules.html`, `static/base.css`, `static/language.js` | dashboard, rule catalog page (`/rules`), shared design tokens, interface text in both languages |
 | `docs/api.md` | JSON API (`/api/v1`) for the page and any future client |
 | `.claude/skills/` | skills that point Claude at the design and strategy docs |
 

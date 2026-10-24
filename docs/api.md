@@ -6,7 +6,8 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 
 - Field names are `snake_case`. Unknown values are `null`. Enumerations are lower-case strings.
 - Times are ISO 8601 in exchange time (America/New_York) with offset, for example `2026-10-23T15:52:19-04:00`.
-- `schema_version` (currently `2`): within one version fields may only be added. Renaming or removing a field bumps the version.
+- `schema_version` (currently `3`): within one version fields may only be added. Renaming, removing or changing the type of a field bumps the version (3 made text fields objects).
+- Text a person reads is an object `{"en": "...", "zh": "..."}`: strategy `display_name`, `summary`, `help_text`, `source`; gate `display_name`; rule `description` and `note`; group `display_name` and `description`; indicator `display_name`. Clients pick the language; `default_language` tells them which to start with.
 - Errors: HTTP 404 with `{"detail": "..."}` for an unknown strategy or symbol.
 - CORS is off unless `allowed_origin_list` in `config/settings.yaml` lists origins. Native apps do not need it.
 
@@ -15,10 +16,12 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 Every rule from `config/rules.yaml`, grouped by letter, with the strategies that use it.
 
 ```json
-{"group_list": [{"group_id": "A", "display_name": "A · #1 Sell Put 五层决策框架", "description": "...",
-  "rule_list": [{"rule_id": "A22", "description": "到期前无财报", "default_weight": 5, "availability": "automatic",
+{"default_language": "en",
+ "group_list": [{"group_id": "A", "display_name": {"en": "A · #1 Sell Put five-layer framework", "zh": "A · #1 Sell Put 五层决策框架"},
+  "description": {"en": "...", "zh": "..."},
+  "rule_list": [{"rule_id": "A22", "description": {"en": "No earnings before expiration", "zh": "到期前无财报"}, "default_weight": 5, "availability": "automatic",
                  "alias_of": null, "note": null,
-                 "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": "Sell Put 四合一", "weight": 5}]}]}]}
+                 "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5}]}]}]}
 ```
 
 `availability`: `automatic`, `missing_data_source`, `account_data`, `user_answer`, `trade_plan`, `not_implemented`. A rule with `alias_of` is a duplicate listing of another rule.
@@ -27,8 +30,9 @@ Every rule from `config/rules.yaml`, grouped by letter, with the strategies that
 
 ```json
 {"default_strategy_id": "sell_put_four_in_one",
- "strategy_list": [{"strategy_id": "sell_put_four_in_one", "display_name": "Sell Put 四合一",
-                    "summary": "one sentence", "help_text": "paragraphs separated by blank lines",
+ "default_language": "en",
+ "strategy_list": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"},
+                    "summary": {"en": "...", "zh": "..."}, "help_text": {"en": "paragraphs separated by blank lines", "zh": "..."},
                     "source": "where the strategy came from"}]}
 ```
 
@@ -38,7 +42,7 @@ Every rule from `config/rules.yaml`, grouped by letter, with the strategies that
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "status": {
     "server_time": "2026-10-24T10:01:00-04:00",
     "generated_at": "2026-10-23T15:52:19-04:00",
@@ -49,9 +53,9 @@ Every rule from `config/rules.yaml`, grouped by letter, with the strategies that
   "strategy_id": "sell_put_four_in_one",
   "max_unknown_weight_ratio": 0.2,
   "market_indicator_card_list": [
-    {"indicator_id": "vix_level", "display_name": "VIX", "is_higher_value_risky": true,
+    {"indicator_id": "vix_level", "display_name": {"en": "VIX", "zh": "VIX"}, "is_higher_value_risky": true,
      "value": 19.78, "change_value": 2.21, "change_unit": "percent"},
-    {"indicator_id": "treasury_ten_year_yield", "display_name": "10Y", "is_higher_value_risky": true,
+    {"indicator_id": "treasury_ten_year_yield", "display_name": {"en": "10Y", "zh": "10Y"}, "is_higher_value_risky": true,
      "value": 4.96, "change_value": -17.0, "change_unit": "basis_points"}
   ],
   "symbol_card_list": [
@@ -85,10 +89,10 @@ The strategy tree for one symbol.
   "strategy_id": "sell_put_four_in_one", "symbol": "SPY",
   "is_pass": true, "score_percent": 95.5, "unknown_weight_ratio": 0.043,
   "gate_result_list": [
-    {"gate_id": "gate_0_macro", "display_name": "GATE 0 宏观/情绪开关", "is_pass": true,
+    {"gate_id": "gate_0_macro", "display_name": {"en": "GATE 0 Macro and sentiment", "zh": "GATE 0 宏观/情绪开关"}, "is_pass": true,
      "expiration_window_label": null, "alternative_window_result_list": [],
      "rule_result_list": [
-       {"rule_id": "A02", "description": "10Y < 4.5%", "status": "fail",
+       {"rule_id": "A02", "description": {"en": "10Y < 4.5%", "zh": "10Y < 4.5%"}, "status": "fail",
         "measured_value": 4.96, "weight": 4, "variant_group": "ten_year_level"}
      ]}
   ]
