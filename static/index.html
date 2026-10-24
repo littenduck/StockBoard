@@ -204,9 +204,9 @@ function renderStrategyOptions() {
 }
 
 function renderStaticText() {
-  document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'), true);
-  document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'), true);
-  document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'), true);
+  document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'));
+  document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'));
+  document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'));
   document.getElementById('catalog-link').textContent = languageText('rule_catalog');
   document.getElementById('theme-button').setAttribute('aria-label', languageText('switch_theme'));
   const hint = document.getElementById('select-symbol-hint');
@@ -303,9 +303,9 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
       <header><svg class="icon gate-marker ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="/icons.svg#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
         <h3 class="strong">${languageRenderText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${escapeText(languageText(summaryStatus(gate.is_pass)))}</span></header>
-      ${gate.expiration_window_label ? `<p class="caption">${languageRenderText(languageLocalize('best_window', { label:gate.expiration_window_label, score:calculateScoreText(gate.rule_result_list) }), true)}</p>` : ''}
+      ${gate.expiration_window_label ? `<p class="caption">${languageRenderText(languageLocalize('best_window', { label:gate.expiration_window_label, score:calculateScoreText(gate.rule_result_list) }))}</p>` : ''}
       ${renderRuleRows(gate.rule_result_list)}
-      ${gate.alternative_window_result_list.map(window => `<h4 class="caption">${languageRenderText(languageLocalize('alternative_window', { label:window.expiration_window_label, score:calculateScoreText(window.rule_result_list) }), true)}</h4>
+      ${gate.alternative_window_result_list.map(window => `<h4 class="caption">${languageRenderText(languageLocalize('alternative_window', { label:window.expiration_window_label, score:calculateScoreText(window.rule_result_list) }))}</h4>
         ${renderRuleRows(window.rule_result_list)}`).join('')}
     </section>`).join('');
   strategyPanel.innerHTML = `<a class="link caption hit" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">${escapeText(languageText('back_to_list'))}</a>
@@ -314,8 +314,8 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
       <div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
       <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></p>` : ''}</div>
     <div class="result-row">
-      <div><p class="caption">${languageRenderText(languageLocalize('verdict'), true)}</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
-      <div><p class="caption">${languageRenderText(languageLocalize('score'), true)}${isInsufficient ? ` <span class="chip">${escapeText(languageText('insufficient_data'))}</span>` : ''}</p>
+      <div><p class="caption">${languageRenderText(languageLocalize('verdict'))}</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
+      <div><p class="caption">${languageRenderText(languageLocalize('score'))}${isInsufficient ? ` <span class="chip">${escapeText(languageText('insufficient_data'))}</span>` : ''}</p>
         <p class="display ${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</p></div>
       </div><p class="caption detail-note">${escapeText(languageText('missing_weight', { percent:Math.round(evaluation.unknown_weight_ratio * 100) }))}</p>
     </header>${gates}`;

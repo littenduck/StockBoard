@@ -75,7 +75,7 @@ function renderStaticText() {
     option.textContent = languageText({ all:'all_rules', used:'used_rules', automatic:'automatic_rules' }[option.value]));
   document.getElementById('explanation').innerHTML = languageRenderParagraphs(languageLocalize('id_explanation'))
     + languageRenderParagraphs(languageLocalize('gap_explanation'))
-    + `<p class="caption">${languageRenderText(languageLocalize('availability'), true)}</p><ul class="legend caption">`
+    + `<p class="caption">${languageRenderText(languageLocalize('availability'))}</p><ul class="legend caption">`
     + Object.keys(AVAILABILITY_COLOR).map(key => `<li><span class="${AVAILABILITY_COLOR[key]}">${escapeText(languageText(key))}</span>: ${escapeText(languageText(key + '_explanation'))}</li>`).join('') + '</ul>';
   const loading = document.getElementById('loading-rules');
   if (loading) loading.textContent = languageText('loading_rules');
