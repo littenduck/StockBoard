@@ -16,8 +16,8 @@ h1, h2, h3, h4, p, ul { margin:0; padding:0; font-size:inherit; font-weight:inhe
 ul { list-style:none; }
 button { font:inherit; color:inherit; background:none; border:0; padding:0; text-align:inherit; cursor:pointer; }
 :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-.caption { font-size:12px; line-height:16px; color:var(--text-secondary); }
-.title { font-size:20px; line-height:24px; font-weight:600; }
+.caption { font-size:12px; line-height:16px; font-weight:400; color:var(--text-secondary); }
+.title { font-size:20px; line-height:24px; font-weight:600; letter-spacing:0; }
 .display { font-size:34px; line-height:40px; font-weight:600; letter-spacing:-0.02em; }
 .strong { font-weight:600; }
 .positive { color:var(--positive); } .negative { color:var(--negative); } .caution { color:var(--caution); } .muted { color:var(--text-secondary); }
@@ -55,3 +55,20 @@ button { font:inherit; color:inherit; background:none; border:0; padding:0; text
 
 .panel { background:var(--surface); border:1px solid var(--separator); border-radius:var(--radius-panel); padding:var(--space-4) var(--space-5); }
 .chip { display:inline-block; padding:0 var(--space-2); border:1px solid var(--separator); border-radius:var(--radius-control); white-space:nowrap; }
+
+/* Text: plain tags render like Markdown. See docs/design.md. */
+h1 { font-size:28px; line-height:32px; font-weight:600; letter-spacing:-0.02em; }
+h2 { font-size:20px; line-height:24px; font-weight:600; }
+h3 { font-size:15px; line-height:20px; font-weight:600; }
+p, li { font-size:15px; line-height:20px; }
+small { font-size:12px; line-height:16px; font-weight:400; color:var(--text-secondary); }
+small[lang="en"] { display:block; margin-top:var(--space-1); }
+strong { font-weight:600; }
+a { position:relative; color:var(--text-secondary); text-decoration:none; }
+a:hover, a:focus-visible { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+p a, li a { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+a::after { content:""; position:absolute; left:calc(-1 * var(--space-2)); right:calc(-1 * var(--space-2)); top:50%; height:var(--hit-size); transform:translateY(-50%); }
+.box { background:var(--surface); border:1px solid var(--separator); border-radius:var(--radius-control); padding:var(--space-4) var(--space-5); }
+small.box { display:inline-block; padding:0 var(--space-2); white-space:nowrap; }
+.box > * + * { margin-top:var(--space-3); }
+.box > h2 + * { margin-top:var(--space-2); }
