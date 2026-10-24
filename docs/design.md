@@ -1,34 +1,84 @@
 # Design
 
-Robinhood-style minimal. One HTML file, no framework, no chart library.
+Claude-style warm palette, Apple-level clarity. One HTML file, vanilla JS and CSS, no framework, no chart library, no web font, no CDN.
+Light theme is the default; the user can switch to dark with the button in the sidebar header.
 
-## Rules
+## Colors
 
-- Fonts: `-apple-system, system-ui`. Numbers use `font-variant-numeric: tabular-nums`.
-- Font sizes: 12px (caption), 15px (body), 28px (big number). No other sizes.
-- Spacing: multiples of 8px only.
-- Radius: 12px everywhere. No shadows. 1px lines only.
-- Colors: light and dark mode from `prefers-color-scheme`. Up `#00C805`, down `#FF5000`, everything else gray.
-- Score color: 75 or more green, 60 to 75 yellow, below 60 red, unknown gray.
-- Volatility indicators where higher means more risk (`is_higher_value_risky: true`) use inverted up/down colors.
-- Forbidden: animation, icon fonts, theme switcher, chart libraries.
+CSS custom properties on `:root` (light) and `:root[data-theme="dark"]`. Every text pair below is at least 4.5:1 on `--background`, `--surface` and `--fill` (checked with the WCAG formula).
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--background` | `#FAF9F5` | `#262624` | page, main area |
+| `--surface` | `#FFFFFF` | `#30302E` | sidebar |
+| `--fill` | `#F0EEE6` | `#3A3A37` | hover and selected row |
+| `--separator` | `#E8E6DC` | `#3D3D3A` | 1px lines, placeholder rows |
+| `--text` | `#141413` | `#F5F4EE` | primary text |
+| `--text-secondary` | `#6B6A64` | `#A8A69D` | captions, unknown, not applicable |
+| `--accent` | `#C96442` | `#D97757` | selection bar, focus ring, theme button. Never body text |
+| `--positive` | `#146C35` | `#4ADE80` | up, 通过 |
+| `--negative` | `#B42318` | `#FF8A8A` | down, 否决, 未通过 |
+| `--caution` | `#8A5A00` | `#FBBF24` | score 60 to 74, stale data |
+
+US convention: green up, red down. Indicators marked `is_higher_value_risky` (VIX, rates, spreads) invert the color.
+Score color: 75 or more `--positive`, 60 to 74 `--caution`, below 60 `--negative`, unknown `--text-secondary`.
+
+## Type
+
+System font only: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif`. All numbers use `font-variant-numeric: tabular-nums`.
+
+| Token | Size / weight / line height | Use |
+|---|---|---|
+| `--font-caption` | 12px / 400 / 16px | labels, timestamps, section titles |
+| `--font-body` | 15px / 400 / 20px | rows, rule text |
+| `--font-title` | 20px / 600 / 24px | symbol name in main, gate titles |
+| `--font-display` | 34px / 600 / 40px, letter-spacing -0.02em | pass result and score in main |
+
+No other sizes. Every heading element has an explicit size.
+
+## Space and shape
+
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius 8px for rows, 12px for containers. No shadows.
+
+## Status
+
+No emoji anywhere. Status = inline SVG icon (16px, `currentColor`) plus Chinese text.
+
+| Status | Icon | Text | Color |
+|---|---|---|---|
+| rule pass | filled circle with check | 通过 | `--positive` |
+| rule fail | filled circle with cross | 未通过 | `--negative` |
+| summary veto (symbol, gate) | filled circle with cross | 否决 | `--negative` |
+| unknown | outline circle with "?" | 未知 | `--text-secondary` |
+| not applicable | short dash | 不适用 | `--text-secondary`, row opacity 0.45 |
+
+Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places carry `aria-label`. Icon to text gap 4px.
+
+## Motion (about 10 CSS lines)
+
+- Row hover and selection: `transition: background-color 120ms ease`.
+- Main panel on symbol change: fade in plus 4px rise, 160ms (`@keyframes panel-enter`).
+- Status dot pulses while a request is in flight.
+- `@media (prefers-reduced-motion: reduce)` disables all of it.
 
 ## Layout
 
-- Desktop (900px or wider): two columns. Left is a narrow sidebar (280px, sticky, scrolls by itself) holding lists. Right is the main area, which is the strategy tree.
-- Sidebar, top to bottom: title, strategy dropdown, market indicator list, symbol list (indices and stocks mixed). Lists, not cards: one row per item, no borders, the selected symbol has a thin left bar.
-- Main area: the selected symbol, its two results (pass, score), then the gates as a tree with a vertical line.
-- Phone: stacked, sidebar on top. Clicking a symbol scrolls to the main area.
+- Desktop (900px or wider): grid `300px 1fr`. Sidebar sticky, scrolls by itself, `--surface` background, 1px right separator. Main max width 880px, padding 32px.
+- Sidebar order: header (title, theme button), status bar, strategy select, 市场指标 list, 标的 list.
+- Phone (below 900px): one column. Indicators become a horizontal scroll strip. Selecting a symbol scrolls to main; main has a "↑ 列表" link.
 
-## Components (only these four)
+## Components (only these)
 
 | Class | Shows |
 |---|---|
-| `indicator-item` | name, value, daily change |
-| `symbol-item` | symbol, pass mark, score, price, daily change |
-| `strategy-gate` | one gate: title, pass mark, rule rows |
-| `strategy-rule-row` | rule id, description, status mark, measured value |
+| `status-bar` | market open or closed, data age, stale or connection warning, full ET time on hover |
+| `indicator-item` | name, value, change (`+1.23%` or `+3.0 bp`) |
+| `symbol-item` | symbol, sparkline, status icon, integer score, price, change. A `<button>` |
+| `status-badge` | icon plus text from the Status table |
+| `sparkline` | 64 by 20 SVG polyline of the last 60 closes, colored by first vs last |
+| `strategy-gate` | gate title, summary badge, rule rows |
+| `strategy-rule-row` | rule id, status badge, description, measured value |
 
-## Status marks
+## Language
 
-Pass `✅`, fail `❌`, unknown `❓`, not applicable `➖`.
+Chinese UI. Symbols and technical terms stay English: VIX, SPX, DTE, IV, RV30, GATE, bp. Times are exchange time, labelled `ET`.
