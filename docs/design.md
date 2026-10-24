@@ -40,6 +40,9 @@ No other sizes. Every heading element has an explicit size.
 
 Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius 8px for rows, 12px for containers. No shadows.
 
+Touch targets are at least 44px tall. The one spacing exception: a 16px-line element that must reach 44px uses 14px vertical padding.
+Font weights: 400 and 600 only.
+
 ## Status
 
 No emoji anywhere. Status = inline SVG icon (16px, `currentColor`) plus Chinese text.
