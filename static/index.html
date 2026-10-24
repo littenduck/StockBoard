@@ -74,7 +74,7 @@
   .strategy-rule-row > .caption, .strategy-rule-row .status-badge { line-height:20px; min-height:20px; }
   .strategy-rule-row.not_applicable, .strategy-rule-row.not_applicable .caption { color:var(--text-secondary); }
   .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
-  details { margin-top:var(--space-1); } summary { cursor:pointer; padding:14px 0; }
+  .window-title { margin:var(--space-4) 0 var(--space-1); }
   .panel-enter { animation:panel-enter 160ms ease-out; }
   @keyframes panel-enter { from { opacity:0; transform:translateY(4px); } }
   @keyframes pulse { 50% { opacity:0.3; } }
@@ -258,6 +258,13 @@ async function loadStrategyEvaluationForSymbol(symbol, shouldAnimate) {
   }
 }
 
+function calculateScoreText(ruleResultList) {
+  const judgedList = ruleResultList.filter(rule => rule.status === 'pass' || rule.status === 'fail');
+  const judgedWeight = judgedList.reduce((total, rule) => total + rule.weight, 0);
+  const passedWeight = judgedList.filter(rule => rule.status === 'pass').reduce((total, rule) => total + rule.weight, 0);
+  return judgedWeight ? Math.round(passedWeight / judgedWeight * 100) : '—';
+}
+
 function renderRuleRows(ruleResultList) {
   return ruleResultList.map(rule => `<div class="strategy-rule-row ${rule.status}">
     <span class="caption">${escapeText(rule.rule_id)}</span>${renderStatusBadge(rule.status)}
@@ -268,17 +275,16 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   const evaluationKey = strategySelect.value + JSON.stringify(evaluation);
   if (evaluationKey === renderedEvaluationKey && !shouldAnimate) return;
   renderedEvaluationKey = evaluationKey;
-  const openWindowLabelSet = new Set([...strategyPanel.querySelectorAll('details[open]')].map(details => details.dataset.windowLabel));
   const isInsufficient = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
   const score = evaluation.score_percent == null ? '—' : Math.round(evaluation.score_percent);
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
       <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
         <h3 class="title">${escapeText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${STATUS_STYLE[summaryStatus(gate.is_pass)].text}</span></header>
-      ${gate.expiration_window_label ? `<p class="caption gate-note">到期窗口 ${escapeText(gate.expiration_window_label)} 天（最佳）</p>` : ''}
+      ${gate.expiration_window_label ? `<p class="caption gate-note">到期窗口 ${escapeText(gate.expiration_window_label)} 天（最佳） · 本层分数 ${calculateScoreText(gate.rule_result_list)}</p>` : ''}
       ${renderRuleRows(gate.rule_result_list)}
-      ${gate.alternative_window_result_list.map(window => `<details data-window-label="${escapeText(window.expiration_window_label)}" ${openWindowLabelSet.has(window.expiration_window_label) ? 'open' : ''}>
-        <summary class="caption">其他到期窗口 ${escapeText(window.expiration_window_label)} 天</summary>${renderRuleRows(window.rule_result_list)}</details>`).join('')}
+      ${gate.alternative_window_result_list.map(window => `<h4 class="caption window-title">备选到期窗口 ${escapeText(window.expiration_window_label)} 天 · 本层分数 ${calculateScoreText(window.rule_result_list)}</h4>
+        ${renderRuleRows(window.rule_result_list)}`).join('')}
     </section>`).join('');
   strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">↑ 列表</a>
     <header class="detail-header"><div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
