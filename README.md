@@ -17,6 +17,8 @@ Open http://localhost:8000. Data refreshes in the background every `refresh_inte
 
 Test: `.venv/bin/python -m pytest tests`
 
+Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.js is only needed to update them: `npm install` (installs `@tabler/icons` at the pinned version), then `.venv/bin/python scripts/build_icons.py` rewrites `static/icons.svg`, `static/favicon.svg` and the license copy. `node_modules/` is git-ignored and is not deployed.
+
 ## Layout
 
 | Path | What |

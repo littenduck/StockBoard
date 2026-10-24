@@ -45,7 +45,7 @@ Font weights: 400 and 600 only.
 
 ## Status
 
-No emoji anywhere. Status = inline SVG icon (16px, `currentColor`) plus Chinese text.
+No emoji anywhere. Status = icon (16px, `currentColor`) plus text. All icons are Tabler Icons 3.49.0 (MIT), taken unchanged from the official npm package and bundled into `static/icons.svg` by `scripts/build_icons.py`. Pages reference them as `/icons.svg#icon-name`. Outline icons render at 1.5px. Never hand-draw an icon: if a needed icon is missing from Tabler, pick the closest Tabler icon.
 
 | Status | Icon | Text | Color |
 |---|---|---|---|

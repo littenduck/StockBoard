@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StockBoard</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23C96442'/%3E%3Cpath d='M7 21l6-6 4 4 8-9' fill='none' stroke='%23FAF9F5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#FAF9F5">
 <link rel="stylesheet" href="/base.css">
 <style>
@@ -85,20 +85,11 @@
 </style>
 </head>
 <body data-title-key="dashboard_title">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="icon-pass" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5 8.3l2 2 4-4.3" fill="none" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="icon-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></symbol>
-  <symbol id="icon-unknown" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
-  <symbol id="icon-not-applicable" viewBox="0 0 16 16"><path d="M4.5 8h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-  <symbol id="icon-help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
-  <symbol id="icon-close" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-  <symbol id="icon-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></symbol>
-</svg>
 <div class="layout">
   <aside>
     <header><h1 class="title">StockBoard</h1>
-      <div class="header-controls"><button class="icon-button" id="language-button"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><ellipse cx="8" cy="8" rx="2.6" ry="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.7 8h12.6" stroke="currentColor" stroke-width="1.4"/></svg></button>
-      <button class="icon-button" id="theme-button"><svg class="icon" aria-hidden="true"><use href="#icon-theme"/></svg></button></div></header>
+      <div class="header-controls"><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
+      <button class="icon-button" id="theme-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-theme"/></svg></button></div></header>
     <div class="status-bar caption" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><span></span></div>
     <h2 class="caption" id="strategy-heading"></h2>
     <select id="strategy-select" aria-labelledby="strategy-heading"></select>
@@ -155,7 +146,7 @@ function formatAge(minutes) {
 }
 function renderStatusBadge(status, showText = true) {
   const style = STATUS_STYLE[status], text = languageText(status);
-  return `<span class="status-badge ${style.color}" ${showText ? '' : `aria-label="${escapeText(text)}"`}><svg class="icon" aria-hidden="true"><use href="#${style.icon}"/></svg>${showText ? escapeText(text) : ''}</span>`;
+  return `<span class="status-badge ${style.color}" ${showText ? '' : `aria-label="${escapeText(text)}"`}><svg class="icon" aria-hidden="true"><use href="/icons.svg#${style.icon}"/></svg>${showText ? escapeText(text) : ''}</span>`;
 }
 function renderSparkline(closePriceList) {
   if (!closePriceList || closePriceList.length < 2) return '<span class="sparkline"></span>';
@@ -252,7 +243,7 @@ function renderStrategyHelp() {
   const strategy = strategyById[strategySelect.value];
   if (!strategy) return;
   document.getElementById('strategy-help').innerHTML = `<header><h2 class="title" id="strategy-help-title">${languageRenderText(strategy.display_name)}</h2>
-      <button class="help-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="${escapeText(languageText('close'))}"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button></header>
+      <button class="help-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="${escapeText(languageText('close'))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-close"/></svg></button></header>
     <p class="summary">${languageRenderText(strategy.summary)}</p>${languageRenderParagraphs(strategy.help_text)}
     <p class="caption">${escapeText(languageText('source', { source:primaryText(strategy.source) }))}</p>
     <p><a class="catalog-link" href="/rules">${escapeText(languageText('see_all_rules'))}</a></p>`;
@@ -324,7 +315,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   const strategyName = (strategyById[strategySelect.value] || {}).display_name || { en:strategySelect.value, zh:strategySelect.value };
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
-      <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
+      <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="/icons.svg#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
         <h3 class="title">${languageRenderText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${escapeText(languageText(summaryStatus(gate.is_pass)))}</span></header>
       ${gate.expiration_window_label ? `<p class="caption gate-note">${languageRenderText(languageLocalize('best_window', { label:gate.expiration_window_label, score:calculateScoreText(gate.rule_result_list) }), true)}</p>` : ''}
       ${renderRuleRows(gate.rule_result_list)}
@@ -333,7 +324,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
     </section>`).join('');
   strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">${escapeText(languageText('back_to_list'))}</a>
     <header class="detail-header"><p class="strategy-line caption">${escapeText(languageText('strategy'))}<span class="strategy-name">${languageRenderText(strategyName)}</span>
-      <button class="help-button" popovertarget="strategy-help" aria-label="${escapeText(languageText('about_strategy', { name:primaryText(strategyName) }))}"><svg class="icon" aria-hidden="true"><use href="#icon-help"/></svg></button></p>
+      <button class="help-button" popovertarget="strategy-help" aria-label="${escapeText(languageText('about_strategy', { name:primaryText(strategyName) }))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-help"/></svg></button></p>
       <div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
       <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></p>` : ''}</div>
     <div class="result-row">

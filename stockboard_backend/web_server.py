@@ -86,6 +86,18 @@ def web_server_get_language_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "language.js"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/icons.svg")
+def web_server_get_icon_sprite() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "icons.svg"), media_type="image/svg+xml",
+                        headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/favicon.svg")
+def web_server_get_favicon() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "favicon.svg"), media_type="image/svg+xml",
+                        headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/base.css")
 def web_server_get_base_stylesheet() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "base.css"), headers={"Cache-Control": "no-cache"})
