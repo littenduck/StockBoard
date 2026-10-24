@@ -1,6 +1,6 @@
 """Load config/settings.yaml into typed settings."""
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 import yaml
@@ -34,6 +34,8 @@ class ApplicationSettings:
     option_expiration_window_list: List[ExpirationWindowSetting]
     target_absolute_delta: float
     macro_event_calendar: list
+    stale_after_minutes: int = 60
+    allowed_origin_list: List[str] = field(default_factory=list)
 
 
 def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> ApplicationSettings:
@@ -47,4 +49,6 @@ def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> App
         option_expiration_window_list=[ExpirationWindowSetting(**item) for item in raw["option_expiration_window_list"]],
         target_absolute_delta=raw["target_absolute_delta"],
         macro_event_calendar=raw.get("macro_event_calendar") or [],
+        stale_after_minutes=raw.get("stale_after_minutes", 60),
+        allowed_origin_list=raw.get("allowed_origin_list") or [],
     )

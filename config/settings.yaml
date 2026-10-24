@@ -1,4 +1,8 @@
 refresh_interval_minutes: 10
+# The page marks data older than this as stale while the market is open.
+stale_after_minutes: 60
+# Other web origins allowed to call the API (CORS). Empty: same-origin page and native apps only.
+allowed_origin_list: []
 default_strategy_id: sell_put_four_in_one
 
 # First row of the page. is_higher_value_risky inverts the up/down colors.
