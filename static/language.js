@@ -51,6 +51,18 @@ const UI_TEXT = {
   not_used: { en:'Not used', zh:'未被使用' },
   loading_rules: { en:'Loading rules…', zh:'正在读取规则…' },
   rules_failed: { en:'Could not load rules. Check that the server is running.', zh:'读取规则失败，请确认服务正在运行。' },
+  automatic: { en:'Automatic', zh:'自动计算' },
+  automatic_explanation: { en:'decided from data the dashboard already fetches', zh:'用看板已经抓取的数据就能判断' },
+  missing_data_source: { en:'No data source', zh:'缺少数据源' },
+  missing_data_source_explanation: { en:'needs data with no stable free source yet, such as FGI, IV percentile, news, fundamentals', zh:'需要暂时没有稳定免费来源的数据，如 FGI、IV 百分位、新闻、基本面' },
+  account_data: { en:'Needs account data', zh:'需要账户数据' },
+  account_data_explanation: { en:'needs your brokerage net value, cash, positions or option level', zh:'需要券商账户的净值、现金、持仓或期权权限' },
+  user_answer: { en:'Needs your answer', zh:'需要你回答' },
+  user_answer_explanation: { en:'only you can answer it, such as whether you would hold the stock long term', zh:'只有你能回答，如是否愿意长期持有' },
+  trade_plan: { en:'Trade plan', zh:'交易计划项' },
+  trade_plan_explanation: { en:'a plan for after the trade (take profit, stop loss), not a screen', zh:'是下单后的计划（止盈、止损），不是筛选条件' },
+  not_implemented: { en:'Not built yet', zh:'尚未实现' },
+  not_implemented_explanation: { en:'computable in principle, not built yet', zh:'原则上可以计算，还没有做' },
 };
 const LANGUAGE_STORAGE_KEY = 'stockboard-language';
 let activeLanguage = 'en', hasStoredLanguageChoice = false;
