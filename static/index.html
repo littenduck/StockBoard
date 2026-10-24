@@ -1,126 +1,304 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StockBoard</title>
 <style>
-  :root { --bg:#fff; --fg:#000; --mute:#6e7781; --line:#e6e8ea; --hover:#f5f6f7; --up:#00c805; --down:#ff5000; --mid:#d9a400; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#000; --fg:#fff; --mute:#8d9399; --line:#23272b; --hover:#14171a; }
+  :root {
+    --background:#FAF9F5; --surface:#FFFFFF; --fill:#F0EEE6; --separator:#E8E6DC; --text:#141413; --text-secondary:#6B6A64;
+    --accent:#C96442; --positive:#146C35; --negative:#B42318; --caution:#8A5A00;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
+    color-scheme:light;
+  }
+  :root[data-theme="dark"] {
+    --background:#262624; --surface:#30302E; --fill:#3A3A37; --separator:#3D3D3A; --text:#F5F4EE; --text-secondary:#A8A69D;
+    --accent:#D97757; --positive:#4ADE80; --negative:#FF8A8A; --caution:#FBBF24; color-scheme:dark;
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system,system-ui,sans-serif; font-variant-numeric:tabular-nums; }
-  .caption { font-size:12px; color:var(--mute); }
-  .big { font-size:28px; font-weight:600; }
-  .row { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
-  .up { color:var(--up); } .down { color:var(--down); } .gray { color:var(--mute); }
+  body { margin:0; background:var(--background); color:var(--text); font:400 15px/20px -apple-system,BlinkMacSystemFont,system-ui,sans-serif; font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
+  h1, h2, h3, p, ul { margin:0; padding:0; font-size:inherit; }
+  ul { list-style:none; }
+  button { font:inherit; color:inherit; background:none; border:0; padding:0; text-align:inherit; cursor:pointer; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
+  .caption { font-size:12px; line-height:16px; color:var(--text-secondary); }
+  .title { font-size:20px; line-height:24px; font-weight:600; }
+  .display { font-size:34px; line-height:40px; font-weight:600; letter-spacing:-0.02em; }
+  .strong { font-weight:600; }
+  .positive { color:var(--positive); } .negative { color:var(--negative); } .caution { color:var(--caution); } .muted { color:var(--text-secondary); }
+  .icon { width:16px; height:16px; flex:none; }
+  .display .icon { width:28px; height:28px; }
+  .status-badge { display:inline-flex; align-items:center; gap:var(--space-1); white-space:nowrap; }
+
   .layout { display:grid; min-height:100vh; }
-  @media (min-width:900px) { .layout { grid-template-columns:280px 1fr; } aside { position:sticky; top:0; height:100vh; overflow-y:auto; border-right:1px solid var(--line); } }
-  aside { padding:16px 0; }
-  aside h2 { font-size:12px; font-weight:400; color:var(--mute); margin:16px 16px 8px; }
-  .indicator-item, .symbol-item { padding:8px 16px; display:grid; grid-template-columns:1fr auto; gap:0 8px; }
-  .symbol-item { cursor:pointer; }
-  .symbol-item:hover { background:var(--hover); }
-  .symbol-item.selected { background:var(--hover); box-shadow:inset 2px 0 var(--fg); }
-  main { padding:16px 24px; max-width:880px; }
-  select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:8px; width:calc(100% - 32px); margin:0 16px; }
-  .results { display:flex; gap:32px; margin:16px 0; }
-  .strategy-gate { border-left:1px solid var(--line); padding:0 0 16px 16px; margin-left:8px; }
-  .strategy-gate > .row { margin-left:-25px; }
-  .strategy-rule-row { display:grid; grid-template-columns:48px 24px 1fr auto; gap:8px; padding:4px 0; border-top:1px solid var(--line); }
-  .not_applicable { opacity:.4; }
+  aside { background:var(--surface); padding:var(--space-4) 0 var(--space-5); }
+  aside > header { display:flex; justify-content:space-between; align-items:center; padding:0 var(--space-4); }
+  .theme-button { width:32px; height:32px; display:grid; place-items:center; border-radius:8px; color:var(--text-secondary); }
+  .theme-button:hover { background:var(--fill); }
+  .status-bar { display:flex; align-items:center; gap:var(--space-2); margin:var(--space-2) var(--space-4) var(--space-4); }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
+  .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
+  select { width:calc(100% - var(--space-6)); margin:0 var(--space-4); padding:var(--space-2) var(--space-3); font:inherit; color:var(--text); background:var(--background); border:1px solid var(--separator); border-radius:8px; }
+  aside h2 { margin:var(--space-5) var(--space-4) var(--space-2); }
+  .indicator-item { display:grid; grid-template-columns:1fr auto; column-gap:var(--space-2); padding:var(--space-2) var(--space-4); }
+  .indicator-item .caption:last-child { text-align:right; }
+  .symbol-item { width:100%; display:grid; grid-template-columns:1fr 64px 64px; column-gap:var(--space-3); align-items:center; padding:var(--space-2) var(--space-4); border-radius:0; transition:background-color 120ms ease; }
+  .symbol-item:hover, .symbol-item[aria-current="true"] { background:var(--fill); }
+  .symbol-item[aria-current="true"] { box-shadow:inset 3px 0 var(--accent); }
+  .symbol-item .sparkline { grid-row:span 2; }
+  .symbol-item .score { grid-row:span 2; justify-self:end; display:flex; align-items:center; gap:var(--space-1); }
+  .symbol-item.is-failed { cursor:default; opacity:0.6; }
+  .placeholder { height:36px; margin:var(--space-2) var(--space-4); border-radius:8px; background:var(--separator); }
+
+  main { padding:var(--space-6); max-width:880px; width:100%; }
+  .back-link { display:none; margin-bottom:var(--space-4); color:var(--text-secondary); }
+  .result-row { display:flex; gap:var(--space-6); margin:var(--space-4) 0 var(--space-6); }
+  .result-row .display { display:flex; align-items:center; gap:var(--space-2); }
+  .tag { display:inline-block; padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; }
+  .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
+  .strategy-gate:last-child { border-left-color:transparent; }
+  .strategy-gate > header { display:flex; align-items:center; gap:var(--space-2); margin:0 0 var(--space-2) -24px; }
+  .strategy-gate > header .icon { background:var(--background); border-radius:50%; }
+  .strategy-gate > header .caption:last-child { margin-left:auto; }
+  .strategy-rule-row { display:grid; grid-template-columns:40px 72px 1fr auto; gap:var(--space-3); padding:var(--space-2) 0; border-top:1px solid var(--separator); }
+  .strategy-rule-row.not_applicable { opacity:0.45; }
+  .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
+  details { margin-top:var(--space-2); } summary { cursor:pointer; padding:var(--space-1) 0; }
+  .panel-enter { animation:panel-enter 160ms ease-out; }
+  @keyframes panel-enter { from { opacity:0; transform:translateY(4px); } }
+  @keyframes pulse { 50% { opacity:0.3; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+
+  @media (min-width:900px) {
+    .layout { grid-template-columns:300px 1fr; }
+    aside { position:sticky; top:0; height:100vh; overflow-y:auto; border-right:1px solid var(--separator); }
+  }
+  @media (max-width:899px) {
+    #indicator-list { display:flex; gap:var(--space-2); overflow-x:auto; padding:0 var(--space-4); }
+    #indicator-list .indicator-item { flex:none; border:1px solid var(--separator); border-radius:12px; padding:var(--space-2) var(--space-3); }
+    main { padding:var(--space-5) var(--space-4); }
+    .back-link { display:inline-block; }
+  }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="icon-pass" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5 8.3l2 2 4-4.3" fill="none" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="icon-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="icon-unknown" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.2-.8.6-.8 1.1v.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.4" r=".8" fill="currentColor"/></symbol>
+  <symbol id="icon-not-applicable" viewBox="0 0 16 16"><path d="M4.5 8h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="icon-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></symbol>
+</svg>
 <div class="layout">
   <aside>
-    <div class="row" style="padding:0 16px"><b>StockBoard</b><span class="caption" id="updated"></span></div>
-    <h2>策略</h2>
-    <select id="strategy-select"></select>
-    <h2>市场指标</h2>
-    <div id="indicator-list"></div>
-    <h2>标的</h2>
-    <div id="symbol-list"></div>
+    <header><h1 class="title">StockBoard</h1>
+      <button class="theme-button" id="theme-button" aria-label="切换浅色或深色模式"><svg class="icon"><use href="#icon-theme"/></svg></button></header>
+    <div class="status-bar caption" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><span>正在获取数据…</span></div>
+    <select id="strategy-select" aria-label="策略"></select>
+    <h2 class="caption">市场指标</h2>
+    <ul id="indicator-list"></ul>
+    <h2 class="caption">标的</h2>
+    <ul id="symbol-list"><li class="placeholder"></li><li class="placeholder"></li><li class="placeholder"></li></ul>
   </aside>
-  <main id="strategy-panel"><span class="caption">点击左侧一个标的</span></main>
+  <main id="strategy-panel" tabindex="-1"><p class="caption">选择左侧的标的查看策略树</p></main>
 </div>
 <script>
-const statusMark = { pass:'✅', fail:'❌', unknown:'❓', not_applicable:'➖' };
-const passMark = value => value === true ? '✅' : value === false ? '❌' : '❓';
-const valueText = value => typeof value === 'number' ? Math.round(value * 100) / 100 : value ?? '';
-const percentText = value => value == null ? '' : (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
-const changeClass = (value, isRisky) => value == null ? 'gray' : (value >= 0) !== !!isRisky ? 'up' : 'down';
-const scoreClass = score => score == null ? 'gray' : score >= 75 ? 'up' : score >= 60 ? '' : 'down';
-const scoreColor = score => score != null && score >= 60 && score < 75 ? 'style="color:var(--mid)"' : '';
-let selectedSymbol = null;
-let maxUnknownWeightRatio = 0.2;
+const STATUS_STYLE = {
+  pass: { icon:'icon-pass', text:'通过', color:'positive' },
+  fail: { icon:'icon-fail', text:'未通过', color:'negative' },
+  veto: { icon:'icon-fail', text:'否决', color:'negative' },
+  unknown: { icon:'icon-unknown', text:'未知', color:'muted' },
+  not_applicable: { icon:'icon-not-applicable', text:'不适用', color:'muted' },
+};
+const priceFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const valueFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits:2 });
 const strategySelect = document.getElementById('strategy-select');
+const symbolList = document.getElementById('symbol-list');
+const strategyPanel = document.getElementById('strategy-panel');
+const statusBar = document.getElementById('status-bar');
+let selectedSymbol = decodeURIComponent(location.hash.slice(1)) || null;
+let latestSnapshot = null, statusReceivedAt = 0, connectionError = false;
+let evaluationRequestNumber = 0, renderedEvaluationKey = '', maxUnknownWeightRatio = 0.2;
+
+const escapeText = text => String(text ?? '').replace(/[&<>"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[character]);
+const signText = value => (value > 0 ? '+' : value < 0 ? '−' : '');
+const summaryStatus = isPass => isPass === true ? 'pass' : isPass === false ? 'veto' : 'unknown';
+const scoreColor = score => score == null ? 'muted' : score >= 75 ? 'positive' : score >= 60 ? 'caution' : 'negative';
+
+function formatChange(value, unit) {
+  if (value == null) return '';
+  return unit === 'basis_points' ? `${signText(value)}${Math.abs(value).toFixed(1)} bp` : `${signText(value)}${Math.abs(value).toFixed(2)}%`;
+}
+function formatMeasuredValue(value) {
+  if (value == null) return '';
+  if (typeof value === 'boolean') return value ? '是' : '否';
+  return typeof value === 'number' ? valueFormat.format(value) : escapeText(value);
+}
+function formatExchangeTime(isoText, isFull) {
+  return isFull ? `${isoText.slice(0, 10)} ${isoText.slice(11, 19)} ET` : `${isoText.slice(5, 7)}/${isoText.slice(8, 10)} ${isoText.slice(11, 16)} ET`;
+}
+function formatAge(minutes) {
+  if (minutes < 1) return '刚刚';
+  return minutes < 60 ? `${Math.floor(minutes)} 分钟前` : `${Math.floor(minutes / 60)} 小时前`;
+}
+function renderStatusBadge(status, showText = true) {
+  const style = STATUS_STYLE[status];
+  return `<span class="status-badge ${style.color}" ${showText ? '' : `aria-label="${style.text}"`}><svg class="icon" aria-hidden="true"><use href="#${style.icon}"/></svg>${showText ? style.text : ''}</span>`;
+}
+function renderSparkline(closePriceList) {
+  if (!closePriceList || closePriceList.length < 2) return '<span class="sparkline"></span>';
+  const lowest = Math.min(...closePriceList), range = (Math.max(...closePriceList) - lowest) || 1;
+  const points = closePriceList.map((price, index) =>
+    `${(index / (closePriceList.length - 1) * 64).toFixed(1)},${(18 - (price - lowest) / range * 16).toFixed(1)}`).join(' ');
+  const color = closePriceList[closePriceList.length - 1] >= closePriceList[0] ? 'var(--positive)' : 'var(--negative)';
+  return `<svg class="sparkline" viewBox="0 0 64 20" width="64" height="20" aria-hidden="true"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+
+function renderStatusBar() {
+  const status = latestSnapshot && latestSnapshot.status;
+  let text = '正在获取数据…', color = 'muted', title = '';
+  if (connectionError) { text = '连接断开，正在重试'; color = 'negative'; }
+  else if (status && status.generated_at) {
+    const ageMinutes = (Date.parse(status.server_time) - Date.parse(status.generated_at) + Date.now() - statusReceivedAt) / 60000;
+    title = '数据生成于 ' + formatExchangeTime(status.generated_at, true);
+    if (!status.market_is_open) text = '休市 · 最后更新 ' + formatExchangeTime(status.generated_at, false);
+    else if (ageMinutes > status.stale_after_minutes) { text = '数据已过期 · 最后更新 ' + formatExchangeTime(status.generated_at, false); color = 'caution'; }
+    else { text = '开盘中 · 更新于 ' + formatAge(ageMinutes); color = 'positive'; }
+  }
+  statusBar.className = `status-bar caption ${color}` + (statusBar.classList.contains('is-loading') ? ' is-loading' : '');
+  statusBar.title = title;
+  statusBar.lastElementChild.textContent = text;
+}
+
+function renderIndicatorList(indicatorList) {
+  document.getElementById('indicator-list').innerHTML = indicatorList.map(indicator => {
+    const isRising = indicator.change_value > 0;
+    const color = indicator.change_value ? ((isRising !== indicator.is_higher_value_risky) ? 'positive' : 'negative') : 'muted';
+    return `<li class="indicator-item"><span>${escapeText(indicator.display_name)}</span>
+      <span class="strong">${indicator.value == null ? '—' : valueFormat.format(indicator.value)}</span>
+      <span></span><span class="caption ${color}">${formatChange(indicator.change_value, indicator.change_unit)}</span></li>`;
+  }).join('');
+}
+
+function renderSymbolList(symbolCardList, failedSymbolList) {
+  const focusedSymbol = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.symbol : null;
+  symbolList.innerHTML = symbolCardList.map(card => {
+    const isInsufficient = card.unknown_weight_ratio > maxUnknownWeightRatio;
+    const score = card.score_percent == null ? '—' : Math.round(card.score_percent);
+    const status = summaryStatus(card.is_pass);
+    return `<li><button class="symbol-item" data-symbol="${escapeText(card.symbol)}" aria-current="${card.symbol === selectedSymbol}"
+        aria-label="${escapeText(card.symbol)}，${STATUS_STYLE[status].text}，分数 ${score}${isInsufficient ? '，数据不足' : ''}">
+      <span class="strong">${escapeText(card.symbol)}</span>${renderSparkline(card.sparkline_close_price_list)}
+      <span class="score">${renderStatusBadge(status, false)}<span class="strong ${isInsufficient ? 'muted' : scoreColor(card.score_percent)}">${score}</span></span>
+      <span class="caption">$${priceFormat.format(card.price)} <span class="${card.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(card.change_value, card.change_unit)}</span></span>
+    </button></li>`;
+  }).join('') + failedSymbolList.map(symbol => `<li><div class="symbol-item is-failed" aria-disabled="true"><span class="strong">${escapeText(symbol)}</span><span></span><span></span><span class="caption">获取失败</span></div></li>`).join('');
+  symbolList.querySelectorAll('button.symbol-item').forEach(button => button.onclick = () => selectSymbol(button.dataset.symbol, true));
+  if (focusedSymbol) { const button = symbolList.querySelector(`[data-symbol="${focusedSymbol}"]`); if (button) button.focus(); }
+}
 
 async function loadStrategyList() {
-  const data = await (await fetch('/api/strategy_list')).json();
-  strategySelect.innerHTML = data.strategy_list.map(s => `<option value="${s.strategy_id}">${s.display_name}</option>`).join('');
+  const data = await (await fetch('/api/v1/strategies')).json();
+  strategySelect.innerHTML = data.strategy_list.map(strategy => `<option value="${escapeText(strategy.strategy_id)}">${escapeText(strategy.display_name)}</option>`).join('');
   strategySelect.value = data.default_strategy_id;
 }
 
 async function loadDashboardSnapshot() {
-  const snapshot = await (await fetch('/api/snapshot?strategy_id=' + strategySelect.value)).json();
-  maxUnknownWeightRatio = snapshot.max_unknown_weight_ratio;
-  document.getElementById('updated').textContent = (snapshot.updated || '等待数据…').slice(5, 16);
-  renderIndicatorList(snapshot.market_indicator_card_list);
-  renderSymbolList(snapshot.symbol_card_list);
-  if (!selectedSymbol && snapshot.symbol_card_list.length) selectedSymbol = snapshot.symbol_card_list[0].symbol;
-  if (selectedSymbol) loadStrategyEvaluationForSymbol(selectedSymbol);
+  statusBar.classList.add('is-loading');
+  try {
+    const response = await fetch('/api/v1/snapshot?strategy_id=' + encodeURIComponent(strategySelect.value));
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    latestSnapshot = await response.json();
+    statusReceivedAt = Date.now();
+    connectionError = false;
+    maxUnknownWeightRatio = latestSnapshot.max_unknown_weight_ratio;
+    renderIndicatorList(latestSnapshot.market_indicator_card_list);
+    const symbolCardList = latestSnapshot.symbol_card_list;
+    if (symbolCardList.length || latestSnapshot.status.generated_at) renderSymbolList(symbolCardList, latestSnapshot.failed_symbol_list);
+    if (!symbolCardList.some(card => card.symbol === selectedSymbol)) selectedSymbol = symbolCardList.length ? symbolCardList[0].symbol : null;
+    if (selectedSymbol) selectSymbol(selectedSymbol, false);
+  } catch (error) {
+    connectionError = true;
+  } finally {
+    statusBar.classList.remove('is-loading');
+    renderStatusBar();
+  }
 }
 
-function renderIndicatorList(indicatorList) {
-  document.getElementById('indicator-list').innerHTML = indicatorList.map(i => `
-    <div class="indicator-item"><span>${i.display_name}</span><b>${i.value ?? '❓'}</b>
-      <span></span><span class="caption ${changeClass(i.change_percent, i.is_higher_value_risky)}">${percentText(i.change_percent)}</span></div>`).join('');
+function selectSymbol(symbol, isUserAction) {
+  const isNewSymbol = symbol !== selectedSymbol || isUserAction;
+  selectedSymbol = symbol;
+  history.replaceState(null, '', '#' + encodeURIComponent(symbol));
+  symbolList.querySelectorAll('button.symbol-item').forEach(button => button.setAttribute('aria-current', String(button.dataset.symbol === symbol)));
+  loadStrategyEvaluationForSymbol(symbol, isNewSymbol && isUserAction);
+  if (isUserAction && window.innerWidth < 900) strategyPanel.scrollIntoView({ behavior:'smooth' });
 }
 
-function renderSymbolList(symbolList) {
-  document.getElementById('symbol-list').innerHTML = symbolList.map(s => {
-    const lowData = s.unknown_weight_ratio > maxUnknownWeightRatio;
-    return `<div class="symbol-item ${s.symbol === selectedSymbol ? 'selected' : ''}" data-symbol="${s.symbol}">
-      <b>${s.symbol}</b><span>${passMark(s.is_pass)} <b class="${lowData ? 'gray' : scoreClass(s.score_percent)}" ${lowData ? '' : scoreColor(s.score_percent)}>${s.score_percent == null ? '❓' : Math.round(s.score_percent)}</b></span>
-      <span class="caption">$${s.price}</span><span class="caption ${changeClass(s.change_percent)}">${percentText(s.change_percent)}</span></div>`;
-  }).join('');
-  document.querySelectorAll('.symbol-item').forEach(item => item.onclick = () => {
-    selectedSymbol = item.dataset.symbol;
-    document.querySelectorAll('.symbol-item').forEach(i => i.classList.toggle('selected', i === item));
-    loadStrategyEvaluationForSymbol(selectedSymbol);
-    if (window.innerWidth < 900) document.getElementById('strategy-panel').scrollIntoView();
-  });
+async function loadStrategyEvaluationForSymbol(symbol, shouldAnimate) {
+  const requestNumber = ++evaluationRequestNumber;
+  try {
+    const response = await fetch(`/api/v1/evaluations/${encodeURIComponent(strategySelect.value)}/${encodeURIComponent(symbol)}`);
+    if (!response.ok || requestNumber !== evaluationRequestNumber) return;
+    renderStrategyTree(symbol, await response.json(), shouldAnimate);
+  } catch (error) {
+    if (requestNumber === evaluationRequestNumber) { connectionError = true; renderStatusBar(); }
+  }
 }
 
-async function loadStrategyEvaluationForSymbol(symbol) {
-  const response = await fetch(`/api/evaluation/${strategySelect.value}/${symbol}`);
-  if (response.ok) renderStrategyTree(symbol, await response.json());
+function renderRuleRows(ruleResultList) {
+  return ruleResultList.map(rule => `<div class="strategy-rule-row ${rule.status}">
+    <span class="caption">${escapeText(rule.rule_id)}</span>${renderStatusBadge(rule.status)}
+    <span>${escapeText(rule.description)}</span><span>${formatMeasuredValue(rule.measured_value)}</span></div>`).join('');
 }
 
-function renderRuleRows(ruleList) {
-  return ruleList.map(r => `<div class="strategy-rule-row ${r.status}"><span class="gray">${r.rule_id}</span>
-    <span>${statusMark[r.status]}</span><span>${r.description}</span><span class="gray">${valueText(r.measured_value)}</span></div>`).join('');
+function renderStrategyTree(symbol, evaluation, shouldAnimate) {
+  const evaluationKey = strategySelect.value + JSON.stringify(evaluation);
+  if (evaluationKey === renderedEvaluationKey && !shouldAnimate) return;
+  renderedEvaluationKey = evaluationKey;
+  const openWindowLabelSet = new Set([...strategyPanel.querySelectorAll('details[open]')].map(details => details.dataset.windowLabel));
+  const isInsufficient = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
+  const score = evaluation.score_percent == null ? '—' : Math.round(evaluation.score_percent);
+  const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
+      <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
+        <h3 class="title">${escapeText(gate.display_name)}</h3><span class="caption">${STATUS_STYLE[summaryStatus(gate.is_pass)].text}</span>
+        <span class="caption">${gate.expiration_window_label ? `到期窗口 ${escapeText(gate.expiration_window_label)} 天（最佳）` : ''}</span></header>
+      ${renderRuleRows(gate.rule_result_list)}
+      ${gate.alternative_window_result_list.map(window => `<details data-window-label="${escapeText(window.expiration_window_label)}" ${openWindowLabelSet.has(window.expiration_window_label) ? 'open' : ''}>
+        <summary class="caption">其他到期窗口 ${escapeText(window.expiration_window_label)} 天</summary>${renderRuleRows(window.rule_result_list)}</details>`).join('')}
+    </section>`).join('');
+  strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">↑ 列表</a>
+    <h2 class="title">${escapeText(symbol)}</h2>
+    <div class="result-row">
+      <div><p class="caption">结论</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
+      <div><p class="caption">分数${isInsufficient ? ' <span class="tag">数据不足</span>' : ''}</p>
+        <p class="display ${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</p></div>
+      <div><p class="caption">数据缺失权重</p><p class="display muted">${Math.round(evaluation.unknown_weight_ratio * 100)}%</p></div>
+    </div>${gates}`;
+  if (shouldAnimate) { strategyPanel.classList.remove('panel-enter'); void strategyPanel.offsetWidth; strategyPanel.classList.add('panel-enter'); }
 }
 
-function renderStrategyTree(symbol, evaluation) {
-  const gates = evaluation.gate_result_list.map(g => `
-    <div class="strategy-gate"><div class="row"><b>${passMark(g.is_pass)} ${g.display_name}</b>
-      <span class="caption">${g.expiration_window_label ? '到期窗口 ' + g.expiration_window_label + ' 天（最佳）' : ''}</span></div>
-      ${renderRuleRows(g.rule_result_list)}
-      ${g.alternative_window_result_list.map(a => `<details><summary class="caption">其他窗口 ${a.expiration_window_label}</summary>${renderRuleRows(a.rule_result_list)}</details>`).join('')}
-    </div>`).join('');
-  const lowData = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
-  document.getElementById('strategy-panel').innerHTML = `
-    <div class="row"><h1 style="margin:0">${symbol}</h1><span class="caption">未知权重 ${Math.round(evaluation.unknown_weight_ratio * 100)}%${lowData ? ' · 数据不足' : ''}</span></div>
-    <div class="results"><div><div class="caption">通过</div><div class="big">${passMark(evaluation.is_pass)}</div></div>
-      <div><div class="caption">分数</div><div class="big ${scoreClass(evaluation.score_percent)}" ${scoreColor(evaluation.score_percent)}>${evaluation.score_percent ?? '❓'}</div></div></div>${gates}`;
+function handleSymbolListKeydown(event) {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  const buttonList = [...symbolList.querySelectorAll('button.symbol-item')];
+  const nextButton = buttonList[buttonList.indexOf(document.activeElement) + (event.key === 'ArrowDown' ? 1 : -1)];
+  if (!nextButton) return;
+  event.preventDefault();
+  nextButton.focus();
+  selectSymbol(nextButton.dataset.symbol, true);
 }
 
-strategySelect.onchange = loadDashboardSnapshot;
-loadStrategyList().then(loadDashboardSnapshot);
+function applyTheme(themeName) {
+  document.documentElement.dataset.theme = themeName;
+  try { localStorage.setItem('stockboard-theme', themeName); } catch (error) { /* storage blocked: theme lasts this visit only */ }
+}
+
+try { applyTheme(localStorage.getItem('stockboard-theme') === 'dark' ? 'dark' : 'light'); } catch (error) { applyTheme('light'); }
+document.getElementById('theme-button').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+symbolList.addEventListener('keydown', handleSymbolListKeydown);
+strategySelect.onchange = () => { renderedEvaluationKey = ''; loadDashboardSnapshot(); };
+loadStrategyList().then(loadDashboardSnapshot, () => { connectionError = true; renderStatusBar(); });
 setInterval(loadDashboardSnapshot, 60000);
+setInterval(renderStatusBar, 30000);
 </script>
 </body>
 </html>
