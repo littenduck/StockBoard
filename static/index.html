@@ -36,11 +36,11 @@
   .result-row .display { display:flex; align-items:center; gap:var(--space-2); }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
   .strategy-gate:last-child { border-left-color:transparent; }
-  .strategy-gate > header { display:flex; align-items:flex-start; gap:var(--space-2); margin-left:-24px; }
-  .gate-marker { background:var(--background); border-radius:50%; margin-top:4px; }
-  .strategy-gate > header > span { margin-top:4px; white-space:nowrap; }
+  .strategy-gate > header { display:flex; align-items:flex-start; gap:var(--space-2); margin:0 0 var(--space-2) -24px; }
+  .gate-marker { background:var(--background); border-radius:50%; margin-top:2px; }
+  .strategy-gate > header > span { margin-top:2px; white-space:nowrap; }
   .strategy-gate > header h3 { min-width:0; }
-  .strategy-gate > header + * { margin-top:var(--space-2); }
+  .strategy-gate > p { margin-bottom:var(--space-1); }
   .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:start; margin:0; border-top:1px solid var(--separator); }
   .strategy-gate .row > .caption, .strategy-gate .row .status-badge { line-height:20px; min-height:20px; }
   .strategy-gate .row[data-status="not_applicable"], .strategy-gate .row[data-status="not_applicable"] .caption { color:var(--text-secondary); }
@@ -302,7 +302,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
       <header><svg class="icon gate-marker ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="/icons.svg#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
-        <h3 class="title">${languageRenderText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${escapeText(languageText(summaryStatus(gate.is_pass)))}</span></header>
+        <h3 class="strong">${languageRenderText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${escapeText(languageText(summaryStatus(gate.is_pass)))}</span></header>
       ${gate.expiration_window_label ? `<p class="caption">${languageRenderText(languageLocalize('best_window', { label:gate.expiration_window_label, score:calculateScoreText(gate.rule_result_list) }), true)}</p>` : ''}
       ${renderRuleRows(gate.rule_result_list)}
       ${gate.alternative_window_result_list.map(window => `<h4 class="caption">${languageRenderText(languageLocalize('alternative_window', { label:window.expiration_window_label, score:calculateScoreText(window.rule_result_list) }), true)}</h4>

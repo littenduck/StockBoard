@@ -31,7 +31,7 @@ System font only: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif`. Al
 |---|---|---|
 | `--font-caption` | 12px / 400 / 16px | labels, timestamps, section titles |
 | `--font-body` | 15px / 400 / 20px | rows, rule text |
-| `--font-title` | 20px / 600 / 24px | symbol name in main, gate titles |
+| `--font-title` | 20px / 600 / 24px | sidebar title, rule group titles, popover title. Gate titles are not title size: they use body size semibold (`strong`) so they sit just above their rules |
 | `--font-display` | 34px / 600 / 40px, letter-spacing -0.02em | pass result and score in main |
 
 No other sizes. Every heading element has an explicit size.
