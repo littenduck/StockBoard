@@ -99,7 +99,7 @@ One shape language. Everything the user can click shares one radius, one hover a
 
 ## Elements
 
-Text is done by tags. There are 7 element classes and one radius (8px). Do not add a new element class; compose these.
+Text is done by tags. There are 7 element classes (6 styled in `base.css` plus `.sparkline`, which has no CSS of its own), 3 helper classes (plus the page-local `.panel-enter`) and one radius (8px). Do not add a new element class; compose these.
 
 | Family | What exists | Used for |
 |---|---|---|
@@ -108,6 +108,7 @@ Text is done by tags. There are 7 element classes and one radius (8px). Do not a
 | List row | `.row` (a `button` or `a` row is interactive; `aria-current` or `.is-target` marks selected) | symbol, indicator and rule rows, sidebar footer link, loading placeholders |
 | Box | `.box`: bordered, radius 8px, `--surface` | popover, explanation box, and `small.box` for tags, usage chips and the phone indicator strip |
 | Mark | `.status-badge` (icon plus word), `.status-dot` (8px dot, `currentColor`), `.sparkline` (inline SVG drawn by the page script, no CSS of its own; the dashboard only uses the class to place it in the row grid) | pass, fail and unknown badges, market dot, price trend |
+| Helper | `.icon` (16px svg, `flex:none`), `.placeholder` (loading row, `--separator` fill), `.is-target` (row selected by the URL hash), `.panel-enter` (fade-in animation, page-local in `index.html`) | icons, loading rows, rule row from the hash, main panel on symbol change |
 
 Layout-only containers (not elements, styled by the page only for layout): page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.legend`, `.usage`, `.rule-meta`, dividers.
 

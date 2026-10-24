@@ -6,9 +6,9 @@ description: Use when changing any StockBoard page (static/index.html, static/ru
 Read `docs/design.md` first and follow it exactly.
 
 - Text is plain HTML tags (h1, h2, h3, p, li, small, strong, a). Do not add text classes; the tag decides the look.
-- Build only from the element classes listed in `docs/design.md`: `.icon-button`, `.field`, `.row`, `.box`, `.status-badge`, `.status-dot`, `.sparkline`. Compose them; do not add a new element class.
+- Build only from the element classes listed in `docs/design.md`: `.icon-button`, `.field`, `.row`, `.box`, `.status-badge`, `.status-dot`, `.sparkline`. (`.sparkline` is an inline SVG with no CSS.) Helper classes also exist: `.icon`, `.placeholder`, `.is-target`, and the page-local animation `.panel-enter`. Compose them; do not add a new element class.
 - One radius: `--radius-control` (8px) for everything.
 - English companions are always `<small lang="en">`, on their own line under the Chinese line.
 - Icons come from `static/icons.svg` (Tabler); never hand-draw one.
 - No negative margins on anything clickable or any row.
-- Every color, size and spacing comes from the tokens in `static/base.css`. Both pages share `static/base.css`; put a style in the page only when it is layout.
+- Type, color and spacing come from the tokens in `static/base.css`; layout columns are page-local. Both pages share `static/base.css`; put a style in the page only when it is layout.

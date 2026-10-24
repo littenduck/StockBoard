@@ -65,7 +65,7 @@ Sizes in use: **28, 20, 15, 12** (was 34, 20, 15, 12). Weights: 400 and 600.
 | **Box** | `.box`: bordered, 8px, `--surface`. It is the popover, the explanation box, and (as `small.box`) the small tags and chips | 1 |
 | **Mark** | `.status-badge` (icon plus word), `.status-dot`, `.sparkline` | 3 |
 
-That is **7 element classes** (was 14), with the 12px panel radius dropped: **one radius, 8px**, for everything (`--radius-panel` is deleted).
+That is **7 element classes** (was 14; six styled in `base.css` plus `.sparkline`, an inline SVG with no CSS), plus helpers `.icon`, `.placeholder`, `.is-target` and the page-local `.panel-enter`, with the 12px panel radius dropped: **one radius, 8px**, for everything (`--radius-panel` is deleted).
 Layout-only containers stay but are not components: the page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.legend`, `.usage`, `.rule-meta`.
 Target: **18 or fewer distinct classes on a dashboard render** (28 now) and **14 or fewer on the rule catalog page** (22 now).
 
