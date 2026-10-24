@@ -1,4 +1,6 @@
 refresh_interval_minutes: 10
+# Language on first visit: en or zh. A choice made in the page is remembered and wins.
+default_language: en
 # The page marks data older than this as stale while the market is open.
 stale_after_minutes: 60
 # Other web origins allowed to call the API (CORS). Empty: same-origin page and native apps only.
@@ -7,11 +9,11 @@ default_strategy_id: sell_put_four_in_one
 
 # First row of the page. is_higher_value_risky inverts the up/down colors.
 market_indicator_list:
-  - {indicator_id: vix_level, display_name: VIX, is_higher_value_risky: true}
-  - {indicator_id: vxn_level, display_name: VXN, is_higher_value_risky: true}
-  - {indicator_id: vvix_level, display_name: VVIX, is_higher_value_risky: true}
-  - {indicator_id: treasury_ten_year_yield, display_name: "10Y", is_higher_value_risky: true}
-  - {indicator_id: high_yield_credit_spread_basis_points, display_name: "HY bp", is_higher_value_risky: true}
+  - {indicator_id: vix_level, display_name: {en: VIX, zh: VIX}, is_higher_value_risky: true}
+  - {indicator_id: vxn_level, display_name: {en: VXN, zh: VXN}, is_higher_value_risky: true}
+  - {indicator_id: vvix_level, display_name: {en: VVIX, zh: VVIX}, is_higher_value_risky: true}
+  - {indicator_id: treasury_ten_year_yield, display_name: {en: "10Y", zh: "10Y"}, is_higher_value_risky: true}
+  - {indicator_id: high_yield_credit_spread_basis_points, display_name: {en: "HY spread", zh: "HY 利差"}, is_higher_value_risky: true}
 
 # Second row of the page: indices and stocks mixed.
 watchlist_symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]

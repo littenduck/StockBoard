@@ -6,7 +6,7 @@ from stockboard_backend import indicator_calculation
 from stockboard_backend.localized_text import CHINESE_CHARACTER_PATTERN
 from stockboard_backend.rule_catalog import RuleCatalog, RuleCatalogEntry, RuleGroup, \
     rule_catalog_load_rule_catalog_from_yaml_file, rule_catalog_validate_rule_catalog_against_known_indicators
-from stockboard_backend.settings_loader import PROJECT_DIRECTORY
+from stockboard_backend.settings_loader import PROJECT_DIRECTORY, settings_loader_load_settings_from_yaml_file
 from stockboard_backend.strategy_loader import strategy_loader_build_rule_definition_from_catalog, \
     strategy_loader_load_all_strategy_definitions_from_directory
 
@@ -67,3 +67,20 @@ def test_every_catalog_text_is_bilingual_and_follows_the_glossary():
         assert_localized_text_is_complete(entry.description, "rule " + entry.rule_id)
         if entry.note:
             assert_localized_text_is_complete(entry.note, "note " + entry.rule_id)
+
+
+def test_every_strategy_and_indicator_text_is_bilingual():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    strategy_by_id = strategy_loader_load_all_strategy_definitions_from_directory(
+        os.path.join(PROJECT_DIRECTORY, "strategies"), catalog)
+    for strategy in strategy_by_id.values():
+        for field_name in ("display_name", "source", "summary", "help_text"):
+            assert_localized_text_is_complete(getattr(strategy, field_name), strategy.strategy_id + " " + field_name)
+        assert strategy.help_text.en.count("\n\n") == strategy.help_text.zh.count("\n\n"), \
+            strategy.strategy_id + " help paragraphs must pair up"
+        for gate in strategy.gate_list:
+            assert_localized_text_is_complete(gate.display_name, strategy.strategy_id + " " + gate.gate_id)
+    settings = settings_loader_load_settings_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
+    assert settings.default_language == "en"
+    for indicator_setting in settings.market_indicator_list:
+        assert_localized_text_is_complete(indicator_setting.display_name, indicator_setting.indicator_id)

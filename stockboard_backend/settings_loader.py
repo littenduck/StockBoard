@@ -6,13 +6,15 @@ from typing import FrozenSet, List
 
 import yaml
 
+from stockboard_backend.localized_text import LANGUAGE_CODE_SET, LocalizedText, localized_text_build_from_raw_value
+
 PROJECT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 @dataclass
 class MarketIndicatorSetting:
     indicator_id: str
-    display_name: str
+    display_name: LocalizedText
     is_higher_value_risky: bool = False
 
 
@@ -39,6 +41,13 @@ class ApplicationSettings:
     allowed_origin_list: List[str] = field(default_factory=list)
     market_holiday_date_set: FrozenSet[datetime.date] = frozenset()
     market_early_close_date_set: FrozenSet[datetime.date] = frozenset()
+    default_language: str = "en"
+
+
+def settings_loader_validate_language_code(language_code: str) -> str:
+    if language_code not in LANGUAGE_CODE_SET:
+        raise ValueError("default_language must be one of {}".format(sorted(LANGUAGE_CODE_SET)))
+    return language_code
 
 
 def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> ApplicationSettings:
@@ -47,13 +56,15 @@ def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> App
     return ApplicationSettings(
         refresh_interval_minutes=raw["refresh_interval_minutes"],
         default_strategy_id=raw["default_strategy_id"],
-        market_indicator_list=[MarketIndicatorSetting(**item) for item in raw["market_indicator_list"]],
+        market_indicator_list=[MarketIndicatorSetting(**{**item, "display_name": localized_text_build_from_raw_value(
+            item.get("display_name"), "indicator {} name".format(item["indicator_id"]))}) for item in raw["market_indicator_list"]],
         watchlist_symbol_list=raw["watchlist_symbol_list"],
         option_expiration_window_list=[ExpirationWindowSetting(**item) for item in raw["option_expiration_window_list"]],
         target_absolute_delta=raw["target_absolute_delta"],
         macro_event_calendar=raw.get("macro_event_calendar") or [],
         stale_after_minutes=raw.get("stale_after_minutes", 60),
         allowed_origin_list=raw.get("allowed_origin_list") or [],
+        default_language=settings_loader_validate_language_code(raw.get("default_language", "en")),
         market_holiday_date_set=frozenset(
             datetime.date.fromisoformat(str(text)) for text in raw.get("market_holiday_list") or []),
         market_early_close_date_set=frozenset(

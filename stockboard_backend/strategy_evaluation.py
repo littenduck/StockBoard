@@ -2,6 +2,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from stockboard_backend.localized_text import LocalizedText
+
 STATUS_PASS = "pass"
 STATUS_FAIL = "fail"
 STATUS_UNKNOWN = "unknown"
@@ -21,7 +23,7 @@ class IndicatorValue:
 @dataclass
 class RuleDefinition:
     rule_id: str
-    description: str
+    description: LocalizedText
     indicator: str
     operator: str
     weight: int
@@ -32,7 +34,7 @@ class RuleDefinition:
 @dataclass
 class GateDefinition:
     gate_id: str
-    display_name: str
+    display_name: LocalizedText
     rule_list: List[RuleDefinition]
     per_expiration_window: bool = False
 
@@ -45,18 +47,18 @@ class StrategyThresholds:
 @dataclass
 class StrategyDefinition:
     strategy_id: str
-    display_name: str
-    source: str
+    display_name: LocalizedText
+    source: LocalizedText
     thresholds: StrategyThresholds
     gate_list: List[GateDefinition]
-    summary: str = ""
-    help_text: str = ""
+    summary: Optional[LocalizedText] = None
+    help_text: Optional[LocalizedText] = None
 
 
 @dataclass
 class RuleEvaluationResult:
     rule_id: str
-    description: str
+    description: LocalizedText
     status: str
     measured_value: Any
     weight: int
@@ -66,7 +68,7 @@ class RuleEvaluationResult:
 @dataclass
 class GateEvaluationResult:
     gate_id: str
-    display_name: str
+    display_name: LocalizedText
     is_pass: Optional[bool]
     rule_result_list: List[RuleEvaluationResult]
     expiration_window_label: Optional[str] = None

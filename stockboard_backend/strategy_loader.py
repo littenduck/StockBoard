@@ -5,6 +5,7 @@ from typing import Dict, List, Set
 
 import yaml
 
+from stockboard_backend.localized_text import localized_text_build_from_raw_value
 from stockboard_backend.rule_catalog import RuleCatalog
 from stockboard_backend.strategy_evaluation import (
     GateDefinition, RuleDefinition, StrategyDefinition, StrategyThresholds,
@@ -33,16 +34,20 @@ def strategy_loader_load_strategy_definition_from_yaml_file(
         raw = yaml.safe_load(strategy_file)
     gate_list = [
         GateDefinition(
-            gate_id=raw_gate["gate_id"], display_name=raw_gate["display_name"],
+            gate_id=raw_gate["gate_id"], display_name=localized_text_build_from_raw_value(
+                raw_gate.get("display_name"), "{} gate {} name".format(raw["strategy_id"], raw_gate["gate_id"])),
             per_expiration_window=raw_gate.get("per_expiration_window", False),
             rule_list=[strategy_loader_build_rule_definition_from_catalog(raw_rule, rule_catalog)
                        for raw_rule in raw_gate["rules"]])
         for raw_gate in raw["gates"]
     ]
+    def localized_field(field_name: str):
+        return localized_text_build_from_raw_value(raw.get(field_name), "{} {}".format(raw["strategy_id"], field_name))
+
     return StrategyDefinition(
-        strategy_id=raw["strategy_id"], display_name=raw["display_name"], source=raw.get("source", ""),
+        strategy_id=raw["strategy_id"], display_name=localized_field("display_name"), source=localized_field("source"),
         thresholds=StrategyThresholds(**raw.get("thresholds", {})), gate_list=gate_list,
-        summary=raw.get("summary", ""), help_text=raw.get("help", "").strip())
+        summary=localized_field("summary"), help_text=localized_field("help"))
 
 
 def strategy_loader_load_all_strategy_definitions_from_directory(

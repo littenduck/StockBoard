@@ -1,26 +1,38 @@
 strategy_id: sell_put_four_in_one
-display_name: Sell Put 四合一
-source: "Notion: Sell Put 四合一决策Skill + 个股期权评分卡 (gates 0-2 only)"
+display_name: {en: "Sell Put 4-in-1", zh: "Sell Put 四合一"}
+source: {en: "Notion: Sell Put 4-in-1 decision skill + stock option scorecard (gates 0-2 only)", zh: "Notion: Sell Put 四合一决策Skill + 个股期权评分卡 (gates 0-2 only)"}
 thresholds: {max_unknown_weight_ratio: 0.20}
-summary: "卖出现金担保看跌期权（Cash-Secured Put）：在宏观环境安全、标的质量好时，卖出 30-45 天、Delta 约 0.25 的虚值 Put 收取权利金。"
-help: |
-  这是一个卖方期权策略：你卖出一张看跌期权（Put）并收取权利金。到期时股价高于行权价，权利金全部归你；跌破行权价，你以行权价买入 100 股，所以要选自己愿意长期持有的标的。
+summary:
+  en: "Sell a cash-secured Put: when the macro backdrop is safe and the stock is sound, sell an out-of-the-money Put with 30-45 days left and a Delta near 0.25 to collect the premium."
+  zh: "卖出现金担保看跌期权（Cash-Secured Put）：在宏观环境安全、标的质量好时，卖出 30-45 天、Delta 约 0.25 的虚值 Put 收取权利金。"
+help:
+  en: |
+    This is an option-selling strategy: you sell a Put and collect the premium. If the stock ends above the strike, you keep the whole premium; if it falls below, you buy 100 shares at the strike, so only pick stocks you are willing to hold.
 
-  它合并了四条来源（Notion「Sell Put 四合一决策 Skill」）：#1 五层决策框架负责宏观与情绪开关；#2 CSP 执行参数负责 Delta、到期天数和收益；#5 Wheel 循环；#6 车轮选股与尾部风险。
+    It merges four sources (Notion "Sell Put 4-in-1 decision skill"): #1 the five-layer framework handles the macro and sentiment switch; #2 the CSP parameters handle Delta, days to expiration and return; #5 the Wheel cycle; #6 wheel stock selection and tail risk.
 
-  评估顺序：GATE 0 宏观/情绪开关（利率、信用利差、VIX、大盘趋势）→ GATE 1 标的筛选（到期前无财报、52 周位置、200 日均线）→ GATE 2 合约选择（在每个到期窗口里选 Delta 最接近 0.25 的虚值 Put，再看 Delta、DTE、年化收益、IV 是否高于实际波动）。
+    Order of evaluation: GATE 0 macro and sentiment (rates, credit spread, VIX, market trend) → GATE 1 stock screen (no earnings before expiration, 52-week position, 200-day average) → GATE 2 contract (in each expiration window, take the out-of-the-money Put with Delta closest to 0.25, then check Delta, DTE, annualized return and whether IV is above realized volatility).
 
-  权重 5 的规则（目前是 A22「到期前无财报」）一票否决。资金结构（GATE 3）和仓位上限（GATE 4）需要账户数据，这一版没有接入。
+    Rules with weight 5 (currently A22, no earnings before expiration) veto the result. Capital structure (GATE 3) and position limits (GATE 4) need account data and are not built yet.
 
-  期权数据只在美股开盘时有实时报价，休市时 GATE 2 显示「未知」。不构成投资建议。
+    Option quotes are live only while the US market is open; while it is closed GATE 2 shows Unknown. Not investment advice.
+  zh: |
+    这是一个卖方期权策略：你卖出一张看跌期权（Put）并收取权利金。到期时股价高于行权价，权利金全部归你；跌破行权价，你以行权价买入 100 股，所以要选自己愿意长期持有的标的。
 
+    它合并了四条来源（Notion「Sell Put 四合一决策 Skill」）：#1 五层决策框架负责宏观与情绪开关；#2 CSP 执行参数负责 Delta、到期天数和收益；#5 Wheel 循环；#6 车轮选股与尾部风险。
+
+    评估顺序：GATE 0 宏观/情绪开关（利率、信用利差、VIX、大盘趋势）→ GATE 1 标的筛选（到期前无财报、52 周位置、200 日均线）→ GATE 2 合约选择（在每个到期窗口里选 Delta 最接近 0.25 的虚值 Put，再看 Delta、DTE、年化收益、IV 是否高于实际波动）。
+
+    权重 5 的规则（目前是 A22「到期前无财报」）一票否决。资金结构（GATE 3）和仓位上限（GATE 4）需要账户数据，这一版没有接入。
+
+    期权数据只在美股开盘时有实时报价，休市时 GATE 2 显示「未知」。不构成投资建议。
 # Not built yet (need account data or manual answers): GATE 3 capital structure,
 # GATE 4 position limits, rules tagged ASK / PLAN, Fed / FOMC / CPI / oil rules.
 # Rules are defined in config/rules.yaml; here only the id, this strategy's weight and the variant group.
 # Variant groups: list the loose rule first, the strict rule after it.
 gates:
   - gate_id: gate_0_macro
-    display_name: "GATE 0 宏观/情绪开关"
+    display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}
     rules:
       - {rule_id: A07, weight: 2, variant_group: ten_year_level}
       - {rule_id: A02, weight: 4, variant_group: ten_year_level}
@@ -33,14 +45,14 @@ gates:
       - {rule_id: Z18, weight: 4}
       - {rule_id: Z19, weight: 3}
   - gate_id: gate_1_underlying
-    display_name: "GATE 1 标的筛选"
+    display_name: {en: "GATE 1 Stock screen", zh: "GATE 1 标的筛选"}
     rules:
       - {rule_id: A22, weight: 5}
       - {rule_id: F03, weight: 2, variant_group: range_position}
       - {rule_id: F02, weight: 3, variant_group: range_position}
       - {rule_id: Z20, weight: 3}
   - gate_id: gate_2_contract
-    display_name: "GATE 2 合约选择"
+    display_name: {en: "GATE 2 Contract", zh: "GATE 2 合约选择"}
     per_expiration_window: true   # evaluated once per window in settings.yaml, best window wins
     rules:
       - {rule_id: B03, weight: 4, variant_group: delta_range}
