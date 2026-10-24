@@ -3,6 +3,7 @@
   --background:#FAF9F5; --surface:#FFFFFF; --fill:#F0EEE6; --separator:#E8E6DC; --text:#141413; --text-secondary:#6B6A64;
   --accent:#C96442; --positive:#146C35; --negative:#B42318; --caution:#8A5A00;
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
+  --radius:8px; --hit-size:44px;
   color-scheme:light;
 }
 :root[data-theme="dark"] {
@@ -11,22 +12,50 @@
 }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--background); color:var(--text); font:400 15px/20px -apple-system,BlinkMacSystemFont,system-ui,sans-serif; font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
-h1, h2, h3, h4, p, ul { margin:0; padding:0; font-size:inherit; font-weight:inherit; }
+h1, h2, h3, p, ul { margin:0; padding:0; }
 ul { list-style:none; }
 button { font:inherit; color:inherit; background:none; border:0; padding:0; text-align:inherit; cursor:pointer; }
-:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
-.caption { font-size:12px; line-height:16px; color:var(--text-secondary); }
-.title { font-size:20px; line-height:24px; font-weight:600; }
-.display { font-size:34px; line-height:40px; font-weight:600; letter-spacing:-0.02em; }
-.strong { font-weight:600; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 .positive { color:var(--positive); } .negative { color:var(--negative); } .caution { color:var(--caution); } .muted { color:var(--text-secondary); }
 .icon { width:16px; height:16px; flex:none; }
-.display .icon { width:28px; height:28px; }
 .status-badge { display:inline-flex; align-items:center; gap:var(--space-1); white-space:nowrap; }
+.status-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
 
-/* Language: English line under or after Chinese text (Chinese mode only); see docs/design.md. Icon buttons: theme and language. */
-.translation { display:block; font-size:12px; line-height:16px; font-weight:400; letter-spacing:0; color:var(--text-secondary); }
-.translation-inline { font-size:12px; line-height:16px; font-weight:400; color:var(--text-secondary); margin-left:var(--space-1); }
-.translation-paragraph { color:var(--text-secondary); }
-.icon-button { width:44px; height:44px; display:grid; place-items:center; flex:none; border-radius:8px; color:var(--text-secondary); transition:background-color 120ms ease; }
+
+/* Shape and states: one radius, hover, focus and selected style for everything clickable. See docs/design.md. */
+
+.icon-button { width:var(--hit-size); height:var(--hit-size); display:grid; place-items:center; flex:none; border-radius:var(--radius); color:var(--text-secondary); transition:background-color 120ms ease; }
 .icon-button:hover { background:var(--fill); color:var(--text); }
+.field { position:relative; display:flex; align-items:center; min-height:var(--hit-size); color:var(--text); background:var(--surface); border:1px solid var(--separator); border-radius:var(--radius); }
+.field select { flex:1; min-width:0; align-self:stretch; padding:0 var(--space-6) 0 var(--space-3); font:inherit; color:inherit; background:transparent; border:0; border-radius:inherit; appearance:none; cursor:pointer; }
+.field select:focus { outline:none; }
+.field .icon { position:absolute; right:var(--space-3); color:var(--text-secondary); pointer-events:none; }
+.field:has(:focus-visible) { outline:2px solid var(--accent); outline-offset:2px; }
+
+.row { position:relative; margin:0 var(--space-2); padding:var(--space-2); border-radius:var(--radius); transition:background-color 120ms ease; }
+.row:is(button, a) { display:grid; align-content:center; width:calc(100% - var(--space-4)); min-height:var(--hit-size); }
+.row:is(button, a):hover { color:var(--text); }
+.row:is(button, a):hover, .row[aria-current="true"], .row.is-target { background:var(--fill); }
+.row[aria-current="true"]::before, .row.is-target::before { content:""; position:absolute; left:0; top:50%; width:3px; height:var(--space-4); transform:translateY(-50%); border-radius:2px; background:var(--accent); }
+.row:focus-visible { outline-offset:-2px; }
+.placeholder { height:calc(var(--hit-size) + var(--space-2)); background:var(--separator); }
+
+
+/* Text: plain tags render like Markdown. See docs/design.md. */
+h1 { font-size:28px; line-height:32px; font-weight:600; letter-spacing:-0.02em; }
+h2 { font-size:20px; line-height:24px; font-weight:600; }
+h3 { font-size:15px; line-height:20px; font-weight:600; }
+p, li { font-size:15px; line-height:20px; }
+small { font-size:12px; line-height:16px; font-weight:400; color:var(--text-secondary); }
+small[lang="en"] { display:block; margin-top:var(--space-1); }
+strong { font-weight:600; }
+h1 .icon { width:28px; height:28px; }
+a { position:relative; color:var(--text-secondary); text-decoration:none; }
+a:hover, a:focus-visible { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+p a, li a, small a { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+a::after { content:""; position:absolute; left:calc(-1 * var(--space-2)); right:calc(-1 * var(--space-2)); top:50%; height:var(--hit-size); transform:translateY(-50%); }
+.row a::after { height:calc(var(--hit-size) - var(--space-2)); }
+.box { background:var(--surface); border:1px solid var(--separator); border-radius:var(--radius); padding:var(--space-4) var(--space-5); }
+small.box { display:inline-block; padding:0 var(--space-2); white-space:nowrap; }
+.box > * + * { margin-top:var(--space-3); }
+.box > h2 + * { margin-top:var(--space-2); }

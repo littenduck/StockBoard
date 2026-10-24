@@ -96,18 +96,18 @@ function languageApplyDocument() {
   const languageButton = document.getElementById('language-button');
   if (languageButton) { languageButton.setAttribute('aria-label', languageText('switch_language')); languageButton.title = languageText('switch_language'); }
 }
-/* In Chinese mode each helper adds the English underneath (block), after (inline) or as the next paragraph. */
-function languageRenderText(localizedText, isInline = false) {
+/* In Chinese mode the English goes in <small lang="en">, always on its own line directly under the Chinese. */
+function languageRenderText(localizedText) {
   const primary = languageEscape(localizedText[activeLanguage]);
   if (activeLanguage !== 'zh') return primary;
-  return `${primary}<span class="${isInline ? 'translation-inline' : 'translation'}" lang="en">${languageEscape(localizedText.en)}</span>`;
+  return `${primary}<small lang="en">${languageEscape(localizedText.en)}</small>`;
 }
 function languageRenderParagraphs(localizedText) {
   const split = text => text.split(/\n\s*\n/).map(paragraph => paragraph.trim()).filter(Boolean);
   const englishList = split(localizedText.en);
   if (activeLanguage !== 'zh') return englishList.map(paragraph => `<p>${languageEscape(paragraph)}</p>`).join('');
   return split(localizedText.zh).map((paragraph, index) => `<p>${languageEscape(paragraph)}</p>`
-    + (englishList[index] ? `<p class="translation-paragraph" lang="en">${languageEscape(englishList[index])}</p>` : '')).join('');
+    + (englishList[index] ? `<small lang="en">${languageEscape(englishList[index])}</small>` : '')).join('');
 }
 function languageBindSwitch(onChange) {
   document.getElementById('language-button').onclick = () => languageApply(activeLanguage === 'zh' ? 'en' : 'zh', onChange);

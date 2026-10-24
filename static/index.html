@@ -8,64 +8,48 @@
 <meta name="theme-color" content="#FAF9F5">
 <link rel="stylesheet" href="/base.css">
 <style>
-
   .layout { display:grid; min-height:100vh; }
   .layout > * { min-width:0; }
   aside { background:var(--surface); padding:var(--space-4) 0 var(--space-5); }
-  aside > header { display:flex; justify-content:space-between; align-items:center; gap:var(--space-2); padding:0 var(--space-4); }
-  .header-controls { display:flex; align-items:center; margin-right:calc(-1 * var(--space-3)); }
+  aside > header { display:flex; justify-content:space-between; align-items:center; gap:var(--space-2); padding:0 var(--space-2) 0 var(--space-4); }
+  aside > header > div { display:flex; align-items:center; }
   .status-bar { display:flex; align-items:center; gap:var(--space-2); margin:var(--space-2) var(--space-4) var(--space-4); }
-  .status-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
   .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
-  select { width:calc(100% - var(--space-6)); margin:0 var(--space-4); min-height:44px; padding:var(--space-3); font:inherit; color:var(--text); background:var(--background); border:1px solid var(--separator); border-radius:8px; }
-  aside h2 { margin:var(--space-5) var(--space-4) var(--space-2); }
-  .indicator-item { display:grid; grid-template-columns:1fr auto 72px; align-items:baseline; column-gap:var(--space-3); padding:var(--space-1) var(--space-4); }
-  .indicator-item > :nth-child(n+2) { text-align:right; }
-  .symbol-item { width:100%; display:grid; grid-template-columns:1fr 64px 64px; column-gap:var(--space-3); align-items:center; padding:var(--space-2) var(--space-4); border-radius:0; transition:background-color 120ms ease; }
-  .symbol-item:hover, .symbol-item[aria-current="true"] { background:var(--fill); }
-  .symbol-item[aria-current="true"] { box-shadow:inset 3px 0 var(--accent); }
-  .symbol-item .sparkline { grid-row:span 2; }
-  .symbol-item .score { grid-row:span 2; justify-self:end; display:flex; align-items:center; gap:var(--space-1); }
-  .symbol-item.is-failed { cursor:default; opacity:0.6; }
-  .placeholder { height:36px; margin:var(--space-2) var(--space-4); border-radius:8px; background:var(--separator); }
+  aside .field { width:calc(100% - var(--space-6)); margin:0 var(--space-4); }
+  aside > small, .strategy-gate > small { display:block; }
+  aside > small { margin:var(--space-5) var(--space-4) var(--space-2); }
+  #indicator-list > .row { display:grid; grid-template-columns:1fr auto 72px; align-items:baseline; column-gap:var(--space-3); padding:var(--space-1) var(--space-2); }
+  #indicator-list > .row > :nth-child(n+2) { text-align:right; }
+  #symbol-list .row { display:grid; grid-template-columns:1fr 64px 64px; column-gap:var(--space-3); align-items:center; }
+  #symbol-list .sparkline { grid-row:span 2; }
+  #symbol-list .row > :nth-child(3) { grid-row:span 2; justify-self:end; display:flex; align-items:center; gap:var(--space-1); }
+  .row[aria-disabled="true"] { color:var(--text-secondary); cursor:default; }
+  #catalog-link { margin-top:var(--space-5); color:var(--text-secondary); } #catalog-link small { color:inherit; }
 
   main { padding:var(--space-6); max-width:880px; width:100%; justify-self:center; }
-  .back-link { display:none; padding:14px 0; margin:-14px 0 var(--space-2); color:var(--text-secondary); }
+  main > nav { display:none; margin-bottom:var(--space-2); }
   .symbol-header { display:flex; flex-wrap:wrap; align-items:baseline; column-gap:var(--space-3); }
   .detail-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
     padding-bottom:var(--space-5); margin-bottom:var(--space-6); border-bottom:1px solid var(--separator); }
-  .detail-note { flex-basis:100%; text-align:right; }
+  .detail-header > small { flex-basis:100%; text-align:right; }
   .result-row { display:flex; gap:var(--space-6); }
-  .result-row .display { display:flex; align-items:center; gap:var(--space-2); }
-  .tag { display:inline-block; padding:0 var(--space-2); border:1px solid var(--separator); border-radius:8px; }
+  .result-row > div { display:grid; grid-template-columns:auto auto; justify-content:start; align-items:baseline; }
+  .result-row h1 { grid-column:1 / -1; display:flex; align-items:center; gap:var(--space-2); } .result-row small.box { margin-left:var(--space-1); }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
   .strategy-gate:last-child { border-left-color:transparent; }
-  .strategy-gate > header { display:flex; align-items:flex-start; gap:var(--space-2); margin-left:-24px; }
-  .strategy-gate > header .icon { background:var(--background); border-radius:50%; margin-top:4px; }
-  .strategy-gate > header > span { margin-top:4px; }
+  .strategy-gate > header { position:relative; display:flex; align-items:flex-start; gap:var(--space-2); margin-bottom:var(--space-2); }
+  .strategy-gate > header > svg { position:absolute; left:calc(-1 * (var(--space-4) + var(--space-2))); top:2px; background:var(--background); border-radius:50%; }
+  .strategy-gate > header > small { margin-top:2px; white-space:nowrap; }
   .strategy-gate > header h3 { min-width:0; }
-  .strategy-gate > header > span { white-space:nowrap; }
-  .gate-note { margin-top:var(--space-1); }
-  .strategy-gate > header + * { margin-top:var(--space-2); }
-  .strategy-rule-row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:start; padding:var(--space-2) 0; border-top:1px solid var(--separator); }
-  .strategy-rule-row > .caption, .strategy-rule-row .status-badge { line-height:20px; min-height:20px; }
-  .strategy-rule-row.not_applicable, .strategy-rule-row.not_applicable .caption { color:var(--text-secondary); }
-  .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
-  .window-title { margin:var(--space-4) 0 var(--space-1); }
-  .rule-link { text-decoration:none; padding:12px 8px; margin:-12px -8px; } .rule-link:hover { color:var(--text); text-decoration:underline; }
-  .catalog-link { display:inline-block; padding:12px 0; margin-bottom:-12px; color:var(--text); text-decoration:underline; text-underline-offset:3px; }
-  .sidebar-footer-link { display:block; margin:var(--space-5) var(--space-4) 0; padding:14px 0; color:var(--text-secondary); text-decoration:none; border-top:1px solid var(--separator); }
-  .sidebar-footer-link:hover { color:var(--text); }
-  .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); margin-bottom:var(--space-1); }
-  .help-button { width:44px; height:44px; margin:-12px -12px -12px -8px; display:grid; place-items:center; border-radius:50%; color:var(--text-secondary); transition:background-color 120ms ease; }
-  .strategy-name { font-size:15px; line-height:20px; font-weight:600; color:var(--text); margin-left:var(--space-1); }
-  .help-button:hover { background:var(--fill); color:var(--text); }
-  .help-popover { width:min(520px, calc(100vw - var(--space-6))); max-height:calc(100vh - 2 * var(--space-6)); overflow-y:auto; padding:var(--space-5);
-    border:1px solid var(--separator); border-radius:12px; background:var(--surface); color:var(--text); }
-  .help-popover::backdrop { background:rgb(20 20 19 / 0.24); }
-  .help-popover > header { display:flex; justify-content:space-between; align-items:center; margin:-8px -12px var(--space-3) 0; }
-  .help-popover p + p { margin-top:var(--space-3); }
-  .help-popover .summary { font-weight:600; }
+  .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); }
+  .strategy-gate .row[data-status="not_applicable"] { color:var(--text-secondary); }
+  .strategy-gate .row > :last-child { text-align:right; color:var(--text-secondary); }
+  .strategy-gate > small { margin:var(--space-2) 0 var(--space-1); }
+  .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); }
+  .strategy-line strong { margin-left:var(--space-1); }
+  #strategy-help { width:min(520px, calc(100vw - var(--space-6))); max-height:calc(100vh - 2 * var(--space-6)); overflow-y:auto; padding:var(--space-5); color:var(--text); }
+  #strategy-help::backdrop { background:rgb(20 20 19 / 0.24); }
+  #strategy-help > header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3); }
   .panel-enter { animation:panel-enter 160ms ease-out; }
   @keyframes panel-enter { from { opacity:0; transform:translateY(4px); } }
   @keyframes pulse { 50% { opacity:0.3; } }
@@ -77,31 +61,31 @@
   }
   @media (max-width:899px) {
     #indicator-list { display:flex; gap:var(--space-2); overflow-x:auto; padding:0 var(--space-4); }
-    #indicator-list .indicator-item { flex:none; grid-template-columns:auto auto auto; border:1px solid var(--separator); border-radius:12px; padding:var(--space-2) var(--space-3); }
+    #indicator-list > .row { flex:none; grid-template-columns:auto auto auto; margin:0; border:1px solid var(--separator); padding:var(--space-2) var(--space-3); }
     main { padding:var(--space-5) var(--space-4); }
-    .detail-note { text-align:left; }
-    .back-link { display:inline-block; }
+    .detail-header > small { text-align:left; }
+    main > nav { display:block; }
   }
 </style>
 </head>
 <body data-title-key="dashboard_title">
 <div class="layout">
   <aside>
-    <header><h1 class="title">StockBoard</h1>
-      <div class="header-controls"><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
+    <header><h2>StockBoard</h2>
+      <div><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
       <button class="icon-button" id="theme-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-theme"/></svg></button></div></header>
-    <div class="status-bar caption" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><span></span></div>
-    <h2 class="caption" id="strategy-heading"></h2>
-    <select id="strategy-select" aria-labelledby="strategy-heading"></select>
-    <h2 class="caption" id="market-heading"></h2>
+    <div class="status-bar" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><small></small></div>
+    <small id="strategy-heading"></small>
+    <span class="field"><select id="strategy-select" aria-labelledby="strategy-heading"></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
+    <small id="market-heading"></small>
     <ul id="indicator-list"></ul>
-    <h2 class="caption" id="symbols-heading"></h2>
-    <ul id="symbol-list"><li class="placeholder"></li><li class="placeholder"></li><li class="placeholder"></li></ul>
-    <a class="sidebar-footer-link caption" id="catalog-link" href="/rules"></a>
+    <small id="symbols-heading"></small>
+    <ul id="symbol-list"><li class="row placeholder"></li><li class="row placeholder"></li><li class="row placeholder"></li></ul>
+    <a class="row" id="catalog-link" href="/rules"><small></small></a>
   </aside>
-  <main id="strategy-panel" tabindex="-1"><p class="caption" id="select-symbol-hint"></p></main>
+  <main id="strategy-panel" tabindex="-1"><small id="select-symbol-hint"></small></main>
 </div>
-<div id="strategy-help" class="help-popover" popover aria-labelledby="strategy-help-title"></div>
+<div id="strategy-help" class="box" popover aria-labelledby="strategy-help-title"></div>
 <script src="/language.js"></script>
 <script>
 const STATUS_STYLE = {
@@ -116,6 +100,7 @@ const valueFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits:2 });
 const strategySelect = document.getElementById('strategy-select');
 const symbolList = document.getElementById('symbol-list');
 const strategyPanel = document.getElementById('strategy-panel');
+strategyPanel.addEventListener('click', event => { if (event.target.closest('main > nav a')) { event.preventDefault(); document.querySelector('aside').scrollIntoView({ behavior:'smooth' }); } });
 const statusBar = document.getElementById('status-bar');
 let selectedSymbol = decodeURIComponent(location.hash.slice(1)) || null;
 let latestSnapshot = null, statusReceivedAt = 0, connectionError = false;
@@ -169,7 +154,8 @@ function renderStatusBar() {
     else if (ageMinutes > status.stale_after_minutes) { text = languageText('data_stale', { time:shortTime }); color = 'caution'; }
     else { text = languageText('market_open', { age:formatAge(ageMinutes) }); color = 'positive'; }
   }
-  statusBar.className = `status-bar caption ${color}` + (statusBar.classList.contains('is-loading') ? ' is-loading' : '');
+  statusBar.className = `status-bar ${color}` + (statusBar.classList.contains('is-loading') ? ' is-loading' : '');
+  statusBar.lastElementChild.className = color;
   statusBar.title = title;
   statusBar.lastElementChild.textContent = text;
 }
@@ -178,9 +164,9 @@ function renderIndicatorList(indicatorList) {
   document.getElementById('indicator-list').innerHTML = indicatorList.map(indicator => {
     const isRising = indicator.change_value > 0;
     const color = indicator.change_value ? ((isRising !== indicator.is_higher_value_risky) ? 'positive' : 'negative') : 'muted';
-    return `<li class="indicator-item"><span>${escapeText(primaryText(indicator.display_name))}</span>
-      <span class="strong">${indicator.value == null ? '—' : valueFormat.format(indicator.value)}</span>
-      <span class="caption ${color}">${formatChange(indicator.change_value, indicator.change_unit)}</span></li>`;
+    return `<li class="row"><span>${escapeText(primaryText(indicator.display_name))}</span>
+      <strong>${indicator.value == null ? '—' : valueFormat.format(indicator.value)}</strong>
+      <small class="${color}">${formatChange(indicator.change_value, indicator.change_unit)}</small></li>`;
   }).join('');
 }
 
@@ -190,14 +176,14 @@ function renderSymbolList(symbolCardList, failedSymbolList) {
     const isInsufficient = card.unknown_weight_ratio > maxUnknownWeightRatio;
     const score = card.score_percent == null ? '—' : Math.round(card.score_percent);
     const status = summaryStatus(card.is_pass);
-    return `<li><button class="symbol-item" data-symbol="${escapeText(card.symbol)}" aria-current="${card.symbol === selectedSymbol}"
+    return `<li><button class="row" data-symbol="${escapeText(card.symbol)}" aria-current="${card.symbol === selectedSymbol}"
         aria-label="${escapeText(languageText('symbol_summary', { symbol:card.symbol, status:languageText(status), score }))}${isInsufficient ? ' · ' + escapeText(languageText('insufficient_data')) : ''}">
-      <span class="strong">${escapeText(card.symbol)}</span>${renderSparkline(card.sparkline_close_price_list)}
-      <span class="score">${renderStatusBadge(status, false)}<span class="strong ${isInsufficient ? 'muted' : scoreColor(card.score_percent)}">${score}</span></span>
-      <span class="caption">$${priceFormat.format(card.price)} <span class="${card.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(card.change_value, card.change_unit)}</span></span>
+      <strong>${escapeText(card.symbol)}</strong>${renderSparkline(card.sparkline_close_price_list)}
+      <span>${renderStatusBadge(status, false)}<strong class="${isInsufficient ? 'muted' : scoreColor(card.score_percent)}">${score}</strong></span>
+      <small>$${priceFormat.format(card.price)} <span class="${card.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(card.change_value, card.change_unit)}</span></small>
     </button></li>`;
-  }).join('') + failedSymbolList.map(symbol => `<li><div class="symbol-item is-failed" aria-disabled="true"><span class="strong">${escapeText(symbol)}</span><span></span><span></span><span class="caption">${escapeText(languageText('unavailable'))}</span></div></li>`).join('');
-  symbolList.querySelectorAll('button.symbol-item').forEach(button => button.onclick = () => selectSymbol(button.dataset.symbol, true));
+  }).join('') + failedSymbolList.map(symbol => `<li><div class="row" aria-disabled="true"><strong>${escapeText(symbol)}</strong><span></span><span></span><small>${escapeText(languageText('unavailable'))}</small></div></li>`).join('');
+  symbolList.querySelectorAll('button').forEach(button => button.onclick = () => selectSymbol(button.dataset.symbol, true));
   if (focusedSymbol) { const button = symbolList.querySelector(`[data-symbol="${focusedSymbol}"]`); if (button) button.focus(); }
 }
 
@@ -218,10 +204,10 @@ function renderStrategyOptions() {
 }
 
 function renderStaticText() {
-  document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'), true);
-  document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'), true);
-  document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'), true);
-  document.getElementById('catalog-link').textContent = languageText('rule_catalog');
+  document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'));
+  document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'));
+  document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'));
+  document.querySelector('#catalog-link small').textContent = languageText('rule_catalog');
   document.getElementById('theme-button').setAttribute('aria-label', languageText('switch_theme'));
   const hint = document.getElementById('select-symbol-hint');
   if (hint) hint.textContent = languageText('select_symbol');
@@ -242,11 +228,11 @@ function handleLanguageChange() {
 function renderStrategyHelp() {
   const strategy = strategyById[strategySelect.value];
   if (!strategy) return;
-  document.getElementById('strategy-help').innerHTML = `<header><h2 class="title" id="strategy-help-title">${languageRenderText(strategy.display_name)}</h2>
-      <button class="help-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="${escapeText(languageText('close'))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-close"/></svg></button></header>
-    <p class="summary">${languageRenderText(strategy.summary)}</p>${languageRenderParagraphs(strategy.help_text)}
-    <p class="caption">${escapeText(languageText('source', { source:primaryText(strategy.source) }))}</p>
-    <p><a class="catalog-link" href="/rules">${escapeText(languageText('see_all_rules'))}</a></p>`;
+  document.getElementById('strategy-help').innerHTML = `<header><h2 id="strategy-help-title">${languageRenderText(strategy.display_name)}</h2>
+      <button class="icon-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="${escapeText(languageText('close'))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-close"/></svg></button></header>
+    <h3>${languageRenderText(strategy.summary)}</h3>${languageRenderParagraphs(strategy.help_text)}
+    <small>${escapeText(languageText('source', { source:primaryText(strategy.source) }))}</small>
+    <p><a href="/rules">${escapeText(languageText('see_all_rules'))}</a></p>`;
 }
 
 async function loadDashboardSnapshot() {
@@ -275,7 +261,7 @@ function selectSymbol(symbol, isUserAction) {
   const isNewSymbol = symbol !== selectedSymbol || isUserAction;
   selectedSymbol = symbol;
   history.replaceState(null, '', '#' + encodeURIComponent(symbol));
-  symbolList.querySelectorAll('button.symbol-item').forEach(button => button.setAttribute('aria-current', String(button.dataset.symbol === symbol)));
+  symbolList.querySelectorAll('button').forEach(button => button.setAttribute('aria-current', String(button.dataset.symbol === symbol)));
   loadStrategyEvaluationForSymbol(symbol, isNewSymbol && isUserAction);
   if (isUserAction && window.innerWidth < 900) strategyPanel.scrollIntoView({ behavior:'smooth' });
 }
@@ -301,8 +287,8 @@ function calculateScoreText(ruleResultList) {
 }
 
 function renderRuleRows(ruleResultList) {
-  return ruleResultList.map(rule => `<div class="strategy-rule-row ${rule.status}">
-    <a class="caption rule-link" href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="${escapeText(languageText('open_rule', { id:rule.rule_id }))}">${escapeText(rule.rule_id)}</a>${renderStatusBadge(rule.status)}
+  return ruleResultList.map(rule => `<div class="row" data-status="${rule.status}">
+    <small><a href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="${escapeText(languageText('open_rule', { id:rule.rule_id }))}">${escapeText(rule.rule_id)}</a></small>${renderStatusBadge(rule.status)}
     <span>${languageRenderText(rule.description)}</span><span>${formatMeasuredValue(rule.measured_value)}</span></div>`).join('');
 }
 
@@ -316,29 +302,29 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
       <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="/icons.svg#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
-        <h3 class="title">${languageRenderText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${escapeText(languageText(summaryStatus(gate.is_pass)))}</span></header>
-      ${gate.expiration_window_label ? `<p class="caption gate-note">${languageRenderText(languageLocalize('best_window', { label:gate.expiration_window_label, score:calculateScoreText(gate.rule_result_list) }), true)}</p>` : ''}
+        <h3>${languageRenderText(gate.display_name)}</h3><small class="${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${escapeText(languageText(summaryStatus(gate.is_pass)))}</small></header>
+      ${gate.expiration_window_label ? `<small>${languageRenderText(languageLocalize('best_window', { label:gate.expiration_window_label, score:calculateScoreText(gate.rule_result_list) }))}</small>` : ''}
       ${renderRuleRows(gate.rule_result_list)}
-      ${gate.alternative_window_result_list.map(window => `<h4 class="caption window-title">${languageRenderText(languageLocalize('alternative_window', { label:window.expiration_window_label, score:calculateScoreText(window.rule_result_list) }), true)}</h4>
+      ${gate.alternative_window_result_list.map(window => `<small>${languageRenderText(languageLocalize('alternative_window', { label:window.expiration_window_label, score:calculateScoreText(window.rule_result_list) }))}</small>
         ${renderRuleRows(window.rule_result_list)}`).join('')}
     </section>`).join('');
-  strategyPanel.innerHTML = `<a class="back-link caption" href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">${escapeText(languageText('back_to_list'))}</a>
-    <header class="detail-header"><p class="strategy-line caption">${escapeText(languageText('strategy'))}<span class="strategy-name">${languageRenderText(strategyName)}</span>
-      <button class="help-button" popovertarget="strategy-help" aria-label="${escapeText(languageText('about_strategy', { name:primaryText(strategyName) }))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-help"/></svg></button></p>
-      <div class="symbol-header"><h2 class="display">${escapeText(symbol)}</h2>${symbolCard ? `<p class="caption">$${priceFormat.format(symbolCard.price)}
-      <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></p>` : ''}</div>
+  strategyPanel.innerHTML = `<nav><small><a href="#${encodeURIComponent(symbol)}">${escapeText(languageText('back_to_list'))}</a></small></nav>
+    <header class="detail-header"><p class="strategy-line"><small>${escapeText(languageText('strategy'))}</small><strong>${languageRenderText(strategyName)}</strong>
+      <button class="icon-button" popovertarget="strategy-help" aria-label="${escapeText(languageText('about_strategy', { name:primaryText(strategyName) }))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-help"/></svg></button></p>
+      <div class="symbol-header"><h1>${escapeText(symbol)}</h1>${symbolCard ? `<small>$${priceFormat.format(symbolCard.price)}
+      <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></small>` : ''}</div>
     <div class="result-row">
-      <div><p class="caption">${languageRenderText(languageLocalize('verdict'), true)}</p><p class="display">${renderStatusBadge(summaryStatus(evaluation.is_pass))}</p></div>
-      <div><p class="caption">${languageRenderText(languageLocalize('score'), true)}${isInsufficient ? ` <span class="tag">${escapeText(languageText('insufficient_data'))}</span>` : ''}</p>
-        <p class="display ${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</p></div>
-      </div><p class="caption detail-note">${escapeText(languageText('missing_weight', { percent:Math.round(evaluation.unknown_weight_ratio * 100) }))}</p>
+      <div><small>${languageRenderText(languageLocalize('verdict'))}</small><h1>${renderStatusBadge(summaryStatus(evaluation.is_pass))}</h1></div>
+      <div><small>${languageRenderText(languageLocalize('score'))}</small>${isInsufficient ? `<small class="box">${escapeText(languageText('insufficient_data'))}</small>` : ''}
+        <h1 class="${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</h1></div>
+      </div><small>${escapeText(languageText('missing_weight', { percent:Math.round(evaluation.unknown_weight_ratio * 100) }))}</small>
     </header>${gates}`;
   if (shouldAnimate) { strategyPanel.classList.remove('panel-enter'); void strategyPanel.offsetWidth; strategyPanel.classList.add('panel-enter'); }
 }
 
 function handleSymbolListKeydown(event) {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-  const buttonList = [...symbolList.querySelectorAll('button.symbol-item')];
+  const buttonList = [...symbolList.querySelectorAll('button')];
   const nextButton = buttonList[buttonList.indexOf(document.activeElement) + (event.key === 'ArrowDown' ? 1 : -1)];
   if (!nextButton) return;
   event.preventDefault();
