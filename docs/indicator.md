@@ -14,6 +14,8 @@ A value that cannot be fetched is `unknown` (shown as ❓, left out of the score
 
 ## Rates and credit (market)
 
+Daily change of these indicators is reported in basis points (`change_unit: basis_points`); volatility indices and prices report percent change.
+
 | indicator_id | Meaning | Source |
 |---|---|---|
 | `treasury_ten_year_yield` | 10Y yield, percent | FRED `DGS10` (public CSV, no key) |
