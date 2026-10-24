@@ -14,7 +14,7 @@ CSS custom properties on `:root` (light) and `:root[data-theme="dark"]`. Every t
 | `--fill` | `#F0EEE6` | `#3A3A37` | hover and selected row (selected adds the accent bar) |
 | `--separator` | `#E8E6DC` | `#3D3D3A` | 1px lines, placeholder rows |
 | `--text` | `#141413` | `#F5F4EE` | primary text |
-| `--text-secondary` | `#6B6A64` | `#A8A69D` | captions, unknown, not applicable |
+| `--text-secondary` | `#6B6A64` | `#A8A69D` | small text, English companions, unknown, not applicable |
 | `--accent` | `#C96442` | `#D97757` | selection bar, focus ring, theme button. Never body text |
 | `--positive` | `#146C35` | `#4ADE80` | up, 通过 |
 | `--negative` | `#B42318` | `#FF8A8A` | down, 否决, 未通过 |
@@ -25,20 +25,32 @@ Score color: 75 or more `--positive`, 60 to 74 `--caution`, below 60 `--negative
 
 ## Type
 
+Markdown-like. Plain HTML tags, no text classes: the tag decides the look.
+
 System font only: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif`. All numbers use `font-variant-numeric: tabular-nums`.
 
-| Token | Size / weight / line height | Use |
-|---|---|---|
-| `--font-caption` | 12px / 400 / 16px | labels, timestamps, section titles |
-| `--font-body` | 15px / 400 / 20px | rows, rule text |
-| `--font-title` | 20px / 600 / 24px | sidebar title, rule group titles, popover title. Gate titles are not title size: they use body size semibold (`strong`) so they sit just above their rules |
-| `--font-display` | 34px / 600 / 40px, letter-spacing -0.02em | pass result and score in main |
+| Markdown | HTML tag | Size / weight / line | Used for |
+|---|---|---|---|
+| `#` H1 | `h1` | 28 / 600 / 32, letter-spacing -0.02em | symbol name, page title, the big verdict and score figures |
+| `##` H2 | `h2` | 20 / 600 / 24 | app name, popover title, rule group titles |
+| `###` H3 | `h3` | 15 / 600 / 20 | gate titles, strategy name, the summary sentence |
+| body | `p`, `li` | 15 / 400 / 20 | everything else that is read |
+| small | `small` | 12 / 400 / 16, `--text-secondary` | labels, timestamps, notes, every English companion |
+| bold | `strong` | weight 600, same size as its parent | emphasis inside a line |
+| link | `a` | see Links below | all links |
 
-No other sizes. Every heading element has an explicit size.
+Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
+
+**Links:** gray `--text-secondary`, no underline. Hover and keyboard focus turn the text `--text` and underline it. Inside a paragraph or list item (`p a`, `li a`) a link is always `--text` and underlined, like Markdown. Every `a` has a 44px hit area built in (`::after`), so no separate hit class is needed.
+
+**Vertical rhythm** (inside any `.box`, the popover and the explanation box included):
+- `.box > * + * { margin-top: 12px }`
+- `.box > h2 + * { margin-top: 8px }`
+- `small[lang="en"] { margin-top: 4px }`, so an English companion hugs the Chinese line it translates.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius tokens: `--radius-control` 8px (everything clickable, plus chips), `--radius-panel` 12px (boxes). Hit size token: `--hit-size` 44px. No shadows. Font weights: 400 and 600 only.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius-control` 8px, for everything (controls, rows, boxes, small tags). Hit size token: `--hit-size` 44px. No shadows.
 
 ## Status
 
@@ -75,40 +87,37 @@ One shape language. Everything the user can click shares one radius, one hover a
 | Rule | Value |
 |---|---|
 | Interactive elements | radius `--radius-control`; min height `--hit-size`; no negative margins anywhere |
-| Hover | background `--fill`; text becomes `--text`. Same for icon button, interactive row, link hit area |
+| Hover | background `--fill`; text becomes `--text`. Same for icon button, interactive row, link |
 | Keyboard focus | 2px `--accent` outline, offset 2px, follows the element's own radius (`:focus-visible` never sets a radius); rows use `outline-offset: -2px` so the ring is not clipped |
 | Selected | `aria-current="true"` (sidebar) or `.is-target` (rules page, from the URL hash): `--fill` plus a straight accent pill, 3px wide and 16px tall, centered on the row's left edge (`::before`). It is a separate shape, not an inset shadow, so it never bends with the row's rounded corner. A darker fill is not used: secondary text would fall below 4.5:1 |
 | Disabled or failed | no opacity (contrast); text becomes `--text-secondary` |
 | Field (`select`) | a `span.field` wraps the `select` and a Tabler chevron: 1px `--separator` border, `--surface` background on every page, radius control, 44px tall. The browser's own arrow is turned off; the chevron sits 12px from the right edge. Keyboard focus rings the whole field |
 | Row | margin `0 var(--space-2)`, padding `var(--space-2)`, radius control |
-| Panel | radius panel, `--surface`, 1px `--separator` border, padding `--space-4` or `--space-5` |
-| Chip | radius control, 1px `--separator` border, padding `0 var(--space-2)`, caption type; height comes from line height, never fixed |
-| Hit area (`.hit`) | `position: relative` plus an `::after` that extends the clickable area to `--hit-size` without changing layout; replaces every negative-margin hack |
-| Circles | only non-clickable marks: `status-dot`, `gate-marker`, sparkline |
+| Box (`.box`) | radius control, `--surface`, 1px `--separator` border. Padding `--space-4` `--space-5` for the popover and explanation box; `0 var(--space-2)` for small tags (`small.box`), whose height comes from the line height, never fixed |
+| Link hit area (`a`) | `position: relative` plus an `::after` that extends the clickable area to `--hit-size` without changing layout; replaces every negative-margin hack |
+| Circles | only non-clickable marks: `status-dot`, sparkline |
 
-## Elements (five families)
+## Elements
 
-| Family | Classes | Used for |
+Text is done by tags. There are 7 element classes and one radius (8px). Do not add a new element class; compose these.
+
+| Family | What exists | Used for |
 |---|---|---|
-| Text | `caption` `title` `display` `strong`, colors `positive` `negative` `caution` `muted`, `link`, `link-emphasis` | all text and every link (hover underline; `link-emphasis` is always underlined) |
-| Control | `icon-button`, `field` | theme, language, help and close buttons; strategy and filter selects |
-| Row | `row` (a `button` or `a` row is interactive; `aria-current` or `.is-target` marks selected) | symbol, indicator and rule rows, sidebar footer link, loading placeholders |
-| Surface | `panel`, `chip` | popover, explanation box; tag, usage chips, phone indicator strip |
-| Mark | `status-badge`, `status-dot`, `sparkline`, `gate-marker` | pass, fail and unknown badges, market dot, price trend, gate icon |
+| Text | tags only: `h1` `h2` `h3` `p` `li` `small` `strong` `a`, plus four color modifiers `.positive` `.negative` `.caution` `.muted` | all text and every link |
+| Control | `.icon-button` (theme, language, help, close), `.field` (select with chevron) | buttons and strategy and filter selects |
+| List row | `.row` (a `button` or `a` row is interactive; `aria-current` or `.is-target` marks selected) | symbol, indicator and rule rows, sidebar footer link, loading placeholders |
+| Box | `.box`: bordered, radius 8px, `--surface` | popover, explanation box, and `small.box` for tags, usage chips and the phone indicator strip |
+| Mark | `.status-badge` (icon plus word), `.status-dot`, `.sparkline` | pass, fail and unknown badges, market dot, price trend |
 
-Layout-only containers (not elements): sidebar, main, `detail-header`, `result-row`, `strategy-gate`, `status-bar`, dividers. Do not add a new element class; compose these.
+Layout-only containers (not elements, styled by the page only for layout): page grid, `aside`, `main`, `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.legend`, `.usage`, `.rule-meta`, dividers.
 
 ## Language
 
 English is the default; Chinese mode shows Chinese with the English underneath. Glossary and writing rules: `docs/language.md`.
 
-| Class | Style | Use |
-|---|---|---|
-| `.translation` | block, 12px / 16px, `--text-secondary`, weight 400 | English line under Chinese text |
-| `.translation-inline` | 12px, `--text-secondary`, 4px left margin | English after a 12px caption on the same line |
-| `.translation-paragraph` | 15px body, `--text-secondary` | English help paragraph after its Chinese paragraph |
+**The one English rule (no exceptions):** in Chinese mode the English text is `<small lang="en">`, always on its own line directly under the Chinese line it translates, always 12px gray. That covers titles, labels, rule descriptions and every help paragraph. There are no `translation*` classes.
 
-English appears under: sidebar section captions, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result captions, expiration window lines, the rules page explanation.
+English appears under: sidebar section labels, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result labels, expiration window lines, the rules page explanation.
 Never doubled: status words, numbers, prices, percentages, times, symbols, the status bar, buttons, select options, aria-labels.
 `<html lang>` is `en` or `zh-Hans`; every English line in Chinese mode carries `lang="en"`.
 
