@@ -1,225 +1,176 @@
-# Plan: bilingual interface (English default, Chinese with English underneath)
+# Plan: one shape language for every control, row and surface
 
-Branch: `feature/bilingual`. One commit per step. Quality bar: the page must still score at least 4.5 on the strict Apple review used so far.
-The previous plan (UI and API v1) is finished; it stays in git history (commit `216d1e5`).
+Branch: `feature/ui-consistency` (from `main` at `e8b09cd`). One commit per step. Quality bar: the page must keep scoring at least 4.5 on the strict Apple review, and the audit in section 7 must pass.
+Previous plans (UI and API v1, bilingual interface) are in git history.
 
 ---
 
-## 0. Requirements
+## 1. The problem, verified
 
-### 0.1 From the user
+The user reported: small buttons, the dropdown, the market indicator box and the highlighted symbol row do not share a style (some rounded, some square), and the help circle next to the strategy is round on hover while everything else is square. All measured in the running page (dark theme, 1512px wide):
 
-| ID | Requirement |
+| Claim | Verdict | Evidence (computed style) |
+|---|---|---|
+| Help button is round, other buttons are square | **True** | `.help-button` radius `50%`; `.icon-button` (theme, language) radius `8px`. Same size (44px), same job, same hover color, two shapes |
+| Dropdown differs from the rest | **True** | `select`: 8px radius **with** a 1px border; icon buttons: 8px radius **no** border, no background until hover |
+| Selected symbol row differs | **True** | Selected row: radius `0px`, full width (299px, touches the sidebar edge), accent bar made with `box-shadow: inset 3px 0`. Rules page highlighted row (same meaning): radius `8px` + same bar. Same state, two shapes |
+| Market indicator box differs | **True** | Desktop: plain rows, no background, radius `0px`. Phone (`max-width: 899px`): bordered chips with radius `12px`. The same element has two shapes, and the chip radius (12) matches no other chip (tag and usage chips use 8) |
+| Colors differ | **Partly true** | Select background is `--background` on the dashboard (`rgb(38,38,36)`) but `--surface` on the rules page (`rgb(48,48,46)`). Hover and selected rows share the same fill, so a hovered row looks selected |
+
+**Additional faults found while auditing (the user did not mention them):**
+
+| # | Fault | How it was found |
+|---|---|---|
+| F1 | `:focus-visible { border-radius: 8px }` in `base.css` changes the shape of any element whose own class sets no radius (symbol rows are `0px`, so they become rounded only while keyboard-focused) | Code reading. Could **not** be reproduced in the browser tool: script focus does not enter the keyboard-focus state |
+| F2 | Five different hacks to reach a 44px tap area: negative margins on `.help-button`, `.back-link`, `.rule-link`, `.catalog-link`, alias links, plus `padding: 14px/15px` | CSS |
+| F3 | Five link styles: `.rule-link` (no underline, underline on hover), `.catalog-link` (always underlined), `.back-link` (gray), `.sidebar-footer-link` (gray with top border), alias link (small gray) | CSS |
+| F4 | `.strategy-gate > header .icon` masks the vertical line with `background` + `border-radius: 50%` (a hack) | CSS |
+| F5 | `.strategy-name` re-implements `.strong` (15px/600) as its own class | CSS |
+| F6 | 42 distinct CSS classes on one dashboard render, many one-off | `distinctClasses` = 42 |
+| F7 | Magic numbers outside the token scale: 14px, 15px, 36px, -24px, 22px chip height | CSS |
+| F8 | Placeholder rows are 8px rounded while the rows they stand in for are square | CSS |
+
+---
+
+## 2. Three style options
+
+All keep the Claude palette, system font and the 4-size type scale. They differ in shape rules.
+
+### Option 1: one control radius, inset rounded rows (recommended) — 4.7 / 5
+
+- Every clickable thing shares **one radius (8px)**: icon buttons (including help and close), select, list rows, links' hover area.
+- List rows are **inset** (8px side margin) with 8px corners; hover = `--fill`; selected = `--fill` + the 3px accent bar (the rules page already looks like this).
+- Panels (popover, explanation box) use 12px; chips use 8px.
+- Circles only for things that are not clickable: status dot, gate marker, sparkline end.
+- Matches Apple's current sidebar look (inset rounded selection) and the Claude app. Fewest rules.
+
+| Criterion (1 to 5) | Score |
 |---|---|
-| L1 | Two languages: English and Chinese. |
-| L2 | English is the default. |
-| L3 | In Chinese mode, Chinese is the main text and the English text is shown too, in small gray type underneath. |
-| L4 | Every strategy, gate, rule and help text gets an English version; the Chinese version is kept. |
-| L5 | Language code: `zh` (not CH, which is Switzerland, nor CN, which is China as a country). |
-| L6 | Keep the 4.5 design standard. |
+| Looks unified | 5.0 |
+| Fits Claude and Apple | 4.8 |
+| Code simplicity (fewest rules) | 4.8 |
+| Accessibility (44px targets, focus ring follows the shape) | 4.7 |
+| Migration effort and risk (rows lose 16px width) | 4.2 |
+| **Overall** | **4.7** |
 
-### 0.2 Decisions (made for the user, explained)
+### Option 2: role-based shapes (circle for icon-only, rounded rectangle for text) — 4.0 / 5
+
+- Icon-only buttons are circles (like an iOS toolbar), selects and rows 8px, panels 12px.
+- Principled, but the user's complaint is exactly "some round, some square"; this keeps two shapes on screen. Three radii plus a circle rule to remember.
+
+| Criterion | Score |
+|---|---|
+| Looks unified | 3.2 |
+| Fits Claude and Apple | 4.3 |
+| Code simplicity | 4.0 |
+| Accessibility | 4.5 |
+| Migration effort and risk | 4.0 |
+| **Overall** | **4.0** |
+
+### Option 3: flat and square, full-width rows (what the sidebar rows do now) — 3.1 / 5
+
+- Radius 0 everywhere except status dots; rows full-bleed; separators and the accent bar carry the structure (Robinhood / terminal style).
+- Very few rules, but it contradicts the warm Claude look the user chose and Apple's rounded controls; the select and buttons would also have to lose their rounding.
+
+| Criterion | Score |
+|---|---|
+| Looks unified | 4.5 |
+| Fits Claude and Apple | 2.0 |
+| Code simplicity | 4.5 |
+| Accessibility | 3.5 |
+| Migration effort and risk | 2.5 (redo the work done in earlier rounds) |
+| **Overall** | **3.1** |
+
+**Chosen: Option 1.**
+
+---
+
+## 3. Decisions (made on the user's behalf; say if any is wrong)
 
 | ID | Decision | Why |
 |---|---|---|
-| D1 | Two modes, not three: **English** (English only) and **中文** (Chinese plus English underneath). | Matches L2 and L3 exactly. A Chinese-only mode is not requested. |
-| D2 | Codes `en` and `zh`; the page sets `<html lang="en">` or `<html lang="zh-Hans">`; every English line shown in Chinese mode carries `lang="en"`. | Standard BCP 47; screen readers switch voice correctly. |
-| D3 | Switch = segmented control `EN | 中文` in the sidebar header, between the title and the theme button. Choice stored in `localStorage` key `stockboard-language` (try/catch). Same control on the rules page. | One place, same as the theme switch; no reload needed. |
-| D4 | Localized text in data is an object `{en: "...", zh: "..."}` under the existing field name. Both keys are required. | One field, two languages; a SwiftUI client reads the same object. |
-| D5 | Snapshot and API `schema_version` goes from 2 to 3 because field types change from string to object. | The API contract says type changes bump the version. |
-| D6 | Where the English line appears (Chinese mode), see section 2.3. Status words, numbers, prices, times, buttons and the status bar are never doubled. | Doubling every word would make rows unreadable; icons and numbers are already language-neutral. |
-| D7 | Long help paragraphs: the English paragraph follows its Chinese paragraph in `--text-secondary` color at body size (15px), not 12px. | 12px is too small for paragraphs of running text; it stays gray so the hierarchy is clear. |
-| D8 | `<select>` options show the active language only. | Native `<select>` cannot show two lines; the selected strategy's English name appears in the main header. |
+| D1 | Radii: `--radius-control: 8px` (buttons, select, rows, chips), `--radius-panel: 12px` (popover, explanation box). Circle (`50%`) only for non-interactive marks | One interactive shape |
+| D2 | Selected row = `--fill` plus the 3px accent bar; hover = `--fill` only. **No new color token** | A darker "selected" fill was tested and rejected: secondary text drops below 4.5:1 (light `#EBE9E0` 4.46, `#E8E6DC` 4.34; dark `#41413E` 4.20, `#44443F` 4.01) |
+| D3 | The mobile indicator strip uses the same `.chip` (8px), not 12px | One chip |
+| D4 | Select background is always `--surface` (dashboard and rules page) | It is a field, not part of the page; `--surface` separates it on both backgrounds |
+| D5 | Replace every negative-margin tap area with one `.hit` rule (section 5) | One mechanism |
+| D6 | One link style: text color `--text-secondary`, becomes `--text` with underline on hover and keyboard focus; `.link-emphasis` variant only for the popover link (always underlined, `--text`) | 5 styles become 1 plus 1 variant |
+| D7 | `:focus-visible` keeps the outline but no longer sets `border-radius`; outline follows each element's own radius | Fixes F1 |
+| D8 | Class count on a dashboard render must drop from 42 to 28 or fewer | F6 |
 
 ---
 
-## 1. Glossary (fixed translations; every step must use these)
+## 4. Inventory of every element, grouped into five families
 
-| 中文 | English |
-|---|---|
-| 策略 | Strategy |
-| 市场指标 | Market |
-| 标的 | Symbols |
-| 结论 | Verdict |
-| 分数 | Score |
-| 通过 / 未通过 / 否决 / 未知 / 不适用 | Pass / Fail / Veto / Unknown / N/A |
-| 数据缺失权重 X%（未知规则不计入分数） | Missing-data weight X% (unknown rules are left out of the score) |
-| 数据不足 | Insufficient data |
-| 到期窗口 X 天（最佳） · 本层分数 Y | Expiration X days (best) · Gate score Y |
-| 备选到期窗口 | Alternative expiration |
-| 开盘中 · 更新于 N 分钟前 | Market open · Updated N min ago |
-| 休市 · 最后更新 | Market closed · Last update |
-| 数据已过期 | Data is stale |
-| 连接断开，正在重试 | Disconnected, retrying |
-| 正在获取数据… | Loading data… |
-| 获取失败 | Unavailable |
-| 规则目录 | Rule catalog |
-| 编号 / 说明 / 默认权重 / 数据状态 / 使用它的策略 | ID / Rule / Weight / Availability / Used by |
-| 自动计算 / 缺少数据源 / 需要账户数据 / 需要你回答 / 交易计划项 / 尚未实现 | Automatic / No data source / Needs account data / Needs your answer / Trade plan / Not built yet |
-| 是 / 否 | Yes / No |
-| 宽松档 / 严格档 | loose tier / strict tier |
-| GATE, VIX, SPX, DTE, IV, RV30, FGI, HY, bp, Delta | unchanged in both languages |
+All visible things on both pages, and the family each belongs to:
 
----
-
-## 2. Design (add to `docs/design.md` as a "Language" section)
-
-### 2.1 Tokens
-
-| Class | Style | Use |
+| Family | Variants (fewest possible) | Elements that become it today |
 |---|---|---|
-| `.translation` | `display:block; font-size:12px; line-height:16px; color:var(--text-secondary); font-weight:400;` | English line under Chinese text |
-| `.translation-inline` | `font-size:12px; color:var(--text-secondary); margin-left:var(--space-1);` | English after a 12px caption label on the same line |
-| `.translation-paragraph` | `color:var(--text-secondary);` (15px body) | English help paragraph (D7) |
+| **Text** | 4 sizes (`caption` 12, `body` 15, `title` 20, `display` 34), weight `strong`, color (`positive`, `negative`, `caution`, `muted`), `link` | page titles, captions, section titles, values, scores, descriptions, links (all 5 kinds), `strategy-name` |
+| **Control** (clickable, 44px tall, 8px, same hover and focus) | `icon-button`, `field` (select) | theme button, language button, help button, popover close button, strategy select, rules filter select |
+| **Row** (list line, inset 8px, hover `--fill`, selected `--fill` + bar) | `row` (static), `row is-selected` | symbol item, indicator item, rule row, rule-catalog rule row (highlighted via URL hash), sidebar footer link |
+| **Surface** (boxed) | `panel` (12px, `--surface`, 1px border), `chip` (8px, 1px border, caption text) | popover, explanation box, tag "Insufficient data", usage chips, mobile indicator chips, loading placeholders (use `.row` height, `--separator` fill) |
+| **Mark** (not clickable, content graphic) | `status-badge` (icon + word), `status-dot`, `sparkline`, `gate-marker` | pass/fail/unknown badges, market status dot, price sparkline, gate title icon |
 
-### 2.2 Segmented control `language-switch`
+Not counted as families (layout only): the sidebar and main grid, `detail-header`, `result-row`, `strategy-gate` tree line, 1px `--separator` dividers.
 
-Two buttons inside a 1px `--separator` rounded container (radius 8px), each at least 44px tall. Selected button: `--fill` background, `--text` color, `aria-pressed="true"`. Labels `EN` and `中文`. Width budget: title 110px + switch 88px + theme button 44px + gaps 16px + padding 32px = 290px, under the 300px sidebar.
+**Result: 5 families, 14 classes** (`caption title display strong link icon-button field row panel chip status-badge sparkline status-dot`) plus the existing color modifiers and layout containers. That replaces 42 one-off classes.
 
-### 2.3 Where the English line appears in Chinese mode
-
-| Element | English shown? | How |
-|---|---|---|
-| Sidebar section captions (策略, 市场指标, 标的) | yes | `.translation-inline` |
-| Strategy name in main header | yes | `.translation` under it |
-| Gate titles | yes | `.translation` under the title |
-| Rule descriptions (dashboard and rules page) | yes | `.translation` under the description |
-| Rule notes (rules page) | yes | `.translation` |
-| Rule group titles and descriptions (rules page) | yes | `.translation` / `.translation-inline` |
-| Help popover: title, summary | yes | `.translation` |
-| Help popover: paragraphs | yes | `.translation-paragraph` after each paragraph |
-| Result captions 结论 / 分数 | yes | `.translation-inline` |
-| Expiration window lines | yes | `.translation-inline` |
-| Explanation box on the rules page | yes | `.translation-paragraph` |
-| Status words, numbers, prices, percentages, times, symbols | no | language-neutral or too frequent |
-| Status bar, buttons, select options, aria-labels | no | one line only; aria in the active language |
-
-In English mode no `.translation` element is rendered at all.
-
-### 2.4 Layout checks forced by longer English
-
-- Rule row status column: from 72px to 88px ("Unknown" with icon).
-- Strategy tree rule rows grow from 1 line to 2 lines in Chinese mode; accepted (it is the requested feature).
-- Indicator rows: English names already used (VIX…); `HY bp` becomes `HY spread` in both languages.
+Tokens added to `base.css` (no new colors): `--radius-control: 8px; --radius-panel: 12px; --hit-size: 44px;`.
 
 ---
 
-## 3. Data and backend
+## 5. Specification (add to `docs/design.md` as "Shape and states")
 
-### 3.1 Data format
-
-```yaml
-# config/rules.yaml
-rule_group_list:
-  - {group_id: A, display_name: {en: "A · #1 Sell Put five-layer framework", zh: "A · #1 Sell Put 五层决策框架"},
-     description: {en: "...", zh: "..."}}
-rule_list:
-  - {rule_id: A22, description: {en: "No earnings before expiration", zh: "到期前无财报"}, default_weight: 5, ...}
-  - {rule_id: A04, ..., note: {en: "...", zh: "..."}}
-# strategies/*.yaml
-display_name: {en: "Sell Put 4-in-1", zh: "Sell Put 四合一"}
-summary: {en: "...", zh: "..."}
-help: {en: "paragraphs\n\nseparated by blank lines", zh: "..."}
-gates: [{gate_id: gate_0_macro, display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}, ...}]
-# config/settings.yaml
-market_indicator_list: [{indicator_id: vix_level, display_name: {en: VIX, zh: VIX}, ...}]
-default_language: en
-```
-
-### 3.2 Code
-
-| File | Change |
+| Rule | Value |
 |---|---|
-| `stockboard_backend/localized_text.py` (new) | `LocalizedText` dataclass (`en`, `zh`); `localized_text_build_from_raw_value(raw_value, field_name) -> LocalizedText` raises `ValueError` naming the field when a language is missing or empty. |
-| `rule_catalog.py` | `description`, `note`, group `display_name`, `description` become `LocalizedText`. |
-| `strategy_evaluation.py` | `RuleDefinition.description`, `GateDefinition.display_name`, `StrategyDefinition.display_name/summary/help_text`, `RuleEvaluationResult.description`, `GateEvaluationResult.display_name` typed `LocalizedText` (dataclasses.asdict turns them into `{en, zh}`). |
-| `strategy_loader.py`, `settings_loader.py` | build `LocalizedText` for those fields; settings gains `default_language` (must be `en` or `zh`). |
-| `refresh_scheduler.py` | `SNAPSHOT_SCHEMA_VERSION = 3`; market card `display_name` is `{en, zh}`. |
-| `web_server.py` | strategies, rules and snapshot responses carry `{en, zh}` objects and `default_language`; old snapshots (v2) count as missing and are rebuilt. |
-
-### 3.3 Tests (new or changed)
-
-- `tests/test_localized_text.py`: missing `zh`, empty `en`, non-dict value each raise with the field name in the message.
-- `tests/test_rule_catalog.py`, **completeness and quality test** over every group, rule, note, strategy name, summary, help and gate in the project:
-  - both `en` and `zh` are present and non-empty;
-  - `en` contains no CJK character (`[\u3400-\u9fff]`), so no untranslated Chinese leaks into English;
-  - `en` uses the glossary spellings: none of the off-glossary variants `loose grade`, `strict grade`, `loose level`, `strict level`, `Not applicable`, `not applicable` appears (forbidden-words list in the test; extend it when the glossary grows).
-- `tests/test_web_server.py`: strategies response has `{en, zh}`; `default_language == "en"`; a schema v2 snapshot counts as missing.
-- Existing tests updated for the new types; all must pass.
+| Interactive elements | radius `--radius-control`; min height `--hit-size` (44px); no negative margins |
+| Hover | background `--fill`; text becomes `--text`. Same for icon button, row, link hit area, select |
+| Focus (keyboard) | 2px `--accent` outline, offset 2px, **follows the element's own radius**; rows use `outline-offset: -2px` so the ring is not clipped |
+| Selected | `row.is-selected`: `--fill` + `box-shadow: inset 3px 0 var(--accent)`; `aria-current="true"` stays |
+| Disabled / failed | `opacity` is not used (contrast); text becomes `--text-secondary` |
+| Field | 1px `--separator` border, `--surface` background, radius control, padding `--space-3`, chevron from the browser |
+| Row | `margin: 0 var(--space-2)`, `padding: var(--space-2) var(--space-2)`, radius control |
+| Panel | radius panel, `--surface`, 1px `--separator` border, padding `--space-4` or `--space-5` |
+| Chip | radius control, 1px `--separator` border, padding `0 var(--space-2)`, caption type, **height from line-height (16px) plus 2px border plus 4px padding, no fixed height** |
+| Hit area (`.hit`) | `position: relative` and a `::after` pseudo-element that extends the clickable area to 44px without changing layout (replaces every negative-margin hack) |
+| Circles | only `status-dot` (8px), `gate-marker`, and the sparkline; never on something clickable |
 
 ---
 
-## 4. Front end
+## 6. Steps and commits
 
-### 4.1 Shared: `static/language.js` (served at `/language.js`; logic at most 50 lines, plus the `UI_TEXT` table) and `static/base.css`
-
-| Function | Job |
-|---|---|
-| `UI_TEXT` | object `{key: {en, zh}}` holding every fixed string: glossary terms, aria-labels, error messages, page titles |
-| `languageGetActive()` | stored choice (`localStorage`, try/catch) if valid, else `document.documentElement.dataset.defaultLanguage`, else `en` |
-| `languageApply(languageCode, onChange)` | sets `<html lang>` (`en` / `zh-Hans`), `document.title`, stores the choice, updates the switch's `aria-pressed`, calls `onChange` |
-| `languageText(key)` | fixed string in the active language |
-| `languageRenderText(localizedText)` | escaped primary text; in Chinese mode adds `<span class="translation" lang="en">` with the English |
-| `languageRenderInline(localizedText)` | same, with `.translation-inline` |
-| `languageRenderParagraphs(localizedText)` | splits on blank lines; Chinese mode pairs each Chinese paragraph with its English paragraph (`.translation-paragraph`) |
-| `languageRenderSwitch()` | markup of the `EN | 中文` segmented control |
-
-Precedence: a stored user choice beats `default_language` from settings, which beats `en`.
-Numbers, prices and percentages keep `Intl.NumberFormat("en-US")` in both languages (US market data). Times keep `ET`.
-
-### 4.2 Dashboard (`static/index.html`, at most 380 lines)
-
-- Replace every hard-coded Chinese string with `languageText(key)` or a render helper; nothing in Chinese stays in the HTML except inside `UI_TEXT`.
-- Add the switch to the sidebar header.
-- On language change: re-render sidebar lists, status bar, main panel and the help popover **from data already in memory** (no fetch); keep selected symbol, scroll position and whether the popover is open.
-- `renderedEvaluationKey` includes the active language, so the "skip identical re-render" shortcut cannot keep the old language on screen.
-- `formatAge`, `formatMeasuredValue` (Yes/No) and the window labels use the active language.
-
-### 4.3 Rules page (`static/rules.html`, at most 140 lines)
-
-Same switch and helpers; availability labels, legend, column headers, filter options, explanation box, summary line, error message and `<title>` from `UI_TEXT`; group, rule and note text via the render helpers.
+1. **Spec.** Add "Shape and states" and the family table (sections 4 and 5) to `docs/design.md`; update the component table there. Commit.
+2. **Base styles.** In `static/base.css`: radius and hit tokens; `.link`, `.row`, `.panel`, `.chip`, `.field`; `.hit`; focus rule fixed (D7); `.icon-button` moved onto the shared control rules. Commit.
+3. **Dashboard.** Move `.help-button` and the popover close button onto `.icon-button` (delete `.help-button`); select onto `.field`; symbol, indicator and sidebar footer rows onto `.row` (selected row uses `is-selected`); popover onto `.panel`; mobile indicator chips and the tag onto `.chip`; placeholders to row height; the five link kinds to `.link`; gate marker to a named `.gate-marker`; `.strategy-name` onto `.strong`. Delete dead CSS. Commit.
+4. **Rules page.** Select to `.field` with the shared background; explanation box to `.panel`; usage chips to `.chip`; rule rows and the highlighted row to `.row`; alias and back links to `.link`. Delete dead CSS. Commit.
+5. **Docs.** Update `README.md` and `.claude/skills/stockboard-design/SKILL.md` (use only the families in `docs/design.md`). Commit.
+6. **Audit** (section 7), independent review, score. Fix commits if needed.
 
 ---
 
-## 5. Steps and commits
+## 7. Acceptance audit (all must pass; each measured with computed styles in the browser, both themes, both languages, widths 375, 1024 and 1512)
 
-Each commit leaves the tests green. The page may show `[object Object]` between steps 3 and 6; the branch is only merged after step 8.
-
-1. Docs: `docs/language.md` (glossary, section 1 moves there; rules for writing both languages) and the Language section of `docs/design.md`. Commit.
-2. `stockboard_backend/localized_text.py` and its tests (not used yet). Commit.
-3. Rule catalog: convert `config/rules.yaml` to `{en, zh}` **with the English written in the same commit**, update `rule_catalog.py` and catalog tests. Commit.
-4. Strategies and settings: convert the 4 strategy files (names, summaries, help, gates) and `config/settings.yaml` with English in the same commit; update `strategy_evaluation.py`, loaders, `refresh_scheduler.py` (schema 3), `web_server.py`; completeness test. Commit.
-5. `static/language.js` and the `base.css` language styles; route `/language.js`. Commit.
-6. Dashboard. Commit.
-7. Rules page. Commit.
-8. Docs: `docs/api.md` (objects, schema 3, `default_language`), `docs/strategy.md` (both languages required), `.claude/skills/stockboard-strategy/SKILL.md` (both languages required, link to `docs/language.md`), `README.md`. Commit.
-9. Verification (section 6), independent review, score. Fix commits if needed.
-
----
-
-## 6. Verification
-
-1. `pytest` all pass, including the completeness and quality test.
-2. English mode, both pages: no CJK character in `document.body.innerText` except the switch label `中文`.
-3. Chinese mode: every element marked "yes" in 2.3 has a `.translation`, `.translation-inline` or `.translation-paragraph` with `lang="en"`, and the English matches the data (spot-check 10 rules against `config/rules.yaml`).
-4. Contrast audit in both themes, both languages, both pages: every text element at least 4.5:1.
-5. Font sizes 12/15/20/34, weights 400/600, tap targets at least 44px, no horizontal overflow at 375, 1024 and 1512px, in both languages.
-6. Switching language: no network request (checked in the network log), selected symbol, scroll position and open popover kept, `<html lang>` and `document.title` change.
-7. Reload keeps the choice; a fresh browser (storage cleared) starts in English.
-8. Line budgets: `index.html` at most 380, `rules.html` at most 140, `language.js` logic at most 50 (the `UI_TEXT` table, one string pair per line, is not counted).
-
-Execution note: the first budget of 70 lines for all of `language.js` counted the text table as code; with about 55 string pairs it could not hold. Moving the table to a JSON file would add an async load and a flash of English, so the budget was split instead.
+1. Every interactive element (`button`, `select`, `a`, rows that are buttons) has `border-radius` exactly `8px`; no interactive element has `50%`.
+2. Every panel has `12px`; every chip has `8px`.
+3. The help button and the theme button have identical computed `border-radius`, size, hover color and focus ring shape.
+4. Select background is identical on the dashboard and the rules page.
+5. Hovered row and selected row differ (selected has the accent bar).
+6. Selected sidebar row and highlighted rules-page row have identical radius and bar.
+7. No negative `margin` on any element (`grep -c "margin:-"` is 0 in `static/`).
+8. Distinct classes on a dashboard render: 28 or fewer (was 42).
+9. Contrast at least 4.5:1 for every text element, including text on `--fill` rows; both pages, both themes, both languages.
+10. Tap targets at least 44px; no horizontal overflow at 375, 1024, 1512.
+11. Keyboard focus ring visible on every control and row, and it does not change the element's shape.
+12. All 44 existing tests still pass; line budgets: `index.html` at most 380, `rules.html` at most 140 (they should shrink).
 
 ---
 
-## 7. Plan review
+## 8. Plan review
 
 | Version | Score | Deductions |
 |---|---|---|
-| Draft | 4.0 | P1 step order broke the build between commits; P2 no translation quality check; P3 language switch did not cover the open popover and the render cache; P4 page title, error messages, number format and default precedence unspecified; P5 future strategy authors not told to write both languages; P6 no code size limits |
-| Revised (this file) | 5.0 | P1 data and English land in the same commit per file group (steps 3, 4); P2 completeness plus no-CJK-in-English plus forbidden-words test; P3 explicit in 4.2; P4 in 4.1 and 4.3; P5 step 8 updates the authoring guide and the skill; P6 line budgets in 4.2, 4.3, 4.1 and section 6 |
+| Draft | 4.2 | R1 first idea added a darker "selected" color; it breaks the 4.5:1 text contrast (measured); R2 `:focus-visible` shape change was unnoticed; R3 no acceptance checks for the families; R4 chips had a fixed 22px height |
+| This file | 4.8 | R1 selected uses fill plus bar, no new token (D2); R2 D7; R3 section 7; R4 chip height from line-height. Remaining deductions: F1 could not be reproduced in the browser (found by code reading only); inset rows lose 16px of width, which may wrap long Chinese plus English rows on the symbol list (checked in step 3 at 300px) |
 
-Residual risks (not deductions, accepted): rule rows are taller in Chinese mode (requested feature); translations are mine and should get a read-through from the user after merge.
-
-
-Change after review: the user asked for the language control to look exactly like the theme button, so the `EN | 中文` segmented control (D3, 2.2) became a single globe icon button sharing the `.icon-button` style; one click toggles the language.
+Open points for the user: (a) keep the accent bar on the selected row (D2) or use fill only; (b) hover color equal to selected fill is accepted because the bar tells them apart.
