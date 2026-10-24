@@ -12,7 +12,7 @@
   .layout > * { min-width:0; }
   aside { background:var(--surface); padding:var(--space-4) 0 var(--space-5); }
   aside > header { display:flex; justify-content:space-between; align-items:center; gap:var(--space-2); padding:0 var(--space-2) 0 var(--space-4); }
-  .header-controls { display:flex; align-items:center; }
+  aside > header > div { display:flex; align-items:center; }
   .status-bar { display:flex; align-items:center; gap:var(--space-2); margin:var(--space-2) var(--space-4) var(--space-4); }
   .status-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex:none; }
   .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
@@ -73,7 +73,7 @@
 <div class="layout">
   <aside>
     <header><h2>StockBoard</h2>
-      <div class="header-controls"><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
+      <div><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
       <button class="icon-button" id="theme-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-theme"/></svg></button></div></header>
     <div class="status-bar" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><small></small></div>
     <small id="strategy-heading"></small>
