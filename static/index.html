@@ -67,7 +67,7 @@
   .strategy-gate > header + * { margin-top:var(--space-2); }
   .strategy-rule-row { display:grid; grid-template-columns:40px 72px 1fr auto; gap:var(--space-3); align-items:start; padding:var(--space-2) 0; border-top:1px solid var(--separator); }
   .strategy-rule-row > .caption, .strategy-rule-row .status-badge { line-height:20px; min-height:20px; }
-  .strategy-rule-row.not_applicable { opacity:0.45; }
+  .strategy-rule-row.not_applicable, .strategy-rule-row.not_applicable .caption { color:var(--text-secondary); }
   .strategy-rule-row > :last-child { text-align:right; color:var(--text-secondary); }
   details { margin-top:var(--space-2); } summary { cursor:pointer; padding:var(--space-1) 0; }
   .panel-enter { animation:panel-enter 160ms ease-out; }
@@ -267,7 +267,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
       <header><svg class="icon ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}" aria-hidden="true"><use href="#${STATUS_STYLE[summaryStatus(gate.is_pass)].icon}"/></svg>
-        <h3 class="title">${escapeText(gate.display_name)}</h3><span class="caption">${STATUS_STYLE[summaryStatus(gate.is_pass)].text}</span></header>
+        <h3 class="title">${escapeText(gate.display_name)}</h3><span class="caption ${STATUS_STYLE[summaryStatus(gate.is_pass)].color}">${STATUS_STYLE[summaryStatus(gate.is_pass)].text}</span></header>
       ${gate.expiration_window_label ? `<p class="caption gate-note">到期窗口 ${escapeText(gate.expiration_window_label)} 天（最佳）</p>` : ''}
       ${renderRuleRows(gate.rule_result_list)}
       ${gate.alternative_window_result_list.map(window => `<details data-window-label="${escapeText(window.expiration_window_label)}" ${openWindowLabelSet.has(window.expiration_window_label) ? 'open' : ''}>

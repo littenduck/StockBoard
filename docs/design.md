@@ -50,7 +50,7 @@ No emoji anywhere. Status = inline SVG icon (16px, `currentColor`) plus Chinese 
 | rule fail | filled circle with cross | 未通过 | `--negative` |
 | summary veto (symbol, gate) | filled circle with cross | 否决 | `--negative` |
 | unknown | outline circle with "?" | 未知 | `--text-secondary` |
-| not applicable | short dash | 不适用 | `--text-secondary`, row opacity 0.45 |
+| not applicable | short dash | 不适用 | `--text-secondary` for the whole row (no opacity: it would break contrast) |
 
 Summaries (symbol, gate) use only 通过 / 否决 / 未知. Icon-only places carry `aria-label`. Icon to text gap 4px.
 
