@@ -34,16 +34,15 @@
   .detail-header > small { flex-basis:100%; text-align:right; }
   .result-row { display:flex; gap:var(--space-6); }
   .result-row > div { display:grid; grid-template-columns:auto auto; justify-content:start; align-items:baseline; }
-  .result-row h1 { grid-column:1 / -1; display:flex; align-items:center; gap:var(--space-2); }
-  .result-row small.box { margin-left:var(--space-1); }
+  .result-row h1 { grid-column:1 / -1; display:flex; align-items:center; gap:var(--space-2); } .result-row small.box { margin-left:var(--space-1); }
   .strategy-gate { border-left:1px solid var(--separator); margin-left:var(--space-2); padding:0 0 var(--space-5) var(--space-4); }
   .strategy-gate:last-child { border-left-color:transparent; }
   .strategy-gate > header { position:relative; display:flex; align-items:flex-start; gap:var(--space-2); margin-bottom:var(--space-2); }
-  .strategy-gate > header > svg { position:absolute; left:-24px; top:2px; background:var(--background); border-radius:50%; }
+  .strategy-gate > header > svg { position:absolute; left:calc(-1 * (var(--space-4) + var(--space-2))); top:2px; background:var(--background); border-radius:50%; }
   .strategy-gate > header > small { margin-top:2px; white-space:nowrap; }
   .strategy-gate > header h3 { min-width:0; }
   .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); }
-  .strategy-gate .row[data-status="not_applicable"], .strategy-gate .row[data-status="not_applicable"] small { color:var(--text-secondary); }
+  .strategy-gate .row[data-status="not_applicable"] { color:var(--text-secondary); }
   .strategy-gate .row > :last-child { text-align:right; color:var(--text-secondary); }
   .strategy-gate > small { margin:var(--space-2) 0 var(--space-1); }
   .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); }
@@ -101,6 +100,7 @@ const valueFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits:2 });
 const strategySelect = document.getElementById('strategy-select');
 const symbolList = document.getElementById('symbol-list');
 const strategyPanel = document.getElementById('strategy-panel');
+strategyPanel.addEventListener('click', event => { if (event.target.closest('main > nav a')) { event.preventDefault(); document.querySelector('aside').scrollIntoView({ behavior:'smooth' }); } });
 const statusBar = document.getElementById('status-bar');
 let selectedSymbol = decodeURIComponent(location.hash.slice(1)) || null;
 let latestSnapshot = null, statusReceivedAt = 0, connectionError = false;
@@ -308,7 +308,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
       ${gate.alternative_window_result_list.map(window => `<small>${languageRenderText(languageLocalize('alternative_window', { label:window.expiration_window_label, score:calculateScoreText(window.rule_result_list) }))}</small>
         ${renderRuleRows(window.rule_result_list)}`).join('')}
     </section>`).join('');
-  strategyPanel.innerHTML = `<nav><small><a href="#${encodeURIComponent(symbol)}" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'}); return false;">${escapeText(languageText('back_to_list'))}</a></small></nav>
+  strategyPanel.innerHTML = `<nav><small><a href="#${encodeURIComponent(symbol)}">${escapeText(languageText('back_to_list'))}</a></small></nav>
     <header class="detail-header"><p class="strategy-line"><small>${escapeText(languageText('strategy'))}</small><strong>${languageRenderText(strategyName)}</strong>
       <button class="icon-button" popovertarget="strategy-help" aria-label="${escapeText(languageText('about_strategy', { name:primaryText(strategyName) }))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-help"/></svg></button></p>
       <div class="symbol-header"><h1>${escapeText(symbol)}</h1>${symbolCard ? `<small>$${priceFormat.format(symbolCard.price)}
