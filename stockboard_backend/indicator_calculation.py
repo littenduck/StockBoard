@@ -64,6 +64,39 @@ def indicator_calculation_calculate_change_over_trading_days(
     return float(clean_series.iloc[-1] - clean_series.iloc[-1 - trading_day_count])
 
 
+def indicator_calculation_calculate_latest_value_or_none(value_series: pandas.Series, minimum_length: int) -> Optional[float]:
+    """Last value of a rolling series, or None when the history is too short for it to be meaningful."""
+    if len(value_series.dropna()) == 0 or len(value_series) < minimum_length:
+        return None
+    return round(float(value_series.iloc[-1]), 2)
+
+
+def indicator_calculation_calculate_distance_from_fifty_two_week_high_percent(
+    close_price_series: pandas.Series,
+) -> Optional[float]:
+    """How far the last close is below the 52 week high, in percent (0 means at the high)."""
+    recent_close_series = close_price_series.iloc[-TRADING_DAYS_PER_YEAR:]
+    if len(recent_close_series) < 2:
+        return None
+    return round(float((1 - recent_close_series.iloc[-1] / recent_close_series.max()) * 100), 2)
+
+
+def indicator_calculation_calculate_volume_ratio_to_average(volume_series: pandas.Series, window_length: int) -> Optional[float]:
+    """Last day's volume divided by the average of the window_length days before it."""
+    previous_volume_series = volume_series.iloc[-window_length - 1:-1]
+    if len(previous_volume_series) < window_length or previous_volume_series.mean() == 0:
+        return None
+    return round(float(volume_series.iloc[-1] / previous_volume_series.mean()), 2)
+
+
+def indicator_calculation_calculate_return_over_trading_days_percent(
+    close_price_series: pandas.Series, trading_day_count: int,
+) -> Optional[float]:
+    if len(close_price_series) <= trading_day_count:
+        return None
+    return round(float(close_price_series.iloc[-1] / close_price_series.iloc[-1 - trading_day_count] - 1) * 100, 2)
+
+
 KNOWN_INDICATOR_ID_SET = {
     "vix_level", "vxn_level", "vvix_level", "vix_term_structure_is_contango",
     "treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points",
@@ -72,6 +105,9 @@ KNOWN_INDICATOR_ID_SET = {
     "realized_volatility_thirty_day", "no_earnings_before_expiration",
     "selected_put_absolute_delta", "selected_put_days_to_expiration",
     "selected_put_annualized_return_percent", "selected_put_implied_volatility_exceeds_realized",
+    "relative_strength_index_two_day", "relative_strength_index_fourteen_day", "price_above_fifty_day_average",
+    "fifty_day_average_above_two_hundred_day_average", "price_below_five_day_average",
+    "distance_from_fifty_two_week_high_percent", "volume_ratio_to_twenty_day_average", "return_six_month_percent",
 }
 
 
@@ -153,6 +189,28 @@ def indicator_calculation_build_symbol_indicator_value_by_id(
               indicator_calculation_calculate_is_price_above_two_hundred_day_average(close_series))
     add_value("realized_volatility_thirty_day",
               indicator_calculation_calculate_realized_volatility_annualized_percent(close_series, 30))
+    fifty_day_average = indicator_calculation_calculate_latest_value_or_none(
+        indicator_calculation_calculate_simple_moving_average(close_series, 50), 50)
+    two_hundred_day_average = indicator_calculation_calculate_latest_value_or_none(
+        indicator_calculation_calculate_simple_moving_average(close_series, 200), 200)
+    five_day_average = indicator_calculation_calculate_latest_value_or_none(
+        indicator_calculation_calculate_simple_moving_average(close_series, 5), 5)
+    last_close = float(close_series.iloc[-1])
+    add_value("relative_strength_index_two_day", indicator_calculation_calculate_latest_value_or_none(
+        indicator_calculation_calculate_relative_strength_index(close_series, 2), 3))
+    add_value("relative_strength_index_fourteen_day", indicator_calculation_calculate_latest_value_or_none(
+        indicator_calculation_calculate_relative_strength_index(close_series, 14), 15))
+    add_value("price_above_fifty_day_average", None if fifty_day_average is None else last_close > fifty_day_average)
+    add_value("fifty_day_average_above_two_hundred_day_average",
+              None if fifty_day_average is None or two_hundred_day_average is None
+              else fifty_day_average > two_hundred_day_average)
+    add_value("price_below_five_day_average", None if five_day_average is None else last_close < five_day_average)
+    add_value("distance_from_fifty_two_week_high_percent",
+              indicator_calculation_calculate_distance_from_fifty_two_week_high_percent(close_series))
+    if "Volume" in price_history:
+        add_value("volume_ratio_to_twenty_day_average",
+                  indicator_calculation_calculate_volume_ratio_to_average(price_history["Volume"], 20))
+    add_value("return_six_month_percent", indicator_calculation_calculate_return_over_trading_days_percent(close_series, 126))
     if is_earnings_date_known:
         add_value("no_earnings_before_expiration",
                   next_earnings_date is None or (next_earnings_date - today).days > earnings_check_days)

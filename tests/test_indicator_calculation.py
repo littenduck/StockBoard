@@ -1,13 +1,19 @@
+import datetime
+
 import pandas
 
 from stockboard_backend.indicator_calculation import (
+    indicator_calculation_build_symbol_indicator_value_by_id,
     indicator_calculation_calculate_change_over_trading_days,
+    indicator_calculation_calculate_distance_from_fifty_two_week_high_percent,
     indicator_calculation_calculate_fifty_two_week_range_percentile,
     indicator_calculation_calculate_is_price_above_two_hundred_day_average,
     indicator_calculation_calculate_latest_change_basis_points,
     indicator_calculation_calculate_realized_volatility_annualized_percent,
     indicator_calculation_calculate_relative_strength_index,
+    indicator_calculation_calculate_return_over_trading_days_percent,
     indicator_calculation_calculate_simple_moving_average,
+    indicator_calculation_calculate_volume_ratio_to_average,
 )
 
 
@@ -46,3 +52,28 @@ def test_change_over_trading_days():
 def test_latest_change_basis_points():
     assert indicator_calculation_calculate_latest_change_basis_points(pandas.Series([4.10, 4.13])) == 3.0
     assert indicator_calculation_calculate_latest_change_basis_points(pandas.Series([4.1])) is None
+
+
+def test_distance_from_fifty_two_week_high_and_return():
+    close_series = pandas.Series([100.0, 120.0, 90.0])
+    assert indicator_calculation_calculate_distance_from_fifty_two_week_high_percent(close_series) == 25.0
+    assert indicator_calculation_calculate_return_over_trading_days_percent(close_series, 2) == -10.0
+    assert indicator_calculation_calculate_return_over_trading_days_percent(close_series, 3) is None
+
+
+def test_volume_ratio_to_average():
+    volume_series = pandas.Series([100.0] * 20 + [250.0])
+    assert indicator_calculation_calculate_volume_ratio_to_average(volume_series, 20) == 2.5
+    assert indicator_calculation_calculate_volume_ratio_to_average(pandas.Series([1.0, 2.0]), 20) is None
+
+
+def test_symbol_indicator_values_include_trend_fields():
+    rising_close = pandas.Series([float(n) for n in range(1, 261)])
+    history = pandas.DataFrame({"Close": rising_close, "Volume": [1000.0] * 260})
+    value_by_id = indicator_calculation_build_symbol_indicator_value_by_id(
+        history, True, None, 45, datetime.date(2026, 10, 1))
+    assert value_by_id["fifty_day_average_above_two_hundred_day_average"].value is True
+    assert value_by_id["price_above_fifty_day_average"].value is True
+    assert value_by_id["price_below_five_day_average"].value is False
+    assert value_by_id["distance_from_fifty_two_week_high_percent"].value == 0.0
+    assert value_by_id["relative_strength_index_two_day"].value > 90

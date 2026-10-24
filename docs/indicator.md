@@ -39,6 +39,19 @@ Daily change of these indicators is reported in basis points (`change_unit: basi
 | `realized_volatility_thirty_day` | annualized, percent | yfinance daily history |
 | `no_earnings_before_expiration` | no earnings date within the longest day count of the first (standard) expiration window | yfinance calendar |
 
+## Symbol trend and momentum
+
+| indicator_id | Meaning | Source |
+|---|---|---|
+| `relative_strength_index_two_day` | RSI over 2 days, 0 to 100 (Connors pullback) | yfinance daily history |
+| `relative_strength_index_fourteen_day` | RSI over 14 days, 0 to 100 | yfinance daily history |
+| `price_above_fifty_day_average` | close above 50 day average | yfinance daily history |
+| `fifty_day_average_above_two_hundred_day_average` | 50 day average above 200 day average (golden cross state) | yfinance daily history |
+| `price_below_five_day_average` | close below 5 day average (short-term pullback) | yfinance daily history |
+| `distance_from_fifty_two_week_high_percent` | percent below the 52 week high (0 = at the high) | yfinance daily history |
+| `volume_ratio_to_twenty_day_average` | last volume divided by the previous 20 day average | yfinance daily history |
+| `return_six_month_percent` | price change over 126 trading days, percent | yfinance daily history |
+
 ## Symbol option contract (per expiration window)
 
 Computed for the representative put of each expiration window.
