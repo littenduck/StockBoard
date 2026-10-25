@@ -23,22 +23,22 @@ SERIES_WORKER_COUNT = 6
 SERIES_GROUP_ID_LIST = ["fred", "cboe_put_call", "cnn", "aaii", "reference_files"]
 SHORT_INTEREST_MAX_AGE_DAYS = 45
 EDGAR_START_DAY = datetime.date(2018, 1, 1)  # six years of days: the PE median needs five years of earnings and prices
-EDGAR_INDICATOR_ID_LIST = [
+EDGAR_INDICATOR_NAME_LIST = [
     "revenue_three_year_cagr_percent", "eps_three_year_cagr_percent", "return_on_invested_capital_percent",
     "free_cash_flow_year_over_year_change", "interest_coverage_ratio", "shares_outstanding_year_over_year_percent",
     "price_earnings_ttm_to_five_year_median_ratio",
 ]
 SPMO_SYMBOL = "SPMO"
 # These three come with the price figures (they carry a daily change), so the series job leaves them alone.
-MADE_WITH_PRICE_FIGURES_INDICATOR_ID_SET = {
+MADE_WITH_PRICE_FIGURES_INDICATOR_NAME_SET = {
     "treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points", "high_yield_credit_spread_basis_points",
 }
 
 
-def live_indicators_stamp(value_by_id: Dict[str, IndicatorValue], observed_at: Optional[float]) -> Dict[str, IndicatorValue]:
+def live_indicators_stamp(value_by_name: Dict[str, IndicatorValue], observed_at: Optional[float]) -> Dict[str, IndicatorValue]:
     """Give every value that has no observation time the time its source was asked."""
     return {key: value if value.observed_at is not None or observed_at is None else dataclasses.replace(value, observed_at=observed_at)
-            for key, value in value_by_id.items()}
+            for key, value in value_by_name.items()}
 
 
 def live_indicators_extract_latest_value(series: pandas.Series):
@@ -53,7 +53,7 @@ def live_indicators_extract_latest_value(series: pandas.Series):
 
 # ---- market wide series: FRED, Cboe, CNN, AAII and the reference files -----------------------------------------------------------
 
-def live_indicators_run_series_job(indicator_id_list: List[str], group_id: str) -> Dict[str, IndicatorValue]:
+def live_indicators_run_series_job(indicator_name_list: List[str], group_id: str) -> Dict[str, IndicatorValue]:
     """Rebuild each indicator's series and keep its newest value. One failed series only drops its own indicator."""
     macro_data.fred_series_cache.clear()  # these module caches only spare repeat downloads inside one job
     cboe_data.index_history_cache.clear()
@@ -64,32 +64,32 @@ def live_indicators_run_series_job(indicator_id_list: List[str], group_id: str) 
         except Exception as error:  # the cache keeps whatever days it already has
             print("put/call cache update failed:", error)
 
-    def fetch_one(indicator_id: str) -> Optional[IndicatorValue]:
+    def fetch_one(indicator_name: str) -> Optional[IndicatorValue]:
         try:
-            latest = live_indicators_extract_latest_value(history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID[indicator_id]())
+            latest = live_indicators_extract_latest_value(history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME[indicator_name]())
         except Exception as error:
-            print("series failed:", indicator_id, error)
+            print("series failed:", indicator_name, error)
             return None
-        return None if latest is None else IndicatorValue(indicator_id, latest[0], "history series", observed_at=latest[1])
+        return None if latest is None else IndicatorValue(indicator_name, latest[0], "history series", observed_at=latest[1])
 
     with ThreadPoolExecutor(max_workers=SERIES_WORKER_COUNT) as executor:
-        value_list = list(executor.map(fetch_one, indicator_id_list))
-    return {value.indicator_id: value for value in value_list if value is not None}
+        value_list = list(executor.map(fetch_one, indicator_name_list))
+    return {value.indicator_name: value for value in value_list if value is not None}
 
 
-def live_indicators_fetch_series_value_by_id(fetch_cache: FetchCache) -> Dict[str, IndicatorValue]:
+def live_indicators_fetch_series_value_by_name(fetch_cache: FetchCache) -> Dict[str, IndicatorValue]:
     """The newest value of every market wide series indicator, each group asked only when due."""
     registry: IndicatorRegistry = fetch_cache.registry
-    value_by_id: Dict[str, IndicatorValue] = {}
+    value_by_name: Dict[str, IndicatorValue] = {}
     for group_id in SERIES_GROUP_ID_LIST:
-        indicator_id_list = [indicator.indicator_id for indicator in registry.indicator_by_id.values()
+        indicator_name_list = [indicator.indicator_name for indicator in registry.indicator_by_name.values()
                              if indicator.fetch_group == group_id and indicator.status == "built"
-                             and indicator.indicator_id in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID
-                             and indicator.indicator_id not in MADE_WITH_PRICE_FIGURES_INDICATOR_ID_SET]
+                             and indicator.indicator_name in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME
+                             and indicator.indicator_name not in MADE_WITH_PRICE_FIGURES_INDICATOR_NAME_SET]
         value_by_group, _ = fetch_cache.get(
-            group_id, None, lambda ids=indicator_id_list, group=group_id: live_indicators_run_series_job(ids, group), default={})
-        value_by_id.update(value_by_group)
-    return value_by_id
+            group_id, None, lambda ids=indicator_name_list, group=group_id: live_indicators_run_series_job(ids, group), default={})
+        value_by_name.update(value_by_group)
+    return value_by_name
 
 
 def live_indicators_fetch_treasury_series(fetch_cache: FetchCache) -> Tuple[Optional[pandas.Series], Optional[pandas.Series]]:
@@ -110,27 +110,27 @@ def live_indicators_fetch_company_snapshot(fetch_cache: FetchCache, symbol: str)
     return {**snapshot, "fetched_at": fetched_at}
 
 
-def live_indicators_build_company_indicator_value_by_id(snapshot: dict, today: datetime.date) -> Dict[str, IndicatorValue]:
+def live_indicators_build_company_indicator_value_by_name(snapshot: dict, today: datetime.date) -> Dict[str, IndicatorValue]:
     info = snapshot["info"] if isinstance(snapshot.get("info"), dict) else {}
-    value_by_id = company_indicators.company_indicators_build_info_indicator_value_by_id(info)
-    value_by_id.update(company_indicators.company_indicators_build_estimate_indicator_value_by_id(
+    value_by_name = company_indicators.company_indicators_build_info_indicator_value_by_name(info)
+    value_by_name.update(company_indicators.company_indicators_build_estimate_indicator_value_by_name(
         snapshot.get("eps_trend"), snapshot.get("recommendations_summary"), company_indicators.company_indicators_get_number(info, "forwardPE")))
-    value_by_id.update(company_indicators.company_indicators_build_insider_indicator_value_by_id(
+    value_by_name.update(company_indicators.company_indicators_build_insider_indicator_value_by_name(
         snapshot.get("insider_transactions"), company_indicators.company_indicators_get_number(info, "sharesOutstanding"), today))
-    value_by_id = {key: IndicatorValue(key, value, "yfinance") for key, value in value_by_id.items()}
-    return live_indicators_stamp(value_by_id, snapshot.get("fetched_at"))
+    value_by_name = {key: IndicatorValue(key, value, "yfinance") for key, value in value_by_name.items()}
+    return live_indicators_stamp(value_by_name, snapshot.get("fetched_at"))
 
 
-def live_indicators_fetch_short_interest_indicator_value_by_id(
+def live_indicators_fetch_short_interest_indicator_value_by_name(
     fetch_cache: FetchCache, symbol: str, shares_outstanding: Optional[float], today: datetime.date,
 ) -> Dict[str, IndicatorValue]:
     table, _ = fetch_cache.get("finra", symbol, lambda: finra_data.finra_data_fetch_short_interest_table(symbol), default=None)
-    value_by_id = live_indicators_build_short_interest_indicator_value_by_id(table, shares_outstanding, today)
+    value_by_name = live_indicators_build_short_interest_indicator_value_by_name(table, shares_outstanding, today)
     observed_at = None if table is None or table.empty else table.index[-1].to_pydatetime().replace(tzinfo=datetime.timezone.utc).timestamp()
-    return {key: IndicatorValue(key, value, "FINRA", observed_at=observed_at) for key, value in value_by_id.items()}
+    return {key: IndicatorValue(key, value, "FINRA", observed_at=observed_at) for key, value in value_by_name.items()}
 
 
-def live_indicators_build_short_interest_indicator_value_by_id(
+def live_indicators_build_short_interest_indicator_value_by_name(
     short_interest: Optional[pandas.DataFrame], shares_outstanding: Optional[float], today: datetime.date,
 ) -> Dict[str, float]:
     """FINRA publishes twice a month; a figure older than 45 days is not used."""
@@ -153,7 +153,7 @@ def live_indicators_fetch_price_series_or_none(symbol: str) -> Optional[pandas.S
 
 # ---- SEC EDGAR, DoltHub, SPMO -------------------------------------------------------------------------------------------------
 
-def live_indicators_fetch_edgar_indicator_value_by_id(fetch_cache: FetchCache, symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
+def live_indicators_fetch_edgar_indicator_value_by_name(fetch_cache: FetchCache, symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
     """Multi year growth, interest coverage, the PE against its five year median and the audit check, from SEC filings.
     Needs EDGAR_CONTACT. A fund or a ticker SEC does not list gives nothing, and is not asked again until the next due time."""
     if not os.environ.get("EDGAR_CONTACT"):
@@ -167,7 +167,7 @@ def live_indicators_fetch_edgar_indicator_value_by_id(fetch_cache: FetchCache, s
         days = pandas.date_range(EDGAR_START_DAY, today, freq="D")
         table = fundamental_series.fundamental_series_build_table(company_facts, days, live_indicators_fetch_price_series_or_none(symbol))
         last_row = table.iloc[-1]
-        value_by_name = {name: round(float(last_row[name]), 4) for name in EDGAR_INDICATOR_ID_LIST
+        value_by_name = {name: round(float(last_row[name]), 4) for name in EDGAR_INDICATOR_NAME_LIST
                          if name in table.columns and pandas.notna(last_row[name])}
         has_problem = edgar_data.edgar_data_find_audit_or_late_filing_problem(edgar_data.edgar_data_fetch_submissions(symbol), today)
         value_by_name["no_audit_or_late_filing_problem_in_last_365_days"] = not has_problem
@@ -177,12 +177,12 @@ def live_indicators_fetch_edgar_indicator_value_by_id(fetch_cache: FetchCache, s
     return live_indicators_stamp({name: IndicatorValue(name, value, "SEC EDGAR") for name, value in value_by_name.items()}, fetched_at)
 
 
-def live_indicators_fetch_implied_volatility_indicator_value_by_id(
+def live_indicators_fetch_implied_volatility_indicator_value_by_name(
     fetch_cache: FetchCache, symbol: str, today: datetime.date,
 ) -> Dict[str, IndicatorValue]:
     """IV percentile over a year and IV against a month ago, from the DoltHub history."""
     def fetch() -> Dict[str, float]:
-        return dolthub_data.dolthub_data_build_indicator_value_by_id(dolthub_data.dolthub_data_fetch_implied_volatility_series(symbol, today), today)
+        return dolthub_data.dolthub_data_build_indicator_value_by_name(dolthub_data.dolthub_data_fetch_implied_volatility_series(symbol, today), today)
     value_by_name, fetched_at = fetch_cache.get("dolthub_iv", symbol, fetch, default={})
     return live_indicators_stamp({name: IndicatorValue(name, value, "DoltHub") for name, value in value_by_name.items()}, fetched_at)
 
@@ -196,7 +196,7 @@ def live_indicators_fetch_spmo_rank_by_symbol(fetch_cache: FetchCache) -> Dict[s
     return rank_by_symbol
 
 
-def live_indicators_build_equity_risk_premium_indicator_value_by_id(
+def live_indicators_build_equity_risk_premium_indicator_value_by_name(
     spy_snapshot: dict, ten_year_yield_percent: Optional[float],
 ) -> Dict[str, IndicatorValue]:
     """Earnings yield of the S&P 500 (from SPY's trailing PE) minus the 10-year Treasury yield, in percent points."""

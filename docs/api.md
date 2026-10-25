@@ -55,9 +55,9 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...), wi
   "strategy_id": "sell_put_four_in_one",
   "max_unknown_weight_ratio": 0.2,
   "market_indicator_card_list": [
-    {"indicator_id": "vix_level", "display_name": {"en": "VIX", "zh": "VIX"}, "is_higher_value_risky": true,
+    {"indicator_name": "vix_level", "display_name": {"en": "VIX", "zh": "VIX"}, "is_higher_value_risky": true,
      "value": 19.78, "change_value": 2.21, "change_unit": "percent"},
-    {"indicator_id": "treasury_ten_year_yield", "display_name": {"en": "10Y", "zh": "10Y"}, "is_higher_value_risky": true,
+    {"indicator_name": "treasury_ten_year_yield", "display_name": {"en": "10Y", "zh": "10Y"}, "is_higher_value_risky": true,
      "value": 4.96, "change_value": -17.0, "change_unit": "basis_points"}
   ],
   "symbol_card_list": [

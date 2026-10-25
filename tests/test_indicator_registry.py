@@ -19,9 +19,9 @@ def test_the_project_registry_is_valid(registry):
 
 
 def test_the_code_produces_exactly_the_built_indicators(registry):
-    built = registry.built_indicator_id_set()
-    assert built - indicator_calculation.PRODUCED_INDICATOR_ID_SET == set(), "built in YAML but not produced by the code"
-    assert indicator_calculation.PRODUCED_INDICATOR_ID_SET - built == set(), "produced by the code but not built in YAML"
+    built = registry.built_indicator_name_set()
+    assert built - indicator_calculation.PRODUCED_INDICATOR_NAME_SET == set(), "built in YAML but not produced by the code"
+    assert indicator_calculation.PRODUCED_INDICATOR_NAME_SET - built == set(), "produced by the code but not built in YAML"
 
 
 def test_durations_are_a_number_and_a_unit():
@@ -54,7 +54,7 @@ def test_validation_catches_a_bad_age_group_or_history(tmp_path):
 
 def test_rules_take_their_facts_from_the_indicator(registry):
     catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
-    indicator = registry.indicator_by_id["treasury_ten_year_yield"]
+    indicator = registry.indicator_by_name["treasury_ten_year_yield"]
     for rule_id in ("MAC-03", "MAC-13"):  # two lines of one indicator
         entry = catalog.rule_entry_by_id[rule_id]
         assert (entry.method, entry.history_source, entry.status, entry.fetch_every, entry.max_age) == (
@@ -65,10 +65,28 @@ def test_rules_take_their_facts_from_the_indicator(registry):
 def test_a_rule_may_not_repeat_what_its_indicator_owns(registry):
     with pytest.raises(ValueError, match="repeats"):
         rule_catalog.rule_catalog_merge_indicator_fields(
-            {"rule_id": "MAC-03", "indicator": "treasury_ten_year_yield", "status": "built"}, registry)
+            {"rule_id": "MAC-03", "indicator": registry.indicator_by_name["treasury_ten_year_yield"].indicator_id, "status": "built"}, registry)
 
 
 def test_the_sidebar_reads_names_from_the_registry():
     settings = settings_loader.settings_loader_load_settings_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
-    assert [item.indicator_id for item in settings.market_indicator_list][:2] == ["vix_level", "vxn_level"]
+    assert [item.indicator_name for item in settings.market_indicator_list][:2] == ["vix_level", "vxn_level"]
     assert settings.market_indicator_list[0].is_higher_value_risky and settings.market_indicator_list[0].display_name.en == "VIX"
+
+
+def test_every_indicator_has_a_short_id_and_a_long_name(registry):
+    assert len(registry.indicator_by_id) == len(registry.indicator_by_name) == 122
+    assert registry.indicator_by_id["I-001"].indicator_name == "federal_funds_target_rate_not_raised_in_182_days"
+    ids = [indicator.indicator_id for indicator in registry.indicator_by_name.values()]
+    assert ids == ["I-%03d" % number for number in range(1, 123)], "ids run 1 to 122 in file order"
+
+
+def test_a_rule_resolves_its_indicator_id_to_the_name_and_keeps_the_id():
+    catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
+    entry = catalog.rule_entry_by_id["MAC-03"]
+    assert entry.indicator == "treasury_ten_year_yield" and entry.indicator_id == catalog.indicator_registry.indicator_by_name[entry.indicator].indicator_id
+
+
+def test_validation_catches_a_bad_id_or_name(tmp_path):
+    assert any("bad indicator_id" in e for e in indicator_registry.indicator_registry_validate(write_registry(tmp_path, indicator_id="I-1")))
+    assert any("lower case" in e for e in indicator_registry.indicator_registry_validate(write_registry(tmp_path, indicator_name="Bad Name")))

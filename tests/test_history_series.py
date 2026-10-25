@@ -59,15 +59,15 @@ def test_every_builder_returns_a_series_when_the_sources_are_available(monkeypat
     monkeypatch.setattr(history_series.sentiment_data, "sentiment_data_fetch_naaim_exposure_series", lambda: base.copy())
     aaii_table = pandas.DataFrame({"bullish_percent": base, "bullish_minus_bearish_percent": base})
     monkeypatch.setattr(history_series.sentiment_data, "sentiment_data_fetch_aaii_survey_table", lambda: aaii_table)
-    for indicator_id, builder in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID.items():
+    for indicator_name, builder in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME.items():
         series = builder()
-        assert isinstance(series, pandas.Series) and not series.empty, indicator_id
+        assert isinstance(series, pandas.Series) and not series.empty, indicator_name
 
 
 def test_every_builder_serves_an_indicator_of_a_backtestable_rule():
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
     backtestable_indicator_set = {entry.indicator for entry in catalog.rule_entry_by_id.values() if entry.backtestable == "yes"}
-    assert set(history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID) <= backtestable_indicator_set
+    assert set(history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME) <= backtestable_indicator_set
 
 
 def test_company_indicator_columns_are_all_backtestable_catalog_indicators():

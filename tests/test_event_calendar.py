@@ -37,7 +37,7 @@ def test_a_meeting_of_two_days_counts_when_the_window_touches_either_day():
 
 
 def test_an_answer_past_the_end_of_the_calendar_is_unknown():
-    life = event_calendar.event_calendar_build_option_life_indicator_value_by_id(
+    life = event_calendar.event_calendar_build_option_life_indicator_value_by_name(
         CALENDAR, COVERED, datetime.date(2026, 12, 20), datetime.date(2027, 1, 20))
     assert life["no_cpi_or_pce_release_inside_option_life"] is None  # PCE dates stop at 2026-12-31
     assert life["no_fomc_meeting_inside_option_life"] is True

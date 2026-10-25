@@ -12,7 +12,7 @@ STATUS_NOT_APPLICABLE = "not_applicable"
 
 @dataclass
 class IndicatorValue:
-    indicator_id: str
+    indicator_name: str
     value: Any
     source: str
     change_value: Optional[float] = None
@@ -91,9 +91,9 @@ class StrategyEvaluationResult:
 
 def strategy_evaluation_evaluate_rule_against_indicator_values(
     rule_definition: RuleDefinition,
-    indicator_value_by_id: Dict[str, IndicatorValue],
+    indicator_value_by_name: Dict[str, IndicatorValue],
 ) -> RuleEvaluationResult:
-    indicator_value = indicator_value_by_id.get(rule_definition.indicator) if rule_definition.indicator else None
+    indicator_value = indicator_value_by_name.get(rule_definition.indicator) if rule_definition.indicator else None
     measured_value = None if indicator_value is None else indicator_value.value
     status = STATUS_UNKNOWN
     # A rule without an indicator or without a line to test (a manual rule, a rule not built yet) stays unknown.
@@ -158,10 +158,10 @@ def strategy_evaluation_calculate_unknown_weight_ratio_from_rule_results(
 
 def strategy_evaluation_evaluate_gate_from_indicator_values(
     gate_definition: GateDefinition,
-    indicator_value_by_id: Dict[str, IndicatorValue],
+    indicator_value_by_name: Dict[str, IndicatorValue],
 ) -> GateEvaluationResult:
     rule_result_list = [
-        strategy_evaluation_evaluate_rule_against_indicator_values(rule, indicator_value_by_id)
+        strategy_evaluation_evaluate_rule_against_indicator_values(rule, indicator_value_by_name)
         for rule in gate_definition.rule_list
     ]
     return GateEvaluationResult(
@@ -174,20 +174,20 @@ def strategy_evaluation_evaluate_gate_from_indicator_values(
 
 def strategy_evaluation_evaluate_contract_gate_for_best_expiration_window(
     gate_definition: GateDefinition,
-    shared_indicator_value_by_id: Dict[str, IndicatorValue],
+    shared_indicator_value_by_name: Dict[str, IndicatorValue],
     option_indicator_value_by_window_label: Dict[str, Dict[str, IndicatorValue]],
 ) -> GateEvaluationResult:
     """Evaluate the gate once per expiration window. The best scoring window is the result;
     the others are kept in alternative_window_result_list."""
     window_result_list = []
-    for window_label, option_indicator_value_by_id in option_indicator_value_by_window_label.items():
+    for window_label, option_indicator_value_by_name in option_indicator_value_by_window_label.items():
         window_result = strategy_evaluation_evaluate_gate_from_indicator_values(
-            gate_definition, {**shared_indicator_value_by_id, **option_indicator_value_by_id})
+            gate_definition, {**shared_indicator_value_by_name, **option_indicator_value_by_name})
         window_result.expiration_window_label = window_label
         window_result_list.append(window_result)
     if not window_result_list:
         empty_result = strategy_evaluation_evaluate_gate_from_indicator_values(
-            gate_definition, shared_indicator_value_by_id)
+            gate_definition, shared_indicator_value_by_name)
         empty_result.expiration_window_label = None
         return empty_result
 
@@ -204,17 +204,17 @@ def strategy_evaluation_evaluate_contract_gate_for_best_expiration_window(
 def strategy_evaluation_evaluate_strategy_for_symbol(
     strategy_definition: StrategyDefinition,
     symbol: str,
-    shared_indicator_value_by_id: Dict[str, IndicatorValue],
+    shared_indicator_value_by_name: Dict[str, IndicatorValue],
     option_indicator_value_by_window_label: Dict[str, Dict[str, IndicatorValue]],
 ) -> StrategyEvaluationResult:
     gate_result_list = []
     for gate_definition in strategy_definition.gate_list:
         if gate_definition.per_expiration_window:
             gate_result = strategy_evaluation_evaluate_contract_gate_for_best_expiration_window(
-                gate_definition, shared_indicator_value_by_id, option_indicator_value_by_window_label)
+                gate_definition, shared_indicator_value_by_name, option_indicator_value_by_window_label)
         else:
             gate_result = strategy_evaluation_evaluate_gate_from_indicator_values(
-                gate_definition, shared_indicator_value_by_id)
+                gate_definition, shared_indicator_value_by_name)
         gate_result_list.append(gate_result)
     all_rule_result_list = [r for gate in gate_result_list for r in gate.rule_result_list]
     return StrategyEvaluationResult(

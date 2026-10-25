@@ -34,10 +34,10 @@ def test_the_snapshot_feeds_the_same_indicator_code_as_yfinance_did():
     assert list(snapshot["eps_trend"].columns) == ["current", "30daysAgo"] and list(snapshot["eps_trend"].index) == ["0y", "+1y"]
     assert snapshot["recommendations_summary"].iloc[0]["strongBuy"] == 6
     assert snapshot["calendar"]["Earnings Date"] == [datetime.date(2026, 11, 2)]
-    value = company_indicators.company_indicators_build_info_indicator_value_by_id(snapshot["info"])
-    value.update(company_indicators.company_indicators_build_estimate_indicator_value_by_id(
+    value = company_indicators.company_indicators_build_info_indicator_value_by_name(snapshot["info"])
+    value.update(company_indicators.company_indicators_build_estimate_indicator_value_by_name(
         snapshot["eps_trend"], snapshot["recommendations_summary"], snapshot["info"]["forwardPE"]))
-    value.update(company_indicators.company_indicators_build_insider_indicator_value_by_id(
+    value.update(company_indicators.company_indicators_build_insider_indicator_value_by_name(
         snapshot["insider_transactions"], snapshot["info"]["sharesOutstanding"], datetime.date(2026, 10, 25)))
     assert value["free_cash_flow_yield_percent"] == pytest.approx(2.16, abs=0.01) and value["buy_rating_share_percent"] == pytest.approx(54.5, abs=0.1)
     assert value["eps_estimate_next_year_four_week_change_percent"] == pytest.approx((9.6 / 9.5 - 1) * 100, abs=0.01)

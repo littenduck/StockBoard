@@ -87,7 +87,7 @@ def cboe(index_name: str) -> pandas.Series:
     return cboe_data.cboe_data_fetch_index_history_series_cached(index_name)
 
 
-HISTORY_SERIES_BUILDER_BY_INDICATOR_ID: Dict[str, Callable[[], pandas.Series]] = {
+HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME: Dict[str, Callable[[], pandas.Series]] = {
     # MAC: policy, rates, credit, inflation, jobs, oil, money
     "federal_funds_target_rate_not_raised_in_182_days":
         lambda: history_series_calculate_not_raised(history_series_build_federal_funds_target_rate(), 182),
@@ -161,8 +161,8 @@ def history_series_build_company_indicator_table(ticker: str, price_series: Opti
     return table
 
 
-def history_series_build_by_indicator_id(indicator_id: str) -> pandas.Series:
-    return HISTORY_SERIES_BUILDER_BY_INDICATOR_ID[indicator_id]()
+def history_series_build_by_indicator_name(indicator_name: str) -> pandas.Series:
+    return HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME[indicator_name]()
 
 
 def history_series_build_point_in_time_cpi_year_over_year(as_of_date_list) -> pandas.Series:
@@ -175,16 +175,16 @@ def history_series_check_against_catalog() -> None:
     with open(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"), encoding="utf8") as indicator_file:
         indicator_list = yaml.safe_load(indicator_file)["indicator_list"]
     rule_list_by_indicator: Dict[str, list] = {
-        indicator["indicator_id"]: [indicator] for indicator in indicator_list if indicator["indicator_id"] in HISTORY_SERIES_BUILDER_BY_INDICATOR_ID}
+        indicator["indicator_name"]: [indicator] for indicator in indicator_list if indicator["indicator_name"] in HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME}
     print(f"{'indicator':62s} {'catalog start':13s} {'first':10s} {'last':10s} {'rows':>6s}  last value")
-    for indicator_id, builder in HISTORY_SERIES_BUILDER_BY_INDICATOR_ID.items():
-        rules = rule_list_by_indicator.get(indicator_id, [])
+    for indicator_name, builder in HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME.items():
+        rules = rule_list_by_indicator.get(indicator_name, [])
         catalog_start = ",".join(sorted({str(rule.get("history_start")) for rule in rules})) or "-"
         try:
             series = builder()
-            print(f"{indicator_id:62s} {catalog_start:13s} {series.index[0].date()!s:10s} {series.index[-1].date()!s:10s} {len(series):6d}  {series.iloc[-1]}")
+            print(f"{indicator_name:62s} {catalog_start:13s} {series.index[0].date()!s:10s} {series.index[-1].date()!s:10s} {len(series):6d}  {series.iloc[-1]}")
         except Exception as error:  # the report must list every indicator, even when one source fails
-            print(f"{indicator_id:62s} {catalog_start:13s} FAILED {error!r}")
+            print(f"{indicator_name:62s} {catalog_start:13s} FAILED {error!r}")
 
 
 if __name__ == "__main__":

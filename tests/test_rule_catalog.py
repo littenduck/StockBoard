@@ -16,7 +16,7 @@ CATALOG_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml")
 def test_project_catalog_and_strategies_are_valid():
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
     assert rule_catalog_validate_rule_catalog_against_known_indicators(
-        catalog, catalog.indicator_registry.built_indicator_id_set()) == []
+        catalog, catalog.indicator_registry.built_indicator_name_set()) == []
     strategy_by_id = strategy_loader_load_all_strategy_definitions_from_directory(
         os.path.join(PROJECT_DIRECTORY, "config", "strategies"), catalog)
     assert "sell_put_four_in_one" in strategy_by_id
@@ -163,4 +163,4 @@ def test_every_strategy_and_indicator_text_is_bilingual():
     settings = settings_loader_load_settings_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
     assert settings.default_language == "en"
     for indicator_setting in settings.market_indicator_list:
-        assert_localized_text_is_complete(indicator_setting.display_name, indicator_setting.indicator_id)
+        assert_localized_text_is_complete(indicator_setting.display_name, indicator_setting.indicator_name)

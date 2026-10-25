@@ -21,19 +21,19 @@ def test_the_newest_value_of_a_series_comes_with_the_time_it_was_observed():
 
 def test_every_series_indicator_of_the_registry_has_a_builder_and_every_edgar_one_is_produced():
     registry = indicator_registry.indicator_registry_load_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"))
-    for indicator in registry.indicator_by_id.values():
+    for indicator in registry.indicator_by_name.values():
         if indicator.fetch_group in live_indicators.SERIES_GROUP_ID_LIST and indicator.status == "built" \
-                and indicator.indicator_id not in live_indicators.MADE_WITH_PRICE_FIGURES_INDICATOR_ID_SET:
-            assert indicator.indicator_id in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID, indicator.indicator_id
-    for indicator_id in live_indicators.EDGAR_INDICATOR_ID_LIST:
-        assert indicator_id in I.PRODUCED_INDICATOR_ID_SET
+                and indicator.indicator_name not in live_indicators.MADE_WITH_PRICE_FIGURES_INDICATOR_NAME_SET:
+            assert indicator.indicator_name in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_NAME, indicator.indicator_name
+    for indicator_name in live_indicators.EDGAR_INDICATOR_NAME_LIST:
+        assert indicator_name in I.PRODUCED_INDICATOR_NAME_SET
 
 
 def test_short_interest_percent_uses_the_latest_filing_and_ignores_an_old_one():
     table = pandas.DataFrame({"short_shares": [5_000_000.0]}, index=pandas.to_datetime(["2026-10-15"]))
-    fresh = live_indicators.live_indicators_build_short_interest_indicator_value_by_id(table, 1_000_000_000, datetime.date(2026, 10, 25))
+    fresh = live_indicators.live_indicators_build_short_interest_indicator_value_by_name(table, 1_000_000_000, datetime.date(2026, 10, 25))
     assert fresh["short_interest_percent_of_shares_outstanding"] == pytest.approx(0.5)
-    assert live_indicators.live_indicators_build_short_interest_indicator_value_by_id(table, 1e9, datetime.date(2027, 1, 25)) == {}
+    assert live_indicators.live_indicators_build_short_interest_indicator_value_by_name(table, 1e9, datetime.date(2027, 1, 25)) == {}
 
 
 def price_history(count=300, step=0.1):
@@ -57,11 +57,11 @@ def test_price_derived_indicators():
 def test_relative_returns_need_the_spy_series():
     history = price_history()
     spy = pandas.Series([100 + 0.05 * day for day in range(300)])
-    value = I.indicator_calculation_build_symbol_indicator_value_by_id(
+    value = I.indicator_calculation_build_symbol_indicator_value_by_name(
         history, True, None, 45, datetime.date(2026, 10, 25), spy, spy)
     assert value["return_one_hundred_twenty_six_day_minus_spy_percent"].value > 0
     assert value["sector_etf_return_minus_spy_return_one_hundred_twenty_six_day"].value == 0
-    assert "return_one_hundred_twenty_six_day_minus_spy_percent" not in I.indicator_calculation_build_symbol_indicator_value_by_id(
+    assert "return_one_hundred_twenty_six_day_minus_spy_percent" not in I.indicator_calculation_build_symbol_indicator_value_by_name(
         history, True, None, 45, datetime.date(2026, 10, 25))
 
 
@@ -70,7 +70,7 @@ def test_market_indicators_from_yfinance_histories():
         return pandas.DataFrame({"Close": pandas.Series([start + step * day for day in range(count)])})
     histories = {"^VIX": frame(20, 0), "^VXN": frame(30, 0), "CL=F": frame(80, 0.1), "DX-Y.NYB": frame(100, 0.01),
                  "RSP": frame(50, 0.05), "SPY": frame(100, 0.05)}
-    value = I.indicator_calculation_build_market_indicator_value_by_id(histories, None, None)
+    value = I.indicator_calculation_build_market_indicator_value_by_name(histories, None, None)
     assert value["vxn_to_vix_ratio"].value == 1.5 and value["vix_to_twenty_day_average_ratio"].value == 1.0
     assert value["wti_crude_oil_price"].value == pytest.approx(80 + 0.1 * 259, abs=0.01)
     assert value["wti_crude_oil_one_month_change_percent"].value > 0
@@ -82,7 +82,7 @@ def test_option_indicators_from_one_selected_put():
     contract = option_chain.SelectedPutContract(
         expiration_date=datetime.date(2026, 11, 20), strike_price=90.0, absolute_delta=0.25, implied_volatility=0.30, premium=2.0,
         days_to_expiration=26, annualized_return_percent=31.2, bid=1.9, ask=2.1, open_interest=800.0, volume=120.0)
-    value = {key: indicator.value for key, indicator in I.indicator_calculation_build_option_indicator_value_by_id(
+    value = {key: indicator.value for key, indicator in I.indicator_calculation_build_option_indicator_value_by_name(
         contract, 25.0, 100.0, 85.0, 3.5).items()}
     assert value["selected_put_bid_ask_spread_percent_of_mid"] == pytest.approx(10.0)
     assert value["selected_expiration_is_third_friday"] is True and value["selected_strike_is_multiple_of_five"] is True
@@ -93,7 +93,7 @@ def test_option_indicators_from_one_selected_put():
     assert value["selected_put_strike_outside_one_sigma_move"] is True  # the one-sigma move is 100 * 0.30 * sqrt(26/365) = 8.0, so 92 is the edge and 90 is outside
     assert value["put_skew_ten_percent_otm_minus_atm_iv_points"] == 3.5
     assert value["selected_put_implied_volatility_exceeds_realized"] is True
-    assert I.indicator_calculation_build_option_indicator_value_by_id(None, 25.0) == {}
+    assert I.indicator_calculation_build_option_indicator_value_by_name(None, 25.0) == {}
 
 
 def test_implied_volatility_is_recovered_from_a_put_price():
@@ -115,11 +115,11 @@ def test_dolthub_history_gives_a_percentile_and_a_one_month_ratio():
     from stockboard_backend import dolthub_data
     days = pandas.date_range(end="2026-10-23", periods=260, freq="B")
     series = pandas.Series([0.20 + 0.001 * index for index in range(260)], index=days)  # rising: today is the highest of the year
-    value = dolthub_data.dolthub_data_build_indicator_value_by_id(series, datetime.date(2026, 10, 25))
+    value = dolthub_data.dolthub_data_build_indicator_value_by_name(series, datetime.date(2026, 10, 25))
     assert value["implied_volatility_percentile"] == 100.0
     assert value["implied_volatility_to_one_month_ago_ratio"] > 1.0
-    assert dolthub_data.dolthub_data_build_indicator_value_by_id(series, datetime.date(2026, 12, 25)) == {}
-    assert "implied_volatility_percentile" not in dolthub_data.dolthub_data_build_indicator_value_by_id(series.iloc[-50:], datetime.date(2026, 10, 25))
+    assert dolthub_data.dolthub_data_build_indicator_value_by_name(series, datetime.date(2026, 12, 25)) == {}
+    assert "implied_volatility_percentile" not in dolthub_data.dolthub_data_build_indicator_value_by_name(series.iloc[-50:], datetime.date(2026, 10, 25))
 
 
 def test_dolthub_rows_and_symbol_check():

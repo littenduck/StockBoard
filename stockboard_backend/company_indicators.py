@@ -28,13 +28,13 @@ def company_indicators_divide(numerator: Optional[float], denominator: Optional[
     return numerator / denominator
 
 
-def company_indicators_build_info_indicator_value_by_id(info: dict) -> Dict[str, float]:
+def company_indicators_build_info_indicator_value_by_name(info: dict) -> Dict[str, float]:
     number = lambda key: company_indicators_get_number(info, key)
     market_cap, ebitda, free_cash_flow = number("marketCap"), number("ebitda"), number("freeCashflow")
     forward_pe, trailing_pe = number("forwardPE"), number("trailingPE")
     total_debt, total_cash = number("totalDebt"), number("totalCash")
     shares, dividend_rate = number("sharesOutstanding"), number("dividendRate")
-    value_by_id: Dict[str, Optional[float]] = {
+    value_by_name: Dict[str, Optional[float]] = {
         "market_capitalization_billion_usd": None if market_cap is None else market_cap / 1e9,
         "trailing_twelve_month_eps": number("trailingEps"),
         "trailing_twelve_month_free_cash_flow": free_cash_flow,
@@ -50,33 +50,33 @@ def company_indicators_build_info_indicator_value_by_id(info: dict) -> Dict[str,
     }
     if not dividend_rate:
         if "trailingEps" in info:  # a company that pays no dividend passes; a fund has no such ratio
-            value_by_id["dividend_to_free_cash_flow_ratio"] = 0.0
+            value_by_name["dividend_to_free_cash_flow_ratio"] = 0.0
     elif shares is not None and (free_cash_flow or 0) > 0:
-        value_by_id["dividend_to_free_cash_flow_ratio"] = dividend_rate * shares / free_cash_flow
-    return {key: round(value, 4) for key, value in value_by_id.items() if value is not None}
+        value_by_name["dividend_to_free_cash_flow_ratio"] = dividend_rate * shares / free_cash_flow
+    return {key: round(value, 4) for key, value in value_by_name.items() if value is not None}
 
 
-def company_indicators_build_estimate_indicator_value_by_id(
+def company_indicators_build_estimate_indicator_value_by_name(
     eps_trend: Optional[pandas.DataFrame], recommendations_summary: Optional[pandas.DataFrame], forward_pe: Optional[float],
 ) -> Dict[str, float]:
     """eps_trend has rows 0y and +1y with columns current and 30daysAgo; recommendations_summary has the row 0m."""
-    value_by_id: Dict[str, float] = {}
+    value_by_name: Dict[str, float] = {}
     if eps_trend is not None and "+1y" in eps_trend.index and "0y" in eps_trend.index:
         next_year_now, next_year_before = eps_trend.loc["+1y", "current"], eps_trend.loc["+1y", "30daysAgo"]
         this_year_now = eps_trend.loc["0y", "current"]
         if next_year_before and next_year_before > 0 and not math.isnan(next_year_now):
-            value_by_id["eps_estimate_next_year_four_week_change_percent"] = (next_year_now / next_year_before - 1) * 100
+            value_by_name["eps_estimate_next_year_four_week_change_percent"] = (next_year_now / next_year_before - 1) * 100
         if this_year_now and this_year_now > 0 and next_year_now > this_year_now and forward_pe and forward_pe > 0:
-            value_by_id["peg_ratio"] = forward_pe / ((next_year_now / this_year_now - 1) * 100)
+            value_by_name["peg_ratio"] = forward_pe / ((next_year_now / this_year_now - 1) * 100)
     if recommendations_summary is not None and len(recommendations_summary):
         current = recommendations_summary.iloc[0]
         total = sum(current[column] for column in ("strongBuy", "buy", "hold", "sell", "strongSell"))
         if total > 0:
-            value_by_id["buy_rating_share_percent"] = (current["strongBuy"] + current["buy"]) / total * 100
-    return {key: round(float(value), 4) for key, value in value_by_id.items()}
+            value_by_name["buy_rating_share_percent"] = (current["strongBuy"] + current["buy"]) / total * 100
+    return {key: round(float(value), 4) for key, value in value_by_name.items()}
 
 
-def company_indicators_build_insider_indicator_value_by_id(
+def company_indicators_build_insider_indicator_value_by_name(
     insider_transactions: Optional[pandas.DataFrame], shares_outstanding: Optional[float], today: datetime.date,
 ) -> Dict[str, float]:
     """Open-market sales and purchases are told apart by the text yfinance gives ('Sale at price ...', 'Purchase at price ...');

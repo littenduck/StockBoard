@@ -67,13 +67,13 @@ def strategy_loader_load_all_strategy_definitions_from_directory(
 
 
 def strategy_loader_validate_strategy_definition_against_known_indicators(
-    strategy_definition: StrategyDefinition, known_indicator_id_set: Set[str],
+    strategy_definition: StrategyDefinition, known_indicator_name_set: Set[str],
 ) -> List[str]:
     """Returns error messages; an empty list means the strategy is valid."""
     error_list = []
     for gate in strategy_definition.gate_list:
         for rule in gate.rule_list:
-            if rule.status == "built" and rule.indicator not in known_indicator_id_set:
+            if rule.status == "built" and rule.indicator not in known_indicator_name_set:
                 error_list.append("{}: rule {} uses unknown indicator {}".format(
                     strategy_definition.strategy_id, rule.rule_id, rule.indicator))
     return error_list

@@ -49,7 +49,8 @@ class RuleCatalogEntry:
     quantifiable: Optional[str] = None
     backtestable: Optional[str] = None
     status: Optional[str] = None
-    indicator: Optional[str] = None
+    indicator: Optional[str] = None  # the indicator_name; the rule file writes the short id (indicator_id) and the loader resolves it
+    indicator_id: Optional[str] = None
     operator: Optional[str] = None
     value: Any = None
     band_of: Optional[str] = None
@@ -85,8 +86,9 @@ def rule_catalog_merge_indicator_fields(raw_rule: dict, registry: Optional[Indic
     repeated = [name for name in INDICATOR_OWNED_FIELD_LIST if name in raw_rule]
     if repeated:
         raise ValueError("rule {} repeats {} that indicator {} owns; delete them from config/rules.yaml".format(
-            raw_rule["rule_id"], ", ".join(repeated), indicator.indicator_id))
-    return {**raw_rule, **{name: getattr(indicator, name) for name in INDICATOR_OWNED_FIELD_LIST},
+            raw_rule["rule_id"], ", ".join(repeated), indicator.indicator_name))
+    return {**raw_rule, "indicator": indicator.indicator_name, "indicator_id": indicator.indicator_id,
+            **{name: getattr(indicator, name) for name in INDICATOR_OWNED_FIELD_LIST},
             "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age}
 
 
@@ -122,7 +124,7 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, i
 
 
 def rule_catalog_validate_rule_catalog_against_known_indicators(
-    rule_catalog: RuleCatalog, known_indicator_id_set: Set[str],
+    rule_catalog: RuleCatalog, known_indicator_name_set: Set[str],
 ) -> List[str]:
     """Returns error messages; an empty list means the catalog is valid.
     An indicator only has to exist for a rule that is already built; a todo rule may name one that is not written yet."""
@@ -150,14 +152,16 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
             error_list.append("rule {} has unknown history source {}".format(entry.rule_id, entry.history_source))
         if entry.history_start is not None and not HISTORY_START_PATTERN.match(str(entry.history_start)):
             error_list.append("rule {} has a bad history_start {}".format(entry.rule_id, entry.history_start))
-        if registry is not None and entry.indicator and entry.indicator not in registry.indicator_by_id:
+        if registry is not None and entry.indicator and entry.indicator not in registry.indicator_by_name:
             error_list.append("rule {} uses indicator {} that is not in config/indicators.yaml".format(entry.rule_id, entry.indicator))
+        if registry is not None and entry.indicator_id and registry.indicator_by_id[entry.indicator_id].indicator_name != entry.indicator:
+            error_list.append("rule {} has an indicator that does not match its id".format(entry.rule_id))
         if entry.band_of and entry.band_of not in rule_catalog.rule_entry_by_id:
             error_list.append("rule {} points to missing rule {}".format(entry.rule_id, entry.band_of))
         if entry.status == "built":
             if not entry.indicator:
                 error_list.append("rule {} is built but has no indicator".format(entry.rule_id))
-            elif entry.indicator not in known_indicator_id_set:
+            elif entry.indicator not in known_indicator_name_set:
                 error_list.append("rule {} uses unknown indicator {}".format(entry.rule_id, entry.indicator))
     for retired in rule_catalog.retired_rule_list:
         if retired.rule_id in rule_catalog.rule_entry_by_id:

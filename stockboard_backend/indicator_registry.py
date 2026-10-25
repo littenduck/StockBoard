@@ -25,6 +25,8 @@ KNOWN_HISTORY_SOURCE_NAME_SET = {
 HISTORY_START_PATTERN = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")  # a year, a month or a day
 DURATION_PATTERN = re.compile(r"^(\d+)([mhd])$")
 SECONDS_PER_UNIT = {"m": 60, "h": 3600, "d": 86400}
+INDICATOR_ID_PATTERN = re.compile(r"^I-\d{3}$")
+INDICATOR_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 TIME_OF_DAY_PATTERN = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
@@ -39,9 +41,11 @@ class FetchGroup:
 
 @dataclass
 class IndicatorDefinition:
-    indicator_id: str
+    indicator_id: str  # I-001: the short number shown to people
+    indicator_name: str  # the long name the code and the history builders use
     scope: str
     status: str
+    description: Optional[LocalizedText] = None
     method: Optional[str] = None
     quantifiable: Optional[str] = None
     backtestable: Optional[str] = None
@@ -65,14 +69,15 @@ class IndicatorDefinition:
 @dataclass
 class IndicatorRegistry:
     fetch_group_by_id: Dict[str, FetchGroup]
-    indicator_by_id: Dict[str, IndicatorDefinition]
+    indicator_by_name: Dict[str, IndicatorDefinition]
+    indicator_by_id: Dict[str, IndicatorDefinition] = field(default_factory=dict)
 
-    def built_indicator_id_set(self) -> Set[str]:
-        return {indicator.indicator_id for indicator in self.indicator_by_id.values() if indicator.status == "built"}
+    def built_indicator_name_set(self) -> Set[str]:
+        return {indicator.indicator_name for indicator in self.indicator_by_name.values() if indicator.status == "built"}
 
     def group_fetch_every_seconds(self, fetch_group_id: str) -> int:
         """A group is fetched as often as its most frequent indicator needs."""
-        every_list = [indicator.fetch_every_seconds for indicator in self.indicator_by_id.values()
+        every_list = [indicator.fetch_every_seconds for indicator in self.indicator_by_name.values()
                       if indicator.fetch_group == fetch_group_id and indicator.status == "built"]
         if every_list:
             return min(every_list)
@@ -97,22 +102,31 @@ def indicator_registry_load_from_yaml_file(indicator_file_path: str) -> Indicato
             fetch_at=[datetime.time(int(text[:2]), int(text[3:])) for text in map(str, raw_group.get("fetch_at") or [])
                       if TIME_OF_DAY_PATTERN.match(text)],
             note=raw_group.get("note", ""), fetch_every=raw_group.get("fetch_every"))
-    indicator_by_id = {}
+    indicator_by_name = {}
     for raw_indicator in raw["indicator_list"]:
-        indicator_by_id[raw_indicator["indicator_id"]] = IndicatorDefinition(**{
+        indicator_by_name[raw_indicator["indicator_name"]] = IndicatorDefinition(**{
             **raw_indicator,
             "display_name": localized_text_build_optional_from_raw_value(
-                raw_indicator.get("display_name"), "indicator {} name".format(raw_indicator["indicator_id"])),
+                raw_indicator.get("display_name"), "indicator {} name".format(raw_indicator["indicator_name"])),
+            "description": localized_text_build_optional_from_raw_value(
+                raw_indicator.get("description"), "indicator {} description".format(raw_indicator["indicator_name"])),
             "history_start": None if raw_indicator.get("history_start") is None else str(raw_indicator["history_start"]),
         })
-    return IndicatorRegistry(fetch_group_by_id=group_by_id, indicator_by_id=indicator_by_id)
+    return IndicatorRegistry(fetch_group_by_id=group_by_id, indicator_by_name=indicator_by_name,
+                             indicator_by_id={indicator.indicator_id: indicator for indicator in indicator_by_name.values()})
 
 
 def indicator_registry_validate(indicator_registry: IndicatorRegistry) -> List[str]:
     """Returns error messages; an empty list means the registry is valid."""
     error_list = []
-    for indicator in indicator_registry.indicator_by_id.values():
-        name = "indicator " + indicator.indicator_id
+    if len(indicator_registry.indicator_by_id) != len(indicator_registry.indicator_by_name):
+        error_list.append("two indicators share an indicator_id")
+    for indicator in indicator_registry.indicator_by_name.values():
+        name = "indicator " + indicator.indicator_name
+        if not INDICATOR_ID_PATTERN.match(indicator.indicator_id):
+            error_list.append("{} has a bad indicator_id {} (use I-001)".format(name, indicator.indicator_id))
+        if not INDICATOR_NAME_PATTERN.match(indicator.indicator_name):
+            error_list.append("{} is not a lower case name with underscores".format(name))
         if indicator.scope not in SCOPE_SET:
             error_list.append("{} has unknown scope {}".format(name, indicator.scope))
         if indicator.status not in STATUS_SET:
@@ -142,7 +156,7 @@ def indicator_registry_validate(indicator_registry: IndicatorRegistry) -> List[s
                     error_list.append("{} has a max_age shorter than its fetch_every".format(name))
             except ValueError as error:
                 error_list.append("{}: {}".format(name, error))
-    used_group_set = {indicator.fetch_group for indicator in indicator_registry.indicator_by_id.values() if indicator.status == "built"}
+    used_group_set = {indicator.fetch_group for indicator in indicator_registry.indicator_by_name.values() if indicator.status == "built"}
     for group_id, group in indicator_registry.fetch_group_by_id.items():
         if group_id in used_group_set:
             continue
@@ -156,15 +170,15 @@ def indicator_registry_validate(indicator_registry: IndicatorRegistry) -> List[s
     return error_list
 
 
-def indicator_registry_drop_stale_values(value_by_id: dict, indicator_registry: IndicatorRegistry, now: float) -> dict:
+def indicator_registry_drop_stale_values(value_by_name: dict, indicator_registry: IndicatorRegistry, now: float) -> dict:
     """Leave out every value whose observation is older than its indicator's max_age, so the rules that use it read unknown.
     A value without an observation time is kept."""
     kept = {}
-    for indicator_id, value in value_by_id.items():
-        indicator = indicator_registry.indicator_by_id.get(indicator_id)
+    for indicator_name, value in value_by_name.items():
+        indicator = indicator_registry.indicator_by_name.get(indicator_name)
         age_limit = None if indicator is None else indicator.max_age_seconds
         observed_at = getattr(value, "observed_at", None)
         if age_limit is not None and observed_at is not None and now - observed_at > age_limit:
             continue
-        kept[indicator_id] = value
+        kept[indicator_name] = value
     return kept

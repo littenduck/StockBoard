@@ -21,6 +21,10 @@
 # group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
 # while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
 
+fetch_group_list: market_hours_only groups are fetched only while the US market is open; fetch_at lists New York times of day at which the
+# group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
+# while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
+
 fetch_group_list:
   - {fetch_group_id: yahoo_history, market_hours_only: false, fetch_at: ["16:30"], fetch_every: "1d", note: "Daily price history of every symbol (an internal job, no indicator): loaded once a day and again after the close"}
   - {fetch_group_id: yahoo_quote, market_hours_only: true, fetch_at: ["16:20"], note: "Prices and everything computed from them; the latest price of every symbol comes from one batched request and replaces today's bar of the daily history"}
@@ -38,122 +42,8 @@ fetch_group_list:
   - {fetch_group_id: edgar, market_hours_only: false, fetch_at: ["06:00"], note: "SEC EDGAR filings"}
 
 indicator_list:
-  # market · aaii
-  - indicator_id: aaii_bullish_minus_bearish_percent
-    scope: market
-    method: "scrape"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "aaii:sentiment"
-    history_start: "1987"
-    status: built
-    fetch_group: aaii
-    fetch_every: 1d
-    max_age: 16d
-  - indicator_id: aaii_bullish_percent
-    scope: market
-    method: "scrape"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "aaii:sentiment"
-    history_start: "1987"
-    status: built
-    fetch_group: aaii
-    fetch_every: 1d
-    max_age: 16d
-  # market · calendar
-  - indicator_id: is_spmo_rebalance_window
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "rule:spmo-rebalance-calendar"
-    history_start: "2015-10"
-    status: built
-    fetch_group: calendar
-    fetch_every: 1d
-    max_age: 2d
-  - indicator_id: no_jobs_report_within_one_day
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:PAYEMS-release-dates"
-    history_start: "1939"
-    status: built
-    fetch_group: calendar
-    fetch_every: 1d
-    max_age: 2d
-  - indicator_id: no_quadruple_witching_in_next_five_trading_days
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "rule:option-expiration-calendar"
-    history_start: "1990"
-    status: built
-    fetch_group: calendar
-    fetch_every: 1d
-    max_age: 2d
-  # market · cboe_put_call
-  - indicator_id: put_call_ratio_total_five_day_average
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "cboe:putcall"
-    history_start: "2006-11-01"
-    status: built
-    fetch_group: cboe_put_call
-    fetch_every: 1d
-    max_age: 7d
-  # market · cnn
-  - indicator_id: fear_greed_index
-    scope: market
-    method: "scrape"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "cnn:fear-and-greed"
-    history_start: "2021-01-04"
-    status: built
-    fetch_group: cnn
-    fetch_every: 1h
-    max_age: 5d
-  # market · fred
-  - indicator_id: chicago_fed_national_activity_index_three_month_average
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:CFNAIMA3"
-    history_start: "1967"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 100d
-  - indicator_id: consumer_price_index_year_over_year_percent
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "alfred:CPIAUCSL"
-    history_start: "1947"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 100d
-  - indicator_id: core_pce_price_index_year_over_year_percent
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "alfred:PCEPILFE"
-    history_start: "1959"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 100d
-  - indicator_id: federal_funds_target_rate_not_raised_in_182_days
+  - indicator_id: I-001
+    indicator_name: "federal_funds_target_rate_not_raised_in_182_days"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -164,97 +54,8 @@ indicator_list:
     fetch_group: fred
     fetch_every: 1d
     max_age: 10d
-  - indicator_id: federal_reserve_total_assets_thirteen_week_change_percent
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:WALCL"
-    history_start: "2002"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 16d
-  - indicator_id: high_yield_credit_spread_basis_points
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:BAMLH0A0HYM2"
-    history_start: "2023-10-24"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 10d
-    display_name: {en: "HY spread", zh: "HY 利差"}
-    is_higher_value_risky: true
-  - indicator_id: high_yield_credit_spread_twenty_day_change_basis_points
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:BAMLH0A0HYM2"
-    history_start: "2023-10-24"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 10d
-  - indicator_id: initial_jobless_claims_four_week_average
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:ICSA"
-    history_start: "1967"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 16d
-  - indicator_id: m2_money_supply_year_over_year_percent
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:M2SL"
-    history_start: "1959"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 100d
-  - indicator_id: market_value_to_gdp_percent
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:NCBEILQ027S"
-    history_start: "1947"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 270d
-  - indicator_id: moodys_baa_minus_ten_year_treasury_spread
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:BAA10Y"
-    history_start: "1986"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 10d
-  - indicator_id: sahm_rule_recession_indicator
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:SAHMREALTIME"
-    history_start: "1959"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 100d
-  - indicator_id: six_month_treasury_bill_yield_minus_federal_funds_rate
+  - indicator_id: I-002
+    indicator_name: "six_month_treasury_bill_yield_minus_federal_funds_rate"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -265,40 +66,8 @@ indicator_list:
     fetch_group: fred
     fetch_every: 1d
     max_age: 10d
-  - indicator_id: trade_policy_uncertainty_ten_year_percentile
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:EPUTRADE"
-    history_start: "1985"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 100d
-  - indicator_id: treasury_ten_year_minus_three_month_spread
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:T10Y3M"
-    history_start: "1982"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 10d
-  - indicator_id: treasury_ten_year_minus_two_year_spread
-    scope: market
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fred:T10Y2Y"
-    history_start: "1976"
-    status: built
-    fetch_group: fred
-    fetch_every: 1d
-    max_age: 10d
-  - indicator_id: treasury_ten_year_yield
+  - indicator_id: I-003
+    indicator_name: "treasury_ten_year_yield"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -311,7 +80,8 @@ indicator_list:
     max_age: 10d
     display_name: {en: "10Y", zh: "10Y"}
     is_higher_value_risky: true
-  - indicator_id: treasury_ten_year_yield_twenty_day_change_basis_points
+  - indicator_id: I-004
+    indicator_name: "treasury_ten_year_yield_twenty_day_change_basis_points"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -322,87 +92,130 @@ indicator_list:
     fetch_group: fred
     fetch_every: 1d
     max_age: 10d
-  - indicator_id: us_epu_thirty_day_average_percentile_five_year
+  - indicator_id: I-005
+    indicator_name: "treasury_ten_year_minus_two_year_spread"
     scope: market
-    method: "computed"
+    method: "api_fetch"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "fred:USEPUINDXD"
-    history_start: "1985"
+    history_source: "fred:T10Y2Y"
+    history_start: "1976"
     status: built
     fetch_group: fred
     fetch_every: 1d
     max_age: 10d
-  # market · reference_files
-  - indicator_id: damodaran_implied_equity_risk_premium_percent
+  - indicator_id: I-006
+    indicator_name: "treasury_ten_year_minus_three_month_spread"
     scope: market
-    method: "scrape"
+    method: "api_fetch"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "damodaran:implied-erp"
-    history_start: "2008-09"
+    history_source: "fred:T10Y3M"
+    history_start: "1982"
     status: built
-    fetch_group: reference_files
+    fetch_group: fred
     fetch_every: 1d
-    max_age: 75d
-  - indicator_id: geopolitical_risk_index_thirty_day_average_percentile_five_year
+    max_age: 10d
+  - indicator_id: I-007
+    indicator_name: "high_yield_credit_spread_basis_points"
     scope: market
-    method: "computed"
+    method: "api_fetch"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "gpr:daily"
-    history_start: "1985"
+    history_source: "fred:BAMLH0A0HYM2"
+    history_start: "2023-10-24"
     status: built
-    fetch_group: reference_files
+    fetch_group: fred
     fetch_every: 1d
-    max_age: 14d
-  - indicator_id: shiller_cape
+    max_age: 10d
+    display_name: {en: "HY spread", zh: "HY 利差"}
+    is_higher_value_risky: true
+  - indicator_id: I-008
+    indicator_name: "high_yield_credit_spread_twenty_day_change_basis_points"
     scope: market
-    method: "scrape"
+    method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "shiller:ie_data"
-    history_start: "1881"
+    history_source: "fred:BAMLH0A0HYM2"
+    history_start: "2023-10-24"
     status: built
-    fetch_group: reference_files
+    fetch_group: fred
     fetch_every: 1d
-    max_age: 45d
-  # market · yahoo_company
-  - indicator_id: equity_risk_premium_simple_percent
+    max_age: 10d
+  - indicator_id: I-009
+    indicator_name: "moodys_baa_minus_ten_year_treasury_spread"
+    scope: market
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:BAA10Y"
+    history_start: "1986"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 10d
+  - indicator_id: I-010
+    indicator_name: "consumer_price_index_year_over_year_percent"
     scope: market
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "shiller:ie_data"
-    history_start: "1962"
+    history_source: "alfred:CPIAUCSL"
+    history_start: "1947"
     status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  # market · yahoo_quote
-  - indicator_id: rsp_to_spy_ratio_above_two_hundred_day_average
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 100d
+  - indicator_id: I-011
+    indicator_name: "core_pce_price_index_year_over_year_percent"
     scope: market
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "yfinance:RSP"
-    history_start: "2003"
+    history_source: "alfred:PCEPILFE"
+    history_start: "1959"
     status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: spx_above_two_hundred_day_average
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 100d
+  - indicator_id: I-012
+    indicator_name: "sahm_rule_recession_indicator"
+    scope: market
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:SAHMREALTIME"
+    history_start: "1959"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 100d
+  - indicator_id: I-013
+    indicator_name: "initial_jobless_claims_four_week_average"
     scope: market
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "yfinance:^GSPC"
-    history_start: "1927-12-30"
+    history_source: "fred:ICSA"
+    history_start: "1967"
     status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: us_dollar_index_twenty_day_change_percent
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 16d
+  - indicator_id: I-014
+    indicator_name: "chicago_fed_national_activity_index_three_month_average"
+    scope: market
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:CFNAIMA3"
+    history_start: "1967"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 100d
+  - indicator_id: I-015
+    indicator_name: "us_dollar_index_twenty_day_change_percent"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -413,7 +226,422 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: vix_level
+  - indicator_id: I-016
+    indicator_name: "wti_crude_oil_price"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:DCOILWTICO"
+    history_start: "1986"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-017
+    indicator_name: "wti_crude_oil_one_month_change_percent"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:DCOILWTICO"
+    history_start: "1986"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-018
+    indicator_name: "m2_money_supply_year_over_year_percent"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:M2SL"
+    history_start: "1959"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 100d
+  - indicator_id: I-019
+    indicator_name: "federal_reserve_total_assets_thirteen_week_change_percent"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:WALCL"
+    history_start: "2002"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 16d
+  - indicator_id: I-020
+    indicator_name: "sector_etf_return_minus_spy_return_one_hundred_twenty_six_day"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:sector-etfs"
+    history_start: "1998"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-021
+    indicator_name: "sector_next_year_eps_estimate_four_week_change_median_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:earnings"
+    history_start: "2017-10-26"
+    status: todo
+  - indicator_id: I-022
+    indicator_name: "trailing_twelve_month_eps"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-023
+    indicator_name: "revenue_year_over_year_percent"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-024
+    indicator_name: "revenue_three_year_cagr_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-025
+    indicator_name: "eps_three_year_cagr_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-026
+    indicator_name: "return_on_invested_capital_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-027
+    indicator_name: "return_on_equity_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-028
+    indicator_name: "gross_margin_percent"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-029
+    indicator_name: "trailing_twelve_month_free_cash_flow"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-030
+    indicator_name: "free_cash_flow_year_over_year_change"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-031
+    indicator_name: "operating_cash_flow_to_net_income_ratio"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-032
+    indicator_name: "net_debt_to_ebitda"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-033
+    indicator_name: "interest_coverage_ratio"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-034
+    indicator_name: "eps_estimate_next_year_four_week_change_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:earnings"
+    history_start: "2017-10-26"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-035
+    indicator_name: "buy_rating_share_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:upgrades_downgrades"
+    history_start: "2012-09"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-036
+    indicator_name: "insider_net_open_market_selling_percent_of_shares_180_days"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:form345"
+    history_start: "2006"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-037
+    indicator_name: "insider_open_market_purchase_count_90_days"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:form345"
+    history_start: "2006"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-038
+    indicator_name: "shares_outstanding_year_over_year_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-039
+    indicator_name: "dividend_to_free_cash_flow_ratio"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-040
+    indicator_name: "no_audit_or_late_filing_problem_in_last_365_days"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:submissions"
+    history_start: "2004"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-041
+    indicator_name: "sp500_forward_pe"
+    scope: symbol
+    method: "ai_search"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "wayback:sp-dji-eps"
+    history_start: "2020-07"
+    status: todo
+  - indicator_id: I-042
+    indicator_name: "equity_risk_premium_simple_percent"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "shiller:ie_data"
+    history_start: "1962"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-043
+    indicator_name: "shiller_cape"
+    scope: market
+    method: "scrape"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "shiller:ie_data"
+    history_start: "1881"
+    status: built
+    fetch_group: reference_files
+    fetch_every: 1d
+    max_age: 45d
+  - indicator_id: I-044
+    indicator_name: "damodaran_implied_equity_risk_premium_percent"
+    scope: market
+    method: "scrape"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "damodaran:implied-erp"
+    history_start: "2008-09"
+    status: built
+    fetch_group: reference_files
+    fetch_every: 1d
+    max_age: 75d
+  - indicator_id: I-045
+    indicator_name: "market_value_to_gdp_percent"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:NCBEILQ027S"
+    history_start: "1947"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 270d
+  - indicator_id: I-046
+    indicator_name: "price_earnings_ttm_to_five_year_median_ratio"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-047
+    indicator_name: "forward_pe_to_trailing_pe_ratio"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:earnings"
+    history_start: "2017-10-26"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-048
+    indicator_name: "enterprise_value_to_ebitda"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-049
+    indicator_name: "peg_ratio"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:earnings"
+    history_start: "2017-10-26"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-050
+    indicator_name: "free_cash_flow_yield_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-051
+    indicator_name: "vix_level"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -426,7 +654,28 @@ indicator_list:
     max_age: 4d
     display_name: {en: "VIX", zh: "VIX"}
     is_higher_value_risky: true
-  - indicator_id: vix_term_structure_is_contango
+  - indicator_id: I-052
+    indicator_name: "vxn_level"
+    scope: market
+    method: "api_fetch"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+    display_name: {en: "VXN", zh: "VXN"}
+    is_higher_value_risky: true
+  - indicator_id: I-053
+    indicator_name: "vvix_level"
+    scope: market
+    method: "api_fetch"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+    display_name: {en: "VVIX", zh: "VVIX"}
+    is_higher_value_risky: true
+  - indicator_id: I-054
+    indicator_name: "vix_term_structure_is_contango"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -437,36 +686,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: vix_to_twenty_day_average_ratio
-    scope: market
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "cboe:VIX_History"
-    history_start: "1990-01-02"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: vvix_level
-    scope: market
-    method: "api_fetch"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-    display_name: {en: "VVIX", zh: "VVIX"}
-    is_higher_value_risky: true
-  - indicator_id: vxn_level
-    scope: market
-    method: "api_fetch"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-    display_name: {en: "VXN", zh: "VXN"}
-    is_higher_value_risky: true
-  - indicator_id: vxn_to_vix_ratio
+  - indicator_id: I-055
+    indicator_name: "vxn_to_vix_ratio"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -477,142 +698,65 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: wti_crude_oil_one_month_change_percent
+  - indicator_id: I-056
+    indicator_name: "fear_greed_index"
     scope: market
-    method: "computed"
+    method: "scrape"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "fred:DCOILWTICO"
-    history_start: "1986"
+    history_source: "cnn:fear-and-greed"
+    history_start: "2021-01-04"
     status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: wti_crude_oil_price
+    fetch_group: cnn
+    fetch_every: 1h
+    max_age: 5d
+  - indicator_id: I-057
+    indicator_name: "aaii_bullish_minus_bearish_percent"
     scope: market
-    method: "computed"
+    method: "scrape"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "fred:DCOILWTICO"
-    history_start: "1986"
+    history_source: "aaii:sentiment"
+    history_start: "1987"
     status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  # symbol · dolthub_iv
-  - indicator_id: implied_volatility_percentile
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:volatility_history"
-    history_start: "2020-02"
-    status: built
-    fetch_group: dolthub_iv
-    fetch_every: 6h
-    max_age: 7d
-  - indicator_id: implied_volatility_to_one_month_ago_ratio
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
-    status: built
-    fetch_group: dolthub_iv
-    fetch_every: 6h
-    max_age: 7d
-  # symbol · edgar
-  - indicator_id: eps_three_year_cagr_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: edgar
+    fetch_group: aaii
     fetch_every: 1d
-    max_age: 120d
-  - indicator_id: free_cash_flow_year_over_year_change
-    scope: symbol
-    method: "computed"
+    max_age: 16d
+  - indicator_id: I-058
+    indicator_name: "aaii_bullish_percent"
+    scope: market
+    method: "scrape"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
+    history_source: "aaii:sentiment"
+    history_start: "1987"
     status: built
-    fetch_group: edgar
+    fetch_group: aaii
     fetch_every: 1d
-    max_age: 120d
-  - indicator_id: interest_coverage_ratio
+    max_age: 16d
+  - indicator_id: I-059
+    indicator_name: "naaim_exposure_index"
     scope: symbol
-    method: "computed"
+    method: "scrape"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: edgar
-    fetch_every: 1d
-    max_age: 120d
-  - indicator_id: no_audit_or_late_filing_problem_in_last_365_days
-    scope: symbol
+    history_source: "naaim:exposure-index"
+    history_start: "2006"
+    status: todo
+  - indicator_id: I-060
+    indicator_name: "put_call_ratio_total_five_day_average"
+    scope: market
     method: "api_fetch"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "edgar:submissions"
-    history_start: "2004"
+    history_source: "cboe:putcall"
+    history_start: "2006-11-01"
     status: built
-    fetch_group: edgar
+    fetch_group: cboe_put_call
     fetch_every: 1d
-    max_age: 120d
-  - indicator_id: price_earnings_ttm_to_five_year_median_ratio
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: edgar
-    fetch_every: 1d
-    max_age: 120d
-  - indicator_id: return_on_invested_capital_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: edgar
-    fetch_every: 1d
-    max_age: 120d
-  - indicator_id: revenue_three_year_cagr_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: edgar
-    fetch_every: 1d
-    max_age: 120d
-  - indicator_id: shares_outstanding_year_over_year_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: edgar
-    fetch_every: 1d
-    max_age: 120d
-  # symbol · finra
-  - indicator_id: short_interest_percent_of_shares_outstanding
+    max_age: 7d
+  - indicator_id: I-061
+    indicator_name: "short_interest_percent_of_shares_outstanding"
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -623,350 +767,8 @@ indicator_list:
     fetch_group: finra
     fetch_every: 1d
     max_age: 45d
-  # symbol · spmo_holdings
-  - indicator_id: spmo_holding_rank
-    scope: symbol
-    method: "scrape"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "sec:n-port"
-    history_start: "2019-11-30"
-    status: built
-    fetch_group: spmo_holdings
-    fetch_every: 1d
-    max_age: 7d
-  # symbol · yahoo_company
-  - indicator_id: buy_rating_share_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:upgrades_downgrades"
-    history_start: "2012-09"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: dividend_to_free_cash_flow_ratio
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: enterprise_value_to_ebitda
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: eps_estimate_next_year_four_week_change_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:earnings"
-    history_start: "2017-10-26"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: forward_pe_to_trailing_pe_ratio
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:earnings"
-    history_start: "2017-10-26"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: free_cash_flow_yield_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: gross_margin_percent
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: insider_net_open_market_selling_percent_of_shares_180_days
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:form345"
-    history_start: "2006"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: insider_open_market_purchase_count_90_days
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:form345"
-    history_start: "2006"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: market_capitalization_billion_usd
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: net_debt_to_ebitda
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: no_earnings_before_expiration
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:submissions"
-    history_start: "2004"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: operating_cash_flow_to_net_income_ratio
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: peg_ratio
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:earnings"
-    history_start: "2017-10-26"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: return_on_equity_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: revenue_year_over_year_percent
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: trailing_twelve_month_eps
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  - indicator_id: trailing_twelve_month_free_cash_flow
-    scope: symbol
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:companyfacts"
-    history_start: "2009"
-    status: built
-    fetch_group: yahoo_company
-    fetch_every: 1h
-    max_age: 3d
-  # symbol · yahoo_options
-  - indicator_id: selected_call_days_to_expiration
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
-    status: built
-    fetch_group: yahoo_options
-    fetch_every: 10m
-    max_age: 1d
-  - indicator_id: selected_call_strike_premium_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
-    status: built
-    fetch_group: yahoo_options
-    fetch_every: 10m
-    max_age: 1d
-  # symbol · yahoo_quote
-  - indicator_id: absolute_distance_from_two_hundred_day_average_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: average_daily_trading_value_twenty_day_usd
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: average_true_range_fourteen_day_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: customers_and_suppliers_have_no_earnings_inside_option_life
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:submissions"
-    history_start: "2004"
-    status: todo
-  - indicator_id: distance_above_sixty_day_low_close_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: distance_from_fifty_two_week_high_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: fifty_day_average_above_two_hundred_day_average
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: fifty_two_week_range_percentile
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:daily-prices"
-    history_start: "1980-12-12"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: industry_leader_has_no_earnings_inside_option_life
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "edgar:submissions"
-    history_start: "2004"
-    status: todo
-  - indicator_id: last_price
-    scope: symbol
-    method: "computed"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: naaim_exposure_index
-    scope: symbol
-    method: "scrape"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "naaim:exposure-index"
-    history_start: "2006"
-    status: todo
-  - indicator_id: no_mega_ipo_in_last_30_trading_days
+  - indicator_id: I-062
+    indicator_name: "no_mega_ipo_in_last_30_trading_days"
     scope: symbol
     method: "ai_search"
     quantifiable: "yes"
@@ -974,7 +776,41 @@ indicator_list:
     history_source: "ritter:ipo-data"
     history_start: "1990"
     status: todo
-  - indicator_id: no_new_fifty_two_week_low_in_last_20_days
+  - indicator_id: I-063
+    indicator_name: "spx_above_two_hundred_day_average"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:^GSPC"
+    history_start: "1927-12-30"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-064
+    indicator_name: "sp500_share_above_two_hundred_day_average_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fja05680:sp500-components"
+    history_start: "1996-01-02"
+    status: todo
+  - indicator_id: I-065
+    indicator_name: "rsp_to_spy_ratio_above_two_hundred_day_average"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:RSP"
+    history_start: "2003"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-066
+    indicator_name: "price_above_two_hundred_day_average"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -985,7 +821,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: price_above_fifty_day_average
+  - indicator_id: I-067
+    indicator_name: "no_new_fifty_two_week_low_in_last_20_days"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -996,7 +833,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: price_above_two_hundred_day_average
+  - indicator_id: I-068
+    indicator_name: "fifty_day_average_above_two_hundred_day_average"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1007,7 +845,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: price_below_five_day_average
+  - indicator_id: I-069
+    indicator_name: "price_above_fifty_day_average"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1018,14 +857,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: realized_volatility_thirty_day
-    scope: symbol
-    method: "computed"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: relative_strength_index_fourteen_day
+  - indicator_id: I-070
+    indicator_name: "distance_from_fifty_two_week_high_percent"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1036,7 +869,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: relative_strength_index_two_day
+  - indicator_id: I-071
+    indicator_name: "fifty_two_week_range_percentile"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1047,7 +881,20 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: return_one_hundred_twenty_six_day_minus_spy_percent
+  - indicator_id: I-072
+    indicator_name: "return_six_month_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-073
+    indicator_name: "return_one_hundred_twenty_six_day_minus_spy_percent"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1058,7 +905,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: return_six_month_percent
+  - indicator_id: I-074
+    indicator_name: "volume_ratio_to_twenty_day_average"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1069,50 +917,8 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  - indicator_id: sector_etf_return_minus_spy_return_one_hundred_twenty_six_day
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "yfinance:sector-etfs"
-    history_start: "1998"
-    status: built
-    fetch_group: yahoo_quote
-    fetch_every: 10m
-    max_age: 4d
-  - indicator_id: sector_next_year_eps_estimate_four_week_change_median_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:earnings"
-    history_start: "2017-10-26"
-    status: todo
-  - indicator_id: selected_option_implied_leverage
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
-    status: todo
-  - indicator_id: sp500_forward_pe
-    scope: symbol
-    method: "ai_search"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "wayback:sp-dji-eps"
-    history_start: "2020-07"
-    status: todo
-  - indicator_id: sp500_share_above_two_hundred_day_average_percent
-    scope: symbol
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "fja05680:sp500-components"
-    history_start: "1996-01-02"
-    status: todo
-  - indicator_id: volume_ratio_to_twenty_day_average
+  - indicator_id: I-075
+    indicator_name: "relative_strength_index_fourteen_day"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1123,42 +929,92 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
-  # window · calendar
-  - indicator_id: no_cpi_or_pce_release_inside_option_life
-    scope: window
+  - indicator_id: I-076
+    indicator_name: "relative_strength_index_two_day"
+    scope: symbol
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "fred:release-dates"
-    history_start: "1959"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
     status: built
-    fetch_group: calendar
-    fetch_every: 1d
-    max_age: 2d
-  - indicator_id: no_election_day_inside_option_life
-    scope: window
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-077
+    indicator_name: "price_below_five_day_average"
+    scope: symbol
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "rule:us-election-calendar"
-    history_start: "1900"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
     status: built
-    fetch_group: calendar
-    fetch_every: 1d
-    max_age: 2d
-  - indicator_id: no_fomc_meeting_inside_option_life
-    scope: window
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-078
+    indicator_name: "distance_above_sixty_day_low_close_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-079
+    indicator_name: "absolute_distance_from_two_hundred_day_average_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-080
+    indicator_name: "average_true_range_fourteen_day_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-081
+    indicator_name: "spmo_holding_rank"
+    scope: symbol
     method: "scrape"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "federalreserve:fomc-calendar"
-    history_start: "1936"
+    history_source: "sec:n-port"
+    history_start: "2019-11-30"
     status: built
-    fetch_group: calendar
+    fetch_group: spmo_holdings
     fetch_every: 1d
-    max_age: 2d
-  # window · yahoo_company
-  - indicator_id: no_ex_dividend_date_inside_option_life
+    max_age: 7d
+  - indicator_id: I-082
+    indicator_name: "no_earnings_before_expiration"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:submissions"
+    history_start: "2004"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-083
+    indicator_name: "no_ex_dividend_date_inside_option_life"
     scope: window
     method: "api_fetch"
     quantifiable: "yes"
@@ -1169,8 +1025,158 @@ indicator_list:
     fetch_group: yahoo_company
     fetch_every: 1h
     max_age: 3d
-  # window · yahoo_options
-  - indicator_id: one_sigma_expected_move_thirty_day_percent
+  - indicator_id: I-084
+    indicator_name: "industry_leader_has_no_earnings_inside_option_life"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:submissions"
+    history_start: "2004"
+    status: todo
+  - indicator_id: I-085
+    indicator_name: "customers_and_suppliers_have_no_earnings_inside_option_life"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:submissions"
+    history_start: "2004"
+    status: todo
+  - indicator_id: I-086
+    indicator_name: "no_fomc_meeting_inside_option_life"
+    scope: window
+    method: "scrape"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "federalreserve:fomc-calendar"
+    history_start: "1936"
+    status: built
+    fetch_group: calendar
+    fetch_every: 1d
+    max_age: 2d
+  - indicator_id: I-087
+    indicator_name: "no_cpi_or_pce_release_inside_option_life"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:release-dates"
+    history_start: "1959"
+    status: built
+    fetch_group: calendar
+    fetch_every: 1d
+    max_age: 2d
+  - indicator_id: I-088
+    indicator_name: "no_jobs_report_within_one_day"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:PAYEMS-release-dates"
+    history_start: "1939"
+    status: built
+    fetch_group: calendar
+    fetch_every: 1d
+    max_age: 2d
+  - indicator_id: I-089
+    indicator_name: "no_election_day_inside_option_life"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "rule:us-election-calendar"
+    history_start: "1900"
+    status: built
+    fetch_group: calendar
+    fetch_every: 1d
+    max_age: 2d
+  - indicator_id: I-090
+    indicator_name: "is_spmo_rebalance_window"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "rule:spmo-rebalance-calendar"
+    history_start: "2015-10"
+    status: built
+    fetch_group: calendar
+    fetch_every: 1d
+    max_age: 2d
+  - indicator_id: I-091
+    indicator_name: "no_quadruple_witching_in_next_five_trading_days"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "rule:option-expiration-calendar"
+    history_start: "1990"
+    status: built
+    fetch_group: calendar
+    fetch_every: 1d
+    max_age: 2d
+  - indicator_id: I-092
+    indicator_name: "trade_policy_uncertainty_ten_year_percentile"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:EPUTRADE"
+    history_start: "1985"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 100d
+  - indicator_id: I-093
+    indicator_name: "us_epu_thirty_day_average_percentile_five_year"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "fred:USEPUINDXD"
+    history_start: "1985"
+    status: built
+    fetch_group: fred
+    fetch_every: 1d
+    max_age: 10d
+  - indicator_id: I-094
+    indicator_name: "geopolitical_risk_index_thirty_day_average_percentile_five_year"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "gpr:daily"
+    history_start: "1985"
+    status: built
+    fetch_group: reference_files
+    fetch_every: 1d
+    max_age: 14d
+  - indicator_id: I-095
+    indicator_name: "market_capitalization_billion_usd"
+    scope: symbol
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: yahoo_company
+    fetch_every: 1h
+    max_age: 3d
+  - indicator_id: I-096
+    indicator_name: "average_daily_trading_value_twenty_day_usd"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "yfinance:daily-prices"
+    history_start: "1980-12-12"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-097
+    indicator_name: "selected_put_bid_ask_spread_percent_of_mid"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1181,7 +1187,64 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: put_skew_ten_percent_otm_minus_atm_iv_points
+  - indicator_id: I-098
+    indicator_name: "selected_put_open_interest"
+    scope: window
+    method: "api_fetch"
+    quantifiable: "yes"
+    backtestable: "no"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-099
+    indicator_name: "selected_put_volume"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "no"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-100
+    indicator_name: "implied_volatility_percentile"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:volatility_history"
+    history_start: "2020-02"
+    status: built
+    fetch_group: dolthub_iv
+    fetch_every: 6h
+    max_age: 7d
+  - indicator_id: I-101
+    indicator_name: "implied_volatility_to_one_month_ago_ratio"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: dolthub_iv
+    fetch_every: 6h
+    max_age: 7d
+  - indicator_id: I-102
+    indicator_name: "vix_to_twenty_day_average_ratio"
+    scope: market
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "cboe:VIX_History"
+    history_start: "1990-01-02"
+    status: built
+    fetch_group: yahoo_quote
+    fetch_every: 10m
+    max_age: 4d
+  - indicator_id: I-103
+    indicator_name: "selected_put_implied_volatility_exceeds_realized"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1192,7 +1255,56 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_expiration_is_third_friday
+  - indicator_id: I-104
+    indicator_name: "one_sigma_expected_move_thirty_day_percent"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-105
+    indicator_name: "put_skew_ten_percent_otm_minus_atm_iv_points"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-106
+    indicator_name: "selected_put_absolute_delta"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-107
+    indicator_name: "selected_put_days_to_expiration"
+    scope: window
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-108
+    indicator_name: "selected_expiration_is_third_friday"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1203,7 +1315,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_option_days_to_expiration
+  - indicator_id: I-109
+    indicator_name: "selected_put_strike_discount_percent"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1214,7 +1327,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_absolute_delta
+  - indicator_id: I-110
+    indicator_name: "selected_put_strike_below_support"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1225,7 +1339,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_annualized_return_percent
+  - indicator_id: I-111
+    indicator_name: "selected_put_strike_outside_one_sigma_move"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1236,7 +1351,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_bid_ask_spread_percent_of_mid
+  - indicator_id: I-112
+    indicator_name: "selected_strike_is_multiple_of_five"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1247,7 +1363,32 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_breakeven_discount_percent
+  - indicator_id: I-113
+    indicator_name: "selected_call_strike_premium_percent"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-114
+    indicator_name: "selected_call_days_to_expiration"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "dolthub:options"
+    history_start: "2019-02-09"
+    status: built
+    fetch_group: yahoo_options
+    fetch_every: 10m
+    max_age: 1d
+  - indicator_id: I-115
+    indicator_name: "selected_option_days_to_expiration"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1258,7 +1399,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_days_to_expiration
+  - indicator_id: I-116
+    indicator_name: "selected_put_annualized_return_percent"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1269,7 +1411,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_implied_volatility_exceeds_realized
+  - indicator_id: I-117
+    indicator_name: "selected_put_monthly_premium_percent"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1280,7 +1423,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_monthly_premium_percent
+  - indicator_id: I-118
+    indicator_name: "selected_put_breakeven_discount_percent"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1291,16 +1435,8 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_open_interest
-    scope: window
-    method: "api_fetch"
-    quantifiable: "yes"
-    backtestable: "no"
-    status: built
-    fetch_group: yahoo_options
-    fetch_every: 10m
-    max_age: 1d
-  - indicator_id: selected_put_probability_of_profit
+  - indicator_id: I-119
+    indicator_name: "selected_put_probability_of_profit"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1311,56 +1447,28 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
-  - indicator_id: selected_put_strike_below_support
-    scope: window
+  - indicator_id: I-120
+    indicator_name: "selected_option_implied_leverage"
+    scope: symbol
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
     history_source: "dolthub:options"
     history_start: "2019-02-09"
-    status: built
-    fetch_group: yahoo_options
-    fetch_every: 10m
-    max_age: 1d
-  - indicator_id: selected_put_strike_discount_percent
-    scope: window
+    status: todo
+  - indicator_id: I-121
+    indicator_name: "last_price"
+    scope: symbol
     method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
     status: built
-    fetch_group: yahoo_options
+    fetch_group: yahoo_quote
     fetch_every: 10m
-    max_age: 1d
-  - indicator_id: selected_put_strike_outside_one_sigma_move
-    scope: window
+    max_age: 4d
+  - indicator_id: I-122
+    indicator_name: "realized_volatility_thirty_day"
+    scope: symbol
     method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
     status: built
-    fetch_group: yahoo_options
+    fetch_group: yahoo_quote
     fetch_every: 10m
-    max_age: 1d
-  - indicator_id: selected_put_volume
-    scope: window
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "no"
-    status: built
-    fetch_group: yahoo_options
-    fetch_every: 10m
-    max_age: 1d
-  - indicator_id: selected_strike_is_multiple_of_five
-    scope: window
-    method: "computed"
-    quantifiable: "yes"
-    backtestable: "yes"
-    history_source: "dolthub:options"
-    history_start: "2019-02-09"
-    status: built
-    fetch_group: yahoo_options
-    fetch_every: 10m
-    max_age: 1d
+    max_age: 4d
