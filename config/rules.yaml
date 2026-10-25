@@ -1,9 +1,9 @@
-# Rule catalog, regrouped by theme (first draft of the redesign; strategies/*.yaml still use the old ids).
-# Rule id = category code + two digits, for example TRD-03. Categories run from macro down to detail.
+# Rule catalog, regrouped by theme. Strategies in strategies/*.yaml pick rules from here and give each rule its own weight.
+# Rule id = category code + two digits, for example TRD-03. Categories run from macro down to detail. Ids are never reused.
+# A rule only answers one question: does the value pass this line? (pass, fail or unknown). It has no weight and no score.
+# A measure with several lines (VIX, Delta, DTE ...) is split into one rule per line. The main rule carries the full description;
+# the others point to it with band_of. A strategy lists the lines it wants, each with its own weight, so crossing one more line adds weight.
 # legacy_id lists the old ids (A01 to Z20, plus T, R, M) that each rule replaces; old alias rules are merged away.
-# weight is the importance score 1 to 5 from the redesign review (5 = core or veto). Strategies may override it.
-# A rule with levels gives partial credit: the first matching level wins, no match means score 0. A level's score is the share of
-# the weight the rule earns (1.0 = all of it). Scores are a first draft.
 #
 # status: how far the rule is from working
 #   built    the app already computes it
@@ -24,13 +24,12 @@
 #   rule_id          unique id, category code plus two digits (ids are never reused)
 #   name             {en, zh} short name
 #   description      {en, zh} what the rule looks at, why it matters, typical values, update frequency; abbreviations are spelled out and the data source is named
-#   weight           importance 1 to 5 (5 = core or veto); a strategy may override it
 #   method           api_fetch, scrape, computed, ai_search or manual
 #   quantifiable     yes, part or no: whether the rule can be turned into a number or a yes/no test (English only)
 #   status           built, todo or no_data
 #   indicator        optional: id of the indicator that gives the value
-#   operator, value  optional: single threshold (less_than, less_or_equal, greater_than, greater_or_equal, between, is_true)
-#   levels           optional: graded score, first matching level wins, no match means score 0
+#   operator, value  the line this rule tests (less_than, less_or_equal, greater_than, greater_or_equal, between with [low, high], is_true)
+#   band_of          optional: id of the main rule when this rule is another line of the same measure (display only, not used in scoring)
 #   legacy_id        old ids this rule replaces
 #   note             optional {en, zh} remark
 
@@ -52,12 +51,12 @@ rule_group_list:
   - {group_id: "EXT", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}}
 
 
+
 rule_list:
   # MAC · Macro
   - rule_id: MAC-01
     name: {en: "Fed hike watch", zh: "美联储加息观察"}
     description: {en: "Passes when the Fed (the US central bank) has not raised interest rates, or signalled that it will, in the last 6 months. Rising rates push stock valuations down and make selling puts riskier. Source: FRED (Federal Reserve Economic Data, run by the St. Louis Fed), series DFF (effective federal funds rate). Guidance wording has no free structured feed. Typical values: a hiking cycle is a run of increases of 25bp or more. Updated daily.", zh: "近 6 个月美联储（美国央行）没有加息，也没有暗示要加息时通过。利率上升会压低股票估值，让卖 Put 更危险。数据来源：FRED（圣路易斯联储的经济数据库）的 DFF 序列，即有效联邦基金利率；指引措辞没有免费的结构化数据。常见情形：加息周期指连续上调 25bp 或以上。每日更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "part"
     status: "todo"
@@ -65,25 +64,34 @@ rule_list:
   - rule_id: MAC-02
     name: {en: "FOMC hike odds", zh: "FOMC 加息概率"}
     description: {en: "Passes when the market-implied chance of a rate hike at the next FOMC (Federal Open Market Committee, the Fed committee that sets US interest rates; about 8 meetings a year) is below 50%. Higher odds mean rates may keep rising and stocks come under pressure. Source: CME FedWatch, built from fed funds futures; there is no free API, so an AI reads the page. Typical values: below 50% is the usual comfort line. Updated intraday.", zh: "下次 FOMC（联邦公开市场委员会，美联储负责定利率的委员会，每年约 8 次会议）加息的市场隐含概率低于 50% 时通过。概率越高，说明利率可能继续上行，股市容易承压。数据来源：CME FedWatch（根据联邦基金期货推算）；没有免费 API，需要 AI 读网页。常见情形：低于 50% 是常用的安心线。盘中更新。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "yes"
     status: "no_data"
     legacy_id: ["A06"]
   - rule_id: MAC-03
-    name: {en: "10Y yield", zh: "10Y 收益率"}
-    description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10 (10-year Treasury constant maturity rate), updated daily with about one business day of delay. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb). Scoring levels (the first matching level wins): below 4.5% earns the full weight; below 5% earns half of the weight; anything else earns nothing.", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列（10 年期国债固定期限收益率），每日更新，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。计分档位（按顺序，第一个匹配的档位生效）：低于 4.5% 拿满权重；低于 5% 拿一半权重；其余不得分。"}
-    weight: 4
+    name: {en: "10Y below 4.5%", zh: "10Y 低于 4.5%"}
+    description: {en: "Passes when the 10-year Treasury yield is below 4.5%. Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10 (10-year Treasury constant maturity rate), updated daily with about one business day of delay. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb). Other tier: MAC-13.", zh: "10 年期美债收益率低于 4.5% 时通过。10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列（10 年期国债固定期限收益率），每日更新，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。其他分档：MAC-13。"}
     method: "api_fetch"
     quantifiable: "yes"
     status: "built"
     indicator: "treasury_ten_year_yield"
-    levels: [{operator: "less_than", value: 4.5, score: 1.0}, {operator: "less_than", value: 5.0, score: 0.5}]
-    legacy_id: ["A02", "A07"]
+    operator: "less_than"
+    value: 4.5
+    legacy_id: ["A02"]
+  - rule_id: MAC-13
+    name: {en: "10Y below 5.0%", zh: "10Y 低于 5.0%"}
+    description: {en: "Passes when the 10-year Treasury yield is below 5.0%. One of the 10-year yield tiers; see MAC-03 for what it measures, the source and typical values.", zh: "10 年期美债收益率低于 5.0% 时通过。10Y 收益率分档之一；含义、数据来源和常见数值见 MAC-03。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "treasury_ten_year_yield"
+    operator: "less_than"
+    value: 5.0
+    band_of: "MAC-03"
+    legacy_id: ["A07"]
   - rule_id: MAC-04
-    name: {en: "10Y yield, 20-day change", zh: "10Y 收益率 20 日变动"}
-    description: {en: "How much the 10-year Treasury yield has risen over the last 20 trading days, in bp (basis points; 1bp = 0.01 percentage point). Passes when the rise is under 25bp. A fast rise hurts stocks more than a high level. Source: FRED series DGS10. Typical values: ±25bp over 20 days is a clear move; a rise of 50bp or more in a month is fast (rule of thumb). Updated daily.", zh: "10 年期国债收益率最近 20 个交易日涨了多少，单位 bp（基点，1bp = 0.01 个百分点）。升幅小于 25bp 时通过。快速上行比高水平更容易让股市受伤。数据来源：FRED 的 DGS10 序列。常见情形：20 日 ±25bp 算明显波动，一个月升 50bp 以上算快速上行（经验）。每日更新。"}
-    weight: 3
+    name: {en: "10Y 20-day rise below 25bp", zh: "10Y 20 日升幅低于 25bp"}
+    description: {en: "How much the 10-year Treasury yield has risen over the last 20 trading days, in bp (basis points; 1bp = 0.01 percentage point). Passes when the rise is under 25bp. A fast rise hurts stocks more than a high level. Source: FRED series DGS10. Typical values: ±25bp over 20 days is a clear move; a rise of 50bp or more in a month is fast (rule of thumb). Updated daily. Other tier: MAC-14.", zh: "10 年期国债收益率最近 20 个交易日涨了多少，单位 bp（基点，1bp = 0.01 个百分点）。升幅小于 25bp 时通过。快速上行比高水平更容易让股市受伤。数据来源：FRED 的 DGS10 序列。常见情形：20 日 ±25bp 算明显波动，一个月升 50bp 以上算快速上行（经验）。每日更新。其他分档：MAC-14。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -91,10 +99,20 @@ rule_list:
     operator: "less_than"
     value: 25
     legacy_id: ["A03"]
+  - rule_id: MAC-14
+    name: {en: "10Y 20-day rise below 50bp", zh: "10Y 20 日升幅低于 50bp"}
+    description: {en: "Passes when the 10-year yield has risen less than 50bp over 20 days. One of the 10-year yield 20-day rise tiers; see MAC-04 for what it measures, the source and typical values.", zh: "10Y 收益率 20 日升幅低于 50bp 时通过。10Y 收益率 20 日升幅分档之一；含义、数据来源和常见数值见 MAC-04。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "treasury_ten_year_yield_twenty_day_change_basis_points"
+    operator: "less_than"
+    value: 50
+    band_of: "MAC-04"
+    legacy_id: []
   - rule_id: MAC-05
-    name: {en: "High-yield credit spread", zh: "高收益债信用利差"}
-    description: {en: "The extra yield junk bonds (HY, high-yield bonds rated below investment grade) pay over Treasuries, measured as OAS (option-adjusted spread). Passes when it is under 400bp. A widening spread signals rising credit risk and usually leads stock stress. Source: FRED series BAMLH0A0HYM2 (ICE BofA US High Yield OAS); FRED now keeps only about 3 years of history. Typical values: long-run average about 500bp; below 350bp is tight, above 500bp is stress, above 800bp is crisis (market convention). Updated daily.", zh: "高收益债（HY，评级低于投资级的债券，俗称垃圾债）比国债多付的利息，用 OAS（期权调整利差）衡量。低于 400bp 时通过。利差走阔代表信用风险上升，通常领先于股市压力。数据来源：FRED 的 BAMLH0A0HYM2 序列（ICE BofA 美国高收益债 OAS）；FRED 现在只保留约 3 年历史。常见情形：长期均值约 500bp；低于 350bp 偏紧，高于 500bp 是压力，高于 800bp 是危机（业界惯例）。每日更新。"}
-    weight: 4
+    name: {en: "HY spread below 400bp", zh: "HY 利差低于 400bp"}
+    description: {en: "The extra yield junk bonds (HY, high-yield bonds rated below investment grade) pay over Treasuries, measured as OAS (option-adjusted spread). Passes when it is under 400bp. A widening spread signals rising credit risk and usually leads stock stress. Source: FRED series BAMLH0A0HYM2 (ICE BofA US High Yield OAS); FRED now keeps only about 3 years of history. Typical values: long-run average about 500bp; below 350bp is tight, above 500bp is stress, above 800bp is crisis (market convention). Updated daily. Other tier: MAC-15.", zh: "高收益债（HY，评级低于投资级的债券，俗称垃圾债）比国债多付的利息，用 OAS（期权调整利差）衡量。低于 400bp 时通过。利差走阔代表信用风险上升，通常领先于股市压力。数据来源：FRED 的 BAMLH0A0HYM2 序列（ICE BofA 美国高收益债 OAS）；FRED 现在只保留约 3 年历史。常见情形：长期均值约 500bp；低于 350bp 偏紧，高于 500bp 是压力，高于 800bp 是危机（业界惯例）。每日更新。其他分档：MAC-15。"}
     method: "api_fetch"
     quantifiable: "yes"
     status: "built"
@@ -102,10 +120,20 @@ rule_list:
     operator: "less_than"
     value: 400
     legacy_id: ["A04"]
+  - rule_id: MAC-15
+    name: {en: "HY spread below 500bp", zh: "HY 利差低于 500bp"}
+    description: {en: "Passes when the HY credit spread is below 500bp. One of the HY spread tiers; see MAC-05 for what it measures, the source and typical values.", zh: "HY 信用利差低于 500bp 时通过。HY 利差分档之一；含义、数据来源和常见数值见 MAC-05。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "high_yield_credit_spread_basis_points"
+    operator: "less_than"
+    value: 500
+    band_of: "MAC-05"
+    legacy_id: []
   - rule_id: MAC-06
     name: {en: "Credit spread, 20-day change", zh: "信用利差 20 日变动"}
     description: {en: "How much the HY credit spread (see MAC-05) has widened over the last 20 trading days. Passes when the rise is under 50bp. A quick widening is an early sign of credit stress. Source: FRED series BAMLH0A0HYM2. Typical values: a rise of 50bp or more in 20 days is often read as credit stress (rule of thumb). Updated daily.", zh: "HY 信用利差（见 MAC-05）最近 20 个交易日走阔了多少。升幅小于 50bp 时通过。短期快速走阔是信用压力的早期信号。数据来源：FRED 的 BAMLH0A0HYM2 序列。常见情形：20 日升幅 50bp 以上常被当作信用压力信号（经验）。每日更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -114,43 +142,48 @@ rule_list:
   - rule_id: MAC-07
     name: {en: "Yield curve", zh: "收益率曲线"}
     description: {en: "Whether the yield curve is inverted, meaning short-term Treasury yields are above long-term ones. Passes when 10Y minus 2Y, or 10Y minus 3M, is above 0. An inverted curve is a common recession warning. Source: FRED series T10Y2Y and T10Y3M, updated daily. Typical values: below 0 means inverted; inversions have often come months to two years before recessions (rule of thumb).", zh: "收益率曲线是否倒挂，即短期国债收益率是否高于长期。10Y 减 2Y，或 10Y 减 3M 大于 0 时通过。倒挂常被当作衰退预警。数据来源：FRED 的 T10Y2Y 和 T10Y3M 序列，每日更新。常见情形：小于 0 即倒挂；倒挂常领先衰退数月到两年（经验）。"}
-    weight: 4
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
   - rule_id: MAC-08
     name: {en: "Inflation", zh: "通胀"}
     description: {en: "How fast prices are rising. High inflation forces the Fed to keep rates high, which holds valuations down. Measured by CPI (Consumer Price Index) and core PCE (Personal Consumption Expenditures price index, excluding food and energy, the Fed's preferred gauge), year over year. Source: FRED series CPIAUCSL and PCEPILFE, updated monthly with a lag of 2 to 6 weeks. Typical values: the Fed targets 2% inflation (PCE); CPI above 3% is high.", zh: "物价涨得多快。通胀高会迫使美联储维持高利率，压住估值。用 CPI（消费者物价指数）和核心 PCE（个人消费支出物价指数，剔除食品和能源，是美联储偏好的指标）的同比来衡量。数据来源：FRED 的 CPIAUCSL 和 PCEPILFE 序列，月更，滞后 2–6 周。常见情形：美联储的目标是 2% 通胀（PCE）；CPI 高于 3% 算偏高。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: MAC-09
     name: {en: "Growth and jobs", zh: "增长与就业"}
     description: {en: "State of growth and the job market; worsening jobs mean higher earnings risk. Uses the unemployment rate, initial jobless claims (weekly new unemployment filings) and ideally PMI (Purchasing Managers' Index, a business survey). Source: FRED series UNRATE and ICSA; ISM PMI is no longer on FRED, so PMI is missing. Typical values: unemployment of 4% to 5% is common; weekly claims of 200,000 to 250,000 are stable and above 300,000 is worsening; the Sahm rule flags a recession when the 3-month average unemployment rate rises 0.5 point above its 12-month low (rule of thumb). Claims update weekly, unemployment monthly.", zh: "经济增长和就业状况；就业恶化意味着企业盈利风险上升。用失业率、初请失业金人数（每周新增失业申请）和 PMI（采购经理人指数，一种企业调查）。数据来源：FRED 的 UNRATE 和 ICSA 序列；ISM PMI 已从 FRED 下架，所以 PMI 缺失。常见情形：失业率 4%–5% 常见；每周初请 20–25 万稳定，高于 30 万算恶化；Sahm 规则：失业率 3 个月均值比 12 个月低点升高 0.5 个点即提示衰退（经验）。初请周更，失业率月更。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "part"
     status: "todo"
   - rule_id: MAC-10
     name: {en: "US dollar", zh: "美元"}
     description: {en: "Trend of the US dollar. A stronger dollar tightens global financial conditions and hurts multinational earnings and risk assets. Source: FRED series DTWEXBGS (broad dollar index, about one week behind) or Yahoo Finance DX-Y.NYB (the DXY dollar index) via yfinance. Typical values: DXY usually trades between 90 and 110; a 20-day move of ±2% is clear (rule of thumb).", zh: "美元走势。美元走强通常收紧全球金融环境，对跨国公司盈利和风险资产不利。数据来源：FRED 的 DTWEXBGS 序列（广义美元指数，约滞后一周），或通过 yfinance 取 Yahoo Finance 的 DX-Y.NYB（DXY 美元指数）。常见情形：DXY 通常在 90–110 之间；20 日变动 ±2% 算明显（经验）。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: MAC-11
-    name: {en: "Oil price", zh: "油价"}
-    description: {en: "Passes when WTI crude oil (West Texas Intermediate, the US oil benchmark) is below $100 a barrel and up less than 15% over the month. Very high or fast-rising oil lifts inflation, squeezes consumers and shakes markets. Source: FRED series DCOILWTICO (a few days behind) or Yahoo Finance CL=F futures via yfinance. Typical values: over the last ten years WTI mostly traded between $40 and $120; $100 is a rule-of-thumb line.", zh: "WTI 原油（西德州中质原油，美国原油基准）低于每桶 $100，且月涨幅低于 15% 时通过。油价过高或涨得太快会推高通胀、挤压消费、扰动市场。数据来源：FRED 的 DCOILWTICO 序列（滞后几天），或通过 yfinance 取 Yahoo Finance 的 CL=F 期货。常见情形：近十年 WTI 多在 $40–$120；$100 是经验线。"}
-    weight: 2
+    name: {en: "WTI below $100", zh: "WTI 低于 $100"}
+    description: {en: "Passes when WTI crude oil (West Texas Intermediate, the US oil benchmark) is below $100 a barrel. Very high or fast-rising oil lifts inflation, squeezes consumers and shakes markets. Source: FRED series DCOILWTICO (a few days behind) or Yahoo Finance CL=F futures via yfinance. Typical values: over the last ten years WTI mostly traded between $40 and $120; $100 is a rule-of-thumb line. The one-month rise limit is split out as MAC-16.", zh: "WTI 原油（西德州中质原油，美国原油基准）低于每桶 $100 时通过。油价过高或涨得太快会推高通胀、挤压消费、扰动市场。数据来源：FRED 的 DCOILWTICO 序列（滞后几天），或通过 yfinance 取 Yahoo Finance 的 CL=F 期货。常见情形：近十年 WTI 多在 $40–$120；$100 是经验线。月涨幅上限已拆成 MAC-16。"}
     method: "computed"
     quantifiable: "yes"
     status: "todo"
+    operator: "less_than"
+    value: 100
+    legacy_id: ["Z12"]
+  - rule_id: MAC-16
+    name: {en: "WTI 1-month rise below 15%", zh: "WTI 月涨幅低于 15%"}
+    description: {en: "Passes when the one-month rise in WTI crude oil is below 15%. Split out of MAC-11, which holds the price limit; see MAC-11 for what WTI is and the source.", zh: "WTI 原油月涨幅低于 15% 时通过。从 MAC-11 拆出（价格上限在 MAC-11）；WTI 的含义和数据来源见 MAC-11。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "todo"
+    operator: "less_than"
+    value: 15
     legacy_id: ["Z12"]
   - rule_id: MAC-12
     name: {en: "Global liquidity", zh: "全球流动性"}
     description: {en: "Direction of money supply and the central bank balance sheet. Easy liquidity helps risk assets; tightening hurts them. Uses the Fed's total assets and M2 (a broad measure of money in the economy). Source: FRED series WALCL (weekly) and M2SL (monthly, about 1.5 months behind). Typical values: M2 growth above 5% a year is fairly loose (rule of thumb).", zh: "货币供应和央行资产负债表的变化方向。流动性宽松对风险资产有利，收紧则不利。用美联储总资产和 M2（广义货币供应）。数据来源：FRED 的 WALCL（周更）和 M2SL（月更，滞后约 1.5 个月）序列。常见情形：M2 年增速高于 5% 算偏宽松（经验）。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -158,14 +191,12 @@ rule_list:
   - rule_id: IND-01
     name: {en: "Industry strength", zh: "行业强弱"}
     description: {en: "Whether the stock's industry has recently beaten or lagged the market. A strong industry lifts its stocks. Compares the sector ETF (a fund that holds one industry, such as XLK for technology) with SPY (the fund tracking the S&P 500) over 6 months. Source: Yahoo Finance via yfinance. Typical values: a sector ETF that beats SPY over 6 months is seen as strong. Updated daily.", zh: "这只股票所在的行业最近跑赢还是跑输大盘。行业走强会带动个股。用行业 ETF（持有某个行业的基金，比如科技的 XLK）与 SPY（跟踪标普 500 的基金）比较 6 个月的涨幅。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：行业 ETF 的 6 个月收益跑赢 SPY 算强。每日更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: IND-02
     name: {en: "Industry cycle", zh: "行业景气"}
     description: {en: "Whether analysts are raising or cutting earnings forecasts for the industry, which shows where it sits in its cycle. No free aggregated feed exists; an AI reads industry reports and news, or individual stock revisions are summed by industry. Typical values: more upgrades than downgrades means a healthy cycle. Updated daily at stock level.", zh: "分析师是在上调还是下调整个行业的盈利预期，反映行业处在周期的什么位置。没有免费的行业汇总数据；由 AI 读行业报告和新闻，或把个股的预期修正按行业汇总。常见情形：上调多于下调说明景气健康。个股层面每日更新。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "part"
     status: "no_data"
@@ -173,7 +204,6 @@ rule_list:
   - rule_id: QUA-01
     name: {en: "Profitable", zh: "盈利为正"}
     description: {en: "Passes when the company made a profit over the last 12 months (EPS, earnings per share, TTM, trailing twelve months, above 0). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance; SEC EDGAR company facts are a steadier alternative. Updated each quarter.", zh: "公司最近 12 个月赚钱（EPS，每股收益，TTM 即过去十二个月，大于 0）时通过。亏损公司波动更大，被行权接盘的风险更高。数据来源：通过 yfinance 取 Yahoo Finance；更稳定的替代是 SEC EDGAR（美国证监会披露系统）的公司数据。按季更新。"}
-    weight: 4
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
@@ -181,7 +211,6 @@ rule_list:
   - rule_id: QUA-02
     name: {en: "Revenue growth", zh: "营收增长"}
     description: {en: "Passes when revenue is higher than a year earlier. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance (latest quarter, year over year); SEC EDGAR as a backup. Updated each quarter.", zh: "营收比去年同期增长时通过。没有销售增长的公司很难长期上涨。数据来源：通过 yfinance 取 Yahoo Finance（最近一季同比）；备选是 SEC EDGAR。按季更新。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
@@ -189,49 +218,63 @@ rule_list:
   - rule_id: QUA-03
     name: {en: "3-year growth", zh: "3 年增速"}
     description: {en: "Growth of earnings and revenue over the last 3 years, to check growth is lasting and not a one-off. Calculated as a CAGR (compound annual growth rate) from annual statements. Source: Yahoo Finance via yfinance financial statements (4 years), or SEC EDGAR. Typical values: a 3-year CAGR above 10% is typical of quality growth stocks (rule of thumb). Updated each quarter or year.", zh: "盈利和营收过去 3 年的增长速度，用来确认增长是持续的，而不是一次性的。用年报算 CAGR（复合年增长率）。数据来源：通过 yfinance 取 Yahoo Finance 的财务报表（4 年），或 SEC EDGAR。常见情形：优质成长股的 3 年 CAGR 常在 10% 以上（经验）。按季或按年更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: QUA-04
     name: {en: "Return on capital", zh: "资本回报率"}
     description: {en: "How efficiently the company turns invested money into profit: ROIC (return on invested capital) and ROE (return on equity). High and steady for many years usually signals a moat, a lasting competitive advantage. ROE can be distorted by buybacks, so ROIC is calculated from the statements. Source: Yahoo Finance via yfinance, or SEC EDGAR. Typical values: ROIC above 15% and steady for 5 to 10 years is a common moat test (Buffett-style rule of thumb); ROE above 15%. Updated each quarter.", zh: "公司把投入的钱变成利润的效率：ROIC（投入资本回报率）和 ROE（股本回报率）。长期又高又稳，通常说明有护城河，即持久的竞争优势。ROE 会被回购扭曲，所以 ROIC 要用财报自己算。数据来源：通过 yfinance 取 Yahoo Finance，或 SEC EDGAR。常见情形：ROIC 高于 15% 并稳定 5–10 年，是常见的护城河检验（巴菲特式经验）；ROE 高于 15%。按季更新。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: QUA-05
     name: {en: "Gross margin", zh: "毛利率"}
     description: {en: "Share of each sales dollar left after the direct cost of goods (gross margin). A high and stable margin means pricing power. Source: Yahoo Finance via yfinance; SEC EDGAR for history. Updated each quarter. Typical values: above 40% is common for brands and software; retail below 30% is normal.", zh: "每一块钱销售额扣掉直接成本后剩下的比例（毛利率）。毛利率高且稳定，说明有定价权。数据来源：通过 yfinance 取 Yahoo Finance；历史用 SEC EDGAR。按季更新。常见情形：品牌和软件公司常高于 40%；零售低于 30% 属正常。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
   - rule_id: QUA-06
     name: {en: "Free cash flow", zh: "自由现金流"}
     description: {en: "Cash left after capital spending: FCF (free cash flow). It is harder to fake than accounting profit and is central to value investing. Passes when FCF is positive and growing. Source: Yahoo Finance via yfinance cash flow statement. Updated each quarter.", zh: "扣掉资本开支后剩下的现金：FCF（自由现金流）。它比账面利润更难造假，是价值投资的核心。FCF 为正且在增长时通过。数据来源：通过 yfinance 取 Yahoo Finance 的现金流量表。按季更新。"}
-    weight: 4
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
   - rule_id: QUA-07
-    name: {en: "Balance sheet", zh: "财务稳健"}
-    description: {en: "Whether debt is manageable relative to earnings: net debt (debt minus cash) divided by EBITDA (earnings before interest, taxes, depreciation and amortization), plus interest coverage (how many times profit covers interest). Heavily indebted companies get into trouble in recessions or when rates rise. Source: Yahoo Finance via yfinance balance sheet. Typical values: net debt to EBITDA below 2 is sound and above 4 is high; interest coverage above 5 is comfortable (rule of thumb).", zh: "债务相对盈利是否可控：净债务（债务减现金）除以 EBITDA（息税折旧摊销前利润），以及利息覆盖倍数（利润能覆盖利息几倍）。负债过高的公司在衰退或加息时容易出问题。数据来源：通过 yfinance 取 Yahoo Finance 的资产负债表。常见情形：净债务/EBITDA 低于 2 稳健，高于 4 偏高；利息覆盖高于 5 倍算宽裕（经验）。"}
-    weight: 4
+    name: {en: "Net debt to EBITDA below 2", zh: "净负债/EBITDA 低于 2"}
+    description: {en: "Passes when net debt to EBITDA is below 2. Whether debt is manageable relative to earnings: net debt (debt minus cash) divided by EBITDA (earnings before interest, taxes, depreciation and amortization), plus interest coverage (how many times profit covers interest). Heavily indebted companies get into trouble in recessions or when rates rise. Source: Yahoo Finance via yfinance balance sheet. Typical values: net debt to EBITDA below 2 is sound and above 4 is high; interest coverage above 5 is comfortable (rule of thumb). Other tier: QUA-11. Interest coverage is split out as QUA-12.", zh: "净负债/EBITDA 低于 2 时通过。债务相对盈利是否可控：净债务（债务减现金）除以 EBITDA（息税折旧摊销前利润），以及利息覆盖倍数（利润能覆盖利息几倍）。负债过高的公司在衰退或加息时容易出问题。数据来源：通过 yfinance 取 Yahoo Finance 的资产负债表。常见情形：净债务/EBITDA 低于 2 稳健，高于 4 偏高；利息覆盖高于 5 倍算宽裕（经验）。其他分档：QUA-11。利息保障倍数已拆成 QUA-12。"}
     method: "computed"
     quantifiable: "yes"
     status: "todo"
+    operator: "less_than"
+    value: 2
+  - rule_id: QUA-11
+    name: {en: "Net debt to EBITDA below 4", zh: "净负债/EBITDA 低于 4"}
+    description: {en: "Passes when net debt to EBITDA is below 4. One of the net debt to EBITDA tiers; see QUA-07 for what it measures, the source and typical values.", zh: "净负债/EBITDA 低于 4 时通过。净负债/EBITDA 分档之一；含义、数据来源和常见数值见 QUA-07。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "todo"
+    operator: "less_than"
+    value: 4
+    band_of: "QUA-07"
+    legacy_id: []
+  - rule_id: QUA-12
+    name: {en: "Interest coverage above 5", zh: "利息保障倍数高于 5"}
+    description: {en: "Passes when interest coverage (how many times operating profit covers interest payments) is above 5. Split out of QUA-07; see QUA-07 for the source and typical values.", zh: "利息保障倍数（营业利润能覆盖利息支出几倍）高于 5 时通过。从 QUA-07 拆出；数据来源和常见数值见 QUA-07。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "todo"
+    operator: "greater_than"
+    value: 5
+    legacy_id: []
   - rule_id: QUA-08
     name: {en: "Earnings quality", zh: "盈利质量"}
     description: {en: "How much of reported profit turned into real cash: operating cash flow divided by net income, and accruals (non-cash accounting items). A big gap suggests profit may be inflated. Source: Yahoo Finance via yfinance cash flow and income statements. Typical values: operating cash flow to net income of 1 or more is good; 0.8 to 1.2 is common.", zh: "账面利润有多少变成了真金白银：经营现金流除以净利润，以及应计项目（不涉及现金的会计项目）。差距大说明利润可能含水分。数据来源：通过 yfinance 取 Yahoo Finance 的现金流量表和利润表。常见情形：经营现金流/净利润达到 1 以上为佳；0.8–1.2 常见。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: QUA-09
     name: {en: "EPS revisions", zh: "EPS 预期修正"}
     description: {en: "Whether analysts are raising more than cutting their EPS (earnings per share) forecasts. Upgrades usually go with price support. Passes when upgrades outnumber downgrades. Source: Yahoo Finance via yfinance eps_revisions (counts for the last 7 and 30 days). Typical values: upgrades outnumbering downgrades (a revision ratio above 1) is positive. Updated daily.", zh: "分析师上调 EPS（每股收益）预期的次数是否多于下调。上调通常伴随股价支撑。上调多于下调时通过。数据来源：通过 yfinance 取 Yahoo Finance 的 eps_revisions（近 7 天和 30 天的次数）。常见情形：上调多于下调（修正比率大于 1）为正面。每日更新。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "part"
     status: "todo"
@@ -239,7 +282,6 @@ rule_list:
   - rule_id: QUA-10
     name: {en: "Analyst buy ratings", zh: "分析师买入评级"}
     description: {en: "Passes when more than 60% of analysts rate the stock a buy. It shows market consensus, but a very one-sided view is also a warning. Source: Yahoo Finance via yfinance recommendations (strong buy, buy, hold, sell, strong sell counts).", zh: "超过 60% 的分析师给出买入评级时通过。它反映市场共识，但观点过于一边倒时也要警惕。数据来源：通过 yfinance 取 Yahoo Finance 的 recommendations（强买、买入、持有、卖出、强卖的家数）。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -248,28 +290,24 @@ rule_list:
   - rule_id: MGT-01
     name: {en: "Insider trading", zh: "内部人交易"}
     description: {en: "Whether the company's executives and directors are net buyers or net sellers of its stock. Buying with their own money is a stronger positive signal than selling, which is often just stock compensation. Source: SEC Form 4 filings (insider trade reports, due within 2 business days), read through Yahoo Finance via yfinance.", zh: "公司高管和董事是净买入还是净卖出自家股票。自掏腰包买入是比卖出更强的正面信号，因为卖出多半只是股权激励。数据来源：SEC Form 4（内部人交易报告，须在 2 个工作日内披露），通过 yfinance 取 Yahoo Finance。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
   - rule_id: MGT-02
     name: {en: "Buybacks and dilution", zh: "回购与稀释"}
     description: {en: "Whether the company is buying back its shares (share count falling) or issuing more (shareholders diluted). A steady fall of 1% to 3% a year is typical of regular buybacks; a rise above 2% a year is dilution. Source: Yahoo Finance via yfinance balance sheet (ordinary shares).", zh: "公司是在回购股票（股数下降），还是不断增发（股东被稀释）。每年稳定下降 1%–3% 是常见的持续回购，每年上升超过 2% 就是稀释。数据来源：通过 yfinance 取 Yahoo Finance 资产负债表里的普通股股数。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: MGT-03
     name: {en: "Capital allocation", zh: "资本配置"}
     description: {en: "Where management spends the money: whether acquisitions create value and whether the dividend is sustainable (for example, dividends covered by FCF, free cash flow). No standard number exists; it is estimated from statements. Source: SEC EDGAR company facts.", zh: "管理层把钱花在哪：并购是否创造价值，分红靠不靠得住（例如分红是否被 FCF，即自由现金流，覆盖）。没有通用数值，需要从财报估算。数据来源：SEC EDGAR 的公司数据。"}
-    weight: 2
     method: "scrape"
     quantifiable: "part"
     status: "no_data"
   - rule_id: MGT-04
     name: {en: "Governance risk", zh: "治理风险"}
     description: {en: "Whether there are governance or accounting problems, such as a qualified audit opinion or a restatement (re-issued financial statements). These usually hit the share price hard once exposed. Source: SEC EDGAR filings, for example 8-K Item 4.02 (non-reliance on past financials), found by an AI search.", zh: "有没有治理或会计问题，比如审计意见异常、财报重述（重新发布财务报表）。这类问题一旦暴露，往往重挫股价。数据来源：SEC EDGAR 披露文件，例如 8-K 第 4.02 项（过往财报不可再依赖），由 AI 搜索获得。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "part"
     status: "no_data"
@@ -277,83 +315,151 @@ rule_list:
   - rule_id: VAL-01
     name: {en: "S&P 500 forward PE", zh: "标普 500 Forward PE"}
     description: {en: "Forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. Source: FactSet Earnings Insight (weekly) or Yardeni Research, read by an AI; multpl.com gives only trailing PE. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb, not verified). Updated weekly.", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。数据来源：FactSet 的 Earnings Insight（周报）或 Yardeni Research，由 AI 读取；multpl.com 只提供 TTM 市盈率。常见情形：长期均值约 16–17；高于 22 偏贵（经验，未核实）。每周更新。"}
-    weight: 3
     method: "ai_search"
     quantifiable: "yes"
     status: "no_data"
   - rule_id: VAL-02
     name: {en: "QQQ PE", zh: "QQQ 市盈率"}
     description: {en: "PE of the Nasdaq-100, through QQQ (the Invesco fund that tracks it), with its premium over SPY (the S&P 500 fund). Tech-heavy, so valuation swings more. Source: Yahoo Finance via yfinance (trailing PE only; no free forward PE). Typical values: the Nasdaq-100 usually trades at a premium to the S&P 500. Updated daily.", zh: "纳指 100 的市盈率（用跟踪它的 QQQ 基金），以及相对 SPY（标普 500 基金）的溢价。科技股占比高，估值波动更大。数据来源：通过 yfinance 取 Yahoo Finance（只有 TTM 市盈率，没有免费的 Forward PE）。常见情形：纳指 100 的估值通常高于标普 500。每日更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: VAL-03
     name: {en: "Equity risk premium", zh: "股权风险溢价"}
     description: {en: "ERP (equity risk premium) in its simple form: earnings yield (1 divided by PE) minus the 10-year Treasury yield. If it is negative, stocks pay less than Treasuries. Source: Yahoo Finance via yfinance for PE and FRED series DGS10 for the yield. Typical values: a negative result means stocks look expensive against Treasuries (simplified Fed model). Updated daily.", zh: "股权风险溢价（ERP）的简化版：盈利收益率（1 除以市盈率）减去 10 年期国债收益率。为负说明买股票的回报还不如国债。数据来源：市盈率通过 yfinance 取 Yahoo Finance，收益率取 FRED 的 DGS10 序列。常见情形：结果为负，说明相对国债股票偏贵（简化的 Fed 模型）。每日更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: VAL-04
     name: {en: "Market cap to GDP", zh: "市值/GDP"}
     description: {en: "Total stock market value divided by GDP (gross domestic product), the Buffett indicator, used to judge whether the market as a whole is overheated. Here a non-standard version is used: US non-financial corporate equities from the Fed's Z.1 flow of funds report divided by GDP. Source: FRED series NCBEILQ027S and GDP, quarterly with a 2 to 3 month lag. Typical values: the standard version above 150% is often called expensive (rule of thumb); this non-standard version gives different numbers.", zh: "股市总市值除以 GDP（国内生产总值），即巴菲特指标，用来判断整个市场是否过热。这里用的是非标准版本：美联储 Z.1 资金流量表里的美国非金融企业股权市值除以 GDP。数据来源：FRED 的 NCBEILQ027S 和 GDP 序列，季更，滞后 2–3 个月。常见情形：标准版本高于 150% 常被称为偏贵（经验）；这个非标准版本的数值不同。"}
-    weight: 1
     method: "computed"
     quantifiable: "part"
     status: "no_data"
   - rule_id: VAL-05
     name: {en: "Stock PE (TTM)", zh: "个股 PE (TTM)"}
     description: {en: "PE (price divided by earnings per share) on TTM (trailing twelve months) actual earnings, and whether it is above or below the stock's own history. Long-run S&P 500 average is roughly 16 to 17. Source: Yahoo Finance via yfinance for the current value; history must be rebuilt from SEC EDGAR EPS. Typical values: growth stocks at 25 to 35 are common. Updated daily.", zh: "按 TTM（过去十二个月）实际盈利算的市盈率（价格除以每股收益），以及比这只股票自身历史贵还是便宜。标普 500 长期平均大约在 16–17。数据来源：当前值通过 yfinance 取 Yahoo Finance；历史需要用 SEC EDGAR 的 EPS 自己重建。常见情形：成长股常在 25–35。每日更新。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: VAL-06
     name: {en: "Stock forward PE", zh: "个股 Forward PE"}
     description: {en: "Forward PE: price divided by analysts' expected earnings for the next 12 months. If it is lower than the TTM PE, the market expects earnings to grow. Source: Yahoo Finance via yfinance.", zh: "Forward PE：价格除以分析师预期的未来 12 个月盈利。如果低于 TTM 市盈率，说明市场预期盈利会增长。数据来源：通过 yfinance 取 Yahoo Finance。"}
-    weight: 4
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
   - rule_id: VAL-07
     name: {en: "EV/EBITDA and PEG", zh: "EV/EBITDA 与 PEG"}
     description: {en: "Two more valuation yardsticks: EV/EBITDA (enterprise value, meaning market cap plus net debt, divided by EBITDA, earnings before interest, taxes, depreciation and amortization) and PEG (PE divided by earnings growth rate; about 1 is often seen as fair). Source: Yahoo Finance via yfinance; its PEG definition is not always consistent. Typical values: EV/EBITDA of 8 to 15 is common.", zh: "另外两把估值尺子：EV/EBITDA（企业价值即市值加净债务，除以 EBITDA 息税折旧摊销前利润）和 PEG（市盈率除以盈利增速，约等于 1 常被视为合理）。数据来源：通过 yfinance 取 Yahoo Finance；它的 PEG 口径并不总是一致。常见情形：EV/EBITDA 常见在 8–15。"}
-    weight: 2
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
   - rule_id: VAL-08
-    name: {en: "FCF yield", zh: "自由现金流收益率"}
-    description: {en: "FCF (free cash flow) divided by market value: roughly how much cash you get back each year for buying the whole company. Above 5% is often seen as cheap, below 3% as expensive. Source: Yahoo Finance via yfinance, calculated.", zh: "FCF（自由现金流）除以市值，相当于买下整家公司每年能拿回多少现金。高于 5% 常被视为便宜，低于 3% 偏贵。数据来源：通过 yfinance 取 Yahoo Finance，自行计算。"}
-    weight: 4
+    name: {en: "FCF yield at least 5%", zh: "自由现金流收益率不低于 5%"}
+    description: {en: "Passes when the FCF yield is at least 5%. FCF (free cash flow) divided by market value: roughly how much cash you get back each year for buying the whole company. Above 5% is often seen as cheap, below 3% as expensive. Source: Yahoo Finance via yfinance, calculated. Other tier: VAL-10.", zh: "自由现金流收益率不低于 5% 时通过。FCF（自由现金流）除以市值，相当于买下整家公司每年能拿回多少现金。高于 5% 常被视为便宜，低于 3% 偏贵。数据来源：通过 yfinance 取 Yahoo Finance，自行计算。其他分档：VAL-10。"}
     method: "computed"
     quantifiable: "yes"
     status: "todo"
+    operator: "greater_or_equal"
+    value: 5
+  - rule_id: VAL-10
+    name: {en: "FCF yield at least 3%", zh: "自由现金流收益率不低于 3%"}
+    description: {en: "Passes when the FCF yield is at least 3%. One of the FCF yield tiers; see VAL-08 for what it measures, the source and typical values.", zh: "自由现金流收益率不低于 3% 时通过。自由现金流收益率分档之一；含义、数据来源和常见数值见 VAL-08。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "todo"
+    operator: "greater_or_equal"
+    value: 3
+    band_of: "VAL-08"
+    legacy_id: []
   - rule_id: VAL-09
     name: {en: "Safety margin", zh: "安全边际"}
     description: {en: "Passes when the strike of the put you sell is no higher than the price you would be happy to pay for the stock. This is the core safety margin of selling puts. Source: your own answer; no data feed.", zh: "你卖出的 Put 的行权价不高于你愿意买入这只股票的价格时通过，这是卖 Put 最核心的安全边际。数据来源：你自己的回答，没有数据源。"}
-    weight: 5
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
     legacy_id: ["A16"]
   # SEN · Sentiment and positioning
   - rule_id: SEN-01
-    name: {en: "VIX", zh: "VIX 恐慌指数"}
-    description: {en: "The VIX (Cboe Volatility Index) shows how much volatility the options market expects for the S&P 500 over the next 30 days; it is called the fear gauge. Too low and options pay little; too high and the market is panicking, so sellers must be careful. Source: Yahoo Finance symbol ^VIX via yfinance; delayed about 15 minutes during trading. Typical values: long-run average about 19 to 20; below 12 is complacent, 20 to 30 tense, above 30 panic, above 40 extreme (market convention). Scoring levels (the first matching level wins): 15 to 25 earns the full weight; 12 to 15 earns half of the weight; 25 to 30 earns half of the weight; anything else earns nothing.", zh: "VIX（Cboe 波动率指数）反映期权市场预期标普 500 未来 30 天的波动，俗称恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，盘中约延迟 15 分钟。常见情形：长期均值约 19–20；低于 12 自满，20–30 紧张，高于 30 恐慌，高于 40 极端（业界惯例）。计分档位（按顺序，第一个匹配的档位生效）：15–25 拿满权重；12–15 拿一半权重；25–30 拿一半权重；其余不得分。"}
-    weight: 5
+    name: {en: "VIX at least 15", zh: "VIX 不低于 15"}
+    description: {en: "Passes when the VIX is at least 15. The VIX (Cboe Volatility Index) shows how much volatility the options market expects for the S&P 500 over the next 30 days; it is called the fear gauge. Too low and options pay little; too high and the market is panicking, so sellers must be careful. Source: Yahoo Finance symbol ^VIX via yfinance; delayed about 15 minutes during trading. Typical values: long-run average about 19 to 20; below 12 is complacent, 20 to 30 tense, above 30 panic, above 40 extreme (market convention). Other tiers: SEN-10, SEN-11, SEN-12, SEN-13, SEN-14, SEN-15.", zh: "VIX 不低于 15 时通过。VIX（Cboe 波动率指数）反映期权市场预期标普 500 未来 30 天的波动，俗称恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，盘中约延迟 15 分钟。常见情形：长期均值约 19–20；低于 12 自满，20–30 紧张，高于 30 恐慌，高于 40 极端（业界惯例）。其他分档：SEN-10、SEN-11、SEN-12、SEN-13、SEN-14、SEN-15。"}
     method: "api_fetch"
     quantifiable: "yes"
     status: "built"
     indicator: "vix_level"
-    levels: [{operator: "between", value: [15, 25], score: 1.0}, {operator: "between", value: [12, 15], score: 0.5}, {operator: "between", value: [25, 30], score: 0.5}]
-    legacy_id: ["A10", "A11", "T01", "D02"]
-    note: {en: "Seller view. Buyer strategies (old D02) read VIX above 30 as extreme fear and override the scores", zh: "卖方视角。买方策略（旧 D02）把 VIX 高于 30 视为极度恐慌，需要覆盖分档"}
+    operator: "greater_or_equal"
+    value: 15
+    legacy_id: ["A11"]
+    note: {en: "Sellers use the floors (SEN-01, SEN-10), trend and momentum strategies use the caps (SEN-11 to SEN-13), contrarian buyers use SEN-14 and SEN-15", zh: "卖方用下限（SEN-01、SEN-10），趋势和动量策略用上限（SEN-11 到 SEN-13），逆向买方用 SEN-14 和 SEN-15"}
+  - rule_id: SEN-10
+    name: {en: "VIX at least 12", zh: "VIX 不低于 12"}
+    description: {en: "Passes when the VIX is at least 12. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values.", zh: "VIX 不低于 12 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "vix_level"
+    operator: "greater_or_equal"
+    value: 12
+    band_of: "SEN-01"
+    legacy_id: ["A10"]
+  - rule_id: SEN-11
+    name: {en: "VIX below 20", zh: "VIX 低于 20"}
+    description: {en: "Passes when the VIX is below 20. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values.", zh: "VIX 低于 20 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "vix_level"
+    operator: "less_than"
+    value: 20
+    band_of: "SEN-01"
+    legacy_id: []
+  - rule_id: SEN-12
+    name: {en: "VIX below 25", zh: "VIX 低于 25"}
+    description: {en: "Passes when the VIX is below 25. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values.", zh: "VIX 低于 25 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "vix_level"
+    operator: "less_than"
+    value: 25
+    band_of: "SEN-01"
+    legacy_id: ["T01"]
+  - rule_id: SEN-13
+    name: {en: "VIX below 30", zh: "VIX 低于 30"}
+    description: {en: "Passes when the VIX is below 30. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values.", zh: "VIX 低于 30 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "vix_level"
+    operator: "less_than"
+    value: 30
+    band_of: "SEN-01"
+    legacy_id: []
+  - rule_id: SEN-14
+    name: {en: "VIX at least 30", zh: "VIX 不低于 30"}
+    description: {en: "Passes when the VIX is at least 30. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values.", zh: "VIX 不低于 30 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "vix_level"
+    operator: "greater_or_equal"
+    value: 30
+    band_of: "SEN-01"
+    legacy_id: ["D02"]
+  - rule_id: SEN-15
+    name: {en: "VIX at least 40", zh: "VIX 不低于 40"}
+    description: {en: "Passes when the VIX is at least 40. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values.", zh: "VIX 不低于 40 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "vix_level"
+    operator: "greater_or_equal"
+    value: 40
+    band_of: "SEN-01"
+    legacy_id: []
   - rule_id: SEN-02
     name: {en: "VIX term structure", zh: "VIX 期限结构"}
     description: {en: "Shape of the VIX futures curve. Contango means later months cost more, which is normal; backwardation means near months cost more, which signals strong short-term panic. Passes in contango. Source: Yahoo Finance ^VIX versus ^VIX3M (3-month VIX) via yfinance. Typical values: contango is the normal state most of the time. Updated daily.", zh: "VIX 期货曲线的形状。Contango（远月更贵）是常态；Backwardation（近月更贵）说明短期恐慌很重。处于 contango 时通过。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX 与 ^VIX3M（3 个月 VIX）。常见情形：多数时间处于 contango。每日更新。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -363,64 +469,102 @@ rule_list:
   - rule_id: SEN-03
     name: {en: "VXN", zh: "VXN 纳指波动率"}
     description: {en: "VXN (Cboe Nasdaq-100 Volatility Index) is the VIX equivalent for the Nasdaq-100, and its ratio to VIX shows whether tech is under extra stress. VXN usually sits above VIX. Source: Yahoo Finance symbol ^VXN via yfinance. Typical values: the VXN to VIX ratio is often around 1.1 to 1.3 (rule of thumb, not verified). Updated daily.", zh: "VXN（Cboe 纳斯达克 100 波动率指数）是纳指 100 版本的 VIX，它与 VIX 的比值反映科技股是否格外紧张。VXN 通常高于 VIX。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VXN。常见情形：VXN 与 VIX 的比值常在 1.1–1.3 左右（经验，未核实）。每日更新。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "yes"
     status: "built"
     indicator: "vxn_level"
-    note: {en: "Indicator exists; no levels yet", zh: "指标已有，暂无分档"}
+    note: {en: "Indicator exists; no tiers yet", zh: "指标已有，暂无分档"}
   - rule_id: SEN-04
-    name: {en: "Fear and Greed", zh: "恐惧贪婪指数"}
-    description: {en: "CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (needs Referer and Origin headers); it may change at any time. Updated daily, close to real time. Scoring levels (the first matching level wins): below 25 earns the full weight; below 45 earns 75% of the weight; below 55 earns half of the weight; anything else earns nothing.", zh: "CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（需要 Referer 和 Origin 请求头），随时可能变化。每日更新，接近实时。计分档位（按顺序，第一个匹配的档位生效）：低于 25 拿满权重；低于 45 拿 75% 的权重；低于 55 拿一半权重；其余不得分。"}
-    weight: 3
+    name: {en: "Fear and Greed below 25", zh: "恐惧贪婪低于 25"}
+    description: {en: "Passes when the CNN Fear and Greed Index is below 25 (extreme fear). CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (needs Referer and Origin headers); it may change at any time. Updated daily, close to real time. Other tiers: SEN-16, SEN-17, SEN-18.", zh: "CNN 恐惧贪婪指数低于 25（极度恐惧）时通过。CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（需要 Referer 和 Origin 请求头），随时可能变化。每日更新，接近实时。其他分档：SEN-16、SEN-17、SEN-18。"}
     method: "scrape"
     quantifiable: "yes"
     status: "todo"
     indicator: "fear_greed_index"
-    levels: [{operator: "less_than", value: 25, score: 1.0}, {operator: "less_than", value: 45, score: 0.75}, {operator: "less_than", value: 55, score: 0.5}]
-    legacy_id: ["A08", "A09", "B02", "D02", "D03"]
-    note: {en: "Contrarian seller view. Old D03 (FGI above 75) is the opposite direction and belongs to a bearish strategy", zh: "逆向的卖方视角。旧 D03（FGI 高于 75）方向相反，属于看空策略"}
+    operator: "less_than"
+    value: 25
+    legacy_id: ["D02"]
+    note: {en: "Contrarian seller view. SEN-18 (above 75) points the opposite way and belongs to a bearish strategy", zh: "逆向的卖方视角。SEN-18（高于 75）方向相反，属于看空策略"}
+  - rule_id: SEN-16
+    name: {en: "Fear and Greed below 45", zh: "恐惧贪婪低于 45"}
+    description: {en: "Passes when the CNN Fear and Greed Index is below 45 (fear or worse). One of the Fear and Greed tiers; see SEN-04 for what it measures, the source and typical values.", zh: "CNN 恐惧贪婪指数低于 45（恐惧或更低）时通过。恐惧贪婪分档之一；含义、数据来源和常见数值见 SEN-04。"}
+    method: "scrape"
+    quantifiable: "yes"
+    status: "todo"
+    indicator: "fear_greed_index"
+    operator: "less_than"
+    value: 45
+    band_of: "SEN-04"
+    legacy_id: ["A09", "B02"]
+  - rule_id: SEN-17
+    name: {en: "Fear and Greed at most 55", zh: "恐惧贪婪不高于 55"}
+    description: {en: "Passes when the CNN Fear and Greed Index is at most 55 (not in greed). One of the Fear and Greed tiers; see SEN-04 for what it measures, the source and typical values.", zh: "CNN 恐惧贪婪指数不高于 55（没有进入贪婪）时通过。恐惧贪婪分档之一；含义、数据来源和常见数值见 SEN-04。"}
+    method: "scrape"
+    quantifiable: "yes"
+    status: "todo"
+    indicator: "fear_greed_index"
+    operator: "less_or_equal"
+    value: 55
+    band_of: "SEN-04"
+    legacy_id: ["A08"]
+  - rule_id: SEN-18
+    name: {en: "Fear and Greed above 75", zh: "恐惧贪婪高于 75"}
+    description: {en: "Passes when the CNN Fear and Greed Index is above 75 (extreme greed). One of the Fear and Greed tiers; see SEN-04 for what it measures, the source and typical values.", zh: "CNN 恐惧贪婪指数高于 75（极度贪婪）时通过。恐惧贪婪分档之一；含义、数据来源和常见数值见 SEN-04。"}
+    method: "scrape"
+    quantifiable: "yes"
+    status: "todo"
+    indicator: "fear_greed_index"
+    operator: "greater_than"
+    value: 75
+    band_of: "SEN-04"
+    legacy_id: ["D03"]
   - rule_id: SEN-05
     name: {en: "AAII survey", zh: "AAII 散户问卷"}
     description: {en: "The weekly survey of the AAII (American Association of Individual Investors) asking retail investors if they are bullish, bearish or neutral. It is often used as a contrarian signal: long-run averages are about 37.5% bullish, 31% bearish and 31.5% neutral. Source: aaii.com sentiment.xls, updated every Thursday; parsing needs the xlrd package.", zh: "AAII（美国个人投资者协会）每周问卷：问散户看多、看空还是中性，常被当作反向指标。长期平均大约是看多 37.5%、看空 31%、中性 31.5%。数据来源：aaii.com 的 sentiment.xls，每周四更新；解析需要 xlrd 包。"}
-    weight: 2
     method: "scrape"
     quantifiable: "yes"
     status: "todo"
   - rule_id: SEN-06
     name: {en: "NAAIM exposure", zh: "NAAIM 经理人仓位"}
     description: {en: "The NAAIM (National Association of Active Investment Managers) Exposure Index: the average stock exposure reported weekly by active fund managers. It typically ranges from 0 to 100 (it can go below 0 or above 100); very high means everyone is bullish and the trade is crowded. Source: naaim.org, updated every Thursday; the number could not be scraped, so an AI reads the page.", zh: "NAAIM（美国主动投资经理协会）仓位指数：主动型基金经理每周自报的平均股票仓位，常见范围 0–100（也可能低于 0 或高于 100）。极高说明大家都很乐观、交易拥挤。数据来源：naaim.org，每周四更新；数字无法直接抓取，由 AI 读网页。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "yes"
     status: "no_data"
   - rule_id: SEN-07
     name: {en: "Put/Call ratio", zh: "Put/Call 比率"}
     description: {en: "Ratio of put option volume to call option volume. A high ratio means fear, a low one means complacency. The free Cboe file stopped in 2019, so it can only be estimated from option chains of individual stocks, not the whole market. Source: Yahoo Finance option chains via yfinance. Typical values: a total Cboe put/call ratio of 0.7 to 1.0 is common; above 1.1 is fear and below 0.6 complacency (rule of thumb).", zh: "看跌期权（Put）成交量与看涨期权（Call）成交量的比值。偏高说明恐慌，偏低说明自满。Cboe 的免费文件在 2019 年就停更了，现在只能用个股的期权链估算，做不到全市场。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：Cboe 总 Put/Call 比率 0.7–1.0 常见；高于 1.1 是恐慌，低于 0.6 是自满（经验）。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "no_data"
   - rule_id: SEN-08
     name: {en: "Mega IPO", zh: "超大型 IPO"}
     description: {en: "Passes when no IPO (initial public offering, a company's first stock sale) of $10 billion or more is happening in the window. Huge new issues soak up cash and often appear near market peaks. Source: no free structured feed; an AI reads news or SEC S-1 filings (registration statements).", zh: "窗口内没有 ≥ $100 亿的 IPO（首次公开募股，公司第一次卖股票）时通过。超大额新股会抽走资金，常出现在市场热度的高点。数据来源：没有免费的结构化数据，由 AI 读新闻或 SEC 的 S-1 文件（注册声明）。"}
-    weight: 1
     method: "ai_search"
     quantifiable: "yes"
     status: "no_data"
     legacy_id: ["A05"]
   - rule_id: SEN-09
-    name: {en: "Short interest", zh: "空头比例"}
-    description: {en: "Share of the stock's float (shares available to trade) that is sold short. A high figure means many people bet against it, and can also fuel a short squeeze (a sharp rise as shorts rush to buy back). Above 10% is high, above 20% very high. Source: Yahoo Finance via yfinance; FINRA (the US broker regulator) publishes the files twice a month.", zh: "被卖空的股数占流通股（可交易股数）的比例。偏高说明很多人在看空，也可能引发逼空（空头抢着回补导致股价急涨）。高于 10% 偏高，高于 20% 很高。数据来源：通过 yfinance 取 Yahoo Finance；FINRA（美国券商监管机构）每月公布两次文件。"}
-    weight: 2
+    name: {en: "Short interest below 10%", zh: "空头比例低于 10%"}
+    description: {en: "Passes when short interest is below 10% of the float. Share of the stock's float (shares available to trade) that is sold short. A high figure means many people bet against it, and can also fuel a short squeeze (a sharp rise as shorts rush to buy back). Above 10% is high, above 20% very high. Source: Yahoo Finance via yfinance; FINRA (the US broker regulator) publishes the files twice a month. Other tier: SEN-19.", zh: "空头比例低于流通股的 10% 时通过。被卖空的股数占流通股（可交易股数）的比例。偏高说明很多人在看空，也可能引发逼空（空头抢着回补导致股价急涨）。高于 10% 偏高，高于 20% 很高。数据来源：通过 yfinance 取 Yahoo Finance；FINRA（美国券商监管机构）每月公布两次文件。其他分档：SEN-19。"}
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
+    operator: "less_than"
+    value: 10
+  - rule_id: SEN-19
+    name: {en: "Short interest below 20%", zh: "空头比例低于 20%"}
+    description: {en: "Passes when short interest is below 20% of the float. One of the short interest tiers; see SEN-09 for what it measures, the source and typical values.", zh: "空头比例低于流通股的 20% 时通过。空头比例分档之一；含义、数据来源和常见数值见 SEN-09。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "todo"
+    operator: "less_than"
+    value: 20
+    band_of: "SEN-09"
+    legacy_id: []
   # TRD · Trend and momentum
   - rule_id: TRD-01
     name: {en: "Market above 200-day", zh: "大盘在 200 日线上"}
     description: {en: "Passes when the S&P 500 closes above its 200-day moving average (the average close of the last 200 days), which marks an uptrend for the whole market. Source: Yahoo Finance symbol ^GSPC via yfinance, already wired in.", zh: "标普 500 收盘价在 200 日均线（最近 200 天收盘价的平均值）之上时通过，表示整个市场处于上升趋势。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC，已接入。"}
-    weight: 5
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -430,14 +574,12 @@ rule_list:
   - rule_id: TRD-02
     name: {en: "Market breadth", zh: "市场广度"}
     description: {en: "How many stocks are above their own 200-day average, and new 52-week highs minus lows. If the index rises while fewer stocks join, the rally is narrow. Needs prices for all 500 S&P 500 stocks. Source: Yahoo Finance via yfinance, calculated; Yahoo has no ready-made breadth index. Typical values: more than 60% of stocks above their 200-day average is strong, less than 40% weak (rule of thumb). Updated daily.", zh: "有多少股票站在自己的 200 日均线之上，以及 52 周新高减新低的数量。指数上涨但参与的股票变少，说明行情偏窄。需要标普 500 全部 500 只股票的价格。数据来源：通过 yfinance 取 Yahoo Finance 后自行计算，Yahoo 没有现成的广度指数。常见情形：超过 60% 的股票站上 200 日线算强，低于 40% 算弱（经验）。每日更新。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: TRD-03
     name: {en: "Stock above 200-day", zh: "个股在 200 日线上"}
     description: {en: "Passes when the stock closes above its own 200-day average. Selling puts on stocks in a downtrend means catching a falling knife. Source: Yahoo Finance via yfinance, already wired in. The original rule also asked for no new 52-week low; that half is not built.", zh: "这只股票收盘价在自己的 200 日均线之上时通过。去给下跌趋势里的股票卖 Put，等于接下坠的飞刀。数据来源：通过 yfinance 取 Yahoo Finance，已接入。原规则还要求没有创 52 周新低，这一半尚未实现。"}
-    weight: 5
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -448,7 +590,6 @@ rule_list:
   - rule_id: TRD-04
     name: {en: "Golden cross state", zh: "黄金交叉状态"}
     description: {en: "Passes when the 50-day moving average is above the 200-day moving average, called the golden cross state, the most common trend confirmation. Source: Yahoo Finance via yfinance, already wired in.", zh: "50 日均线在 200 日均线之上时通过，称为黄金交叉状态，是最常见的趋势确认。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -458,7 +599,6 @@ rule_list:
   - rule_id: TRD-05
     name: {en: "Above 50-day", zh: "在 50 日线上"}
     description: {en: "Passes when the close is above the 50-day average, showing the medium-term trend is healthy. Source: Yahoo Finance via yfinance, already wired in.", zh: "收盘价在 50 日均线之上时通过，说明中期走势健康。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -466,30 +606,51 @@ rule_list:
     operator: "is_true"
     legacy_id: ["T03"]
   - rule_id: TRD-06
-    name: {en: "Near 52-week high", zh: "接近 52 周高点"}
-    description: {en: "How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, already wired in. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio). Scoring levels (the first matching level wins): 5% or below earns the full weight; 15% or below earns half of the weight; anything else earns nothing.", zh: "价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。计分档位（按顺序，第一个匹配的档位生效）：不超过 5% 拿满权重；不超过 15% 拿一半权重；其余不得分。"}
-    weight: 4
+    name: {en: "Within 5% of 52-week high", zh: "距 52 周高点 5% 以内"}
+    description: {en: "Passes when the price is within 5% of its 52-week high. How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, already wired in. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio). Other tier: TRD-17.", zh: "价格距 52 周高点不超过 5% 时通过。价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。其他分档：TRD-17。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "distance_from_fifty_two_week_high_percent"
-    levels: [{operator: "less_or_equal", value: 5, score: 1.0}, {operator: "less_or_equal", value: 15, score: 0.5}]
-    legacy_id: ["M02", "T05"]
+    operator: "less_or_equal"
+    value: 5
+    legacy_id: ["M02"]
+  - rule_id: TRD-17
+    name: {en: "Within 15% of 52-week high", zh: "距 52 周高点 15% 以内"}
+    description: {en: "Passes when the price is within 15% of its 52-week high. One of the 52-week high distance tiers; see TRD-06 for what it measures, the source and typical values.", zh: "价格距 52 周高点不超过 15% 时通过。距 52 周高点的距离分档之一；含义、数据来源和常见数值见 TRD-06。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "distance_from_fifty_two_week_high_percent"
+    operator: "less_or_equal"
+    value: 15
+    band_of: "TRD-06"
+    legacy_id: ["T05"]
   - rule_id: TRD-07
-    name: {en: "52-week range position", zh: "52 周区间位置"}
-    description: {en: "Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance, already wired in. Scoring levels (the first matching level wins): 25 or below earns the full weight; 50 or below earns half of the weight; anything else earns nothing.", zh: "价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，已接入。计分档位（按顺序，第一个匹配的档位生效）：不超过 25 拿满权重；不超过 50 拿一半权重；其余不得分。"}
-    weight: 3
+    name: {en: "52-week position at most 25", zh: "52 周位置不高于 25"}
+    description: {en: "Passes when the price sits in the lowest quarter of its 52-week range (position 25 or below). Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance, already wired in. Other tier: TRD-18.", zh: "价格处于 52 周区间的最低四分之一（位置不高于 25）时通过。价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，已接入。其他分档：TRD-18。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "fifty_two_week_range_percentile"
-    levels: [{operator: "less_or_equal", value: 25, score: 1.0}, {operator: "less_or_equal", value: 50, score: 0.5}]
-    legacy_id: ["F02", "F03"]
+    operator: "less_or_equal"
+    value: 25
+    legacy_id: ["F02"]
     note: {en: "Low zone is the Wheel view; momentum strategies want the opposite and use TRD-06", zh: "低位是 Wheel 的视角；动量策略方向相反，用 TRD-06"}
+  - rule_id: TRD-18
+    name: {en: "52-week position at most 50", zh: "52 周位置不高于 50"}
+    description: {en: "Passes when the price sits in the lower half of its 52-week range (position 50 or below). One of the 52-week position tiers; see TRD-07 for what it measures, the source and typical values.", zh: "价格处于 52 周区间的下半部分（位置不高于 50）时通过。52 周位置分档之一；含义、数据来源和常见数值见 TRD-07。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "fifty_two_week_range_percentile"
+    operator: "less_or_equal"
+    value: 50
+    band_of: "TRD-07"
+    legacy_id: ["F03"]
   - rule_id: TRD-08
     name: {en: "6-month gain", zh: "6 个月涨幅"}
     description: {en: "Passes when the stock is up more than 10% over the last 6 months. Winners tend to keep winning for a while (momentum effect). Source: Yahoo Finance via yfinance, already wired in. Typical values: above 10% is a common line; academic momentum uses 3 to 12 months (Jegadeesh and Titman 1993).", zh: "股票最近 6 个月涨幅超过 10% 时通过。涨得好的股票往往会在一段时间内继续跑赢（动量效应）。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：10% 是常用线；学术上的动量用 3–12 个月（Jegadeesh 与 Titman 1993）。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -500,14 +661,12 @@ rule_list:
   - rule_id: TRD-09
     name: {en: "Relative strength", zh: "相对强弱"}
     description: {en: "Whether the stock has beaten or lagged the market (SPY, the S&P 500 fund) or its sector over recent months. Source: Yahoo Finance via yfinance, calculated.", zh: "这只股票最近几个月跑赢还是跑输大盘（SPY，标普 500 基金）或所在板块。数据来源：通过 yfinance 取 Yahoo Finance，自行计算。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: TRD-10
     name: {en: "Volume surge", zh: "放量"}
     description: {en: "Passes when the latest day's volume is at least 1.5 times the 20-day average volume. A breakout on heavy volume is more believable than one on thin volume. Source: Yahoo Finance via yfinance, already wired in.", zh: "最近一天的成交量至少是 20 日平均成交量的 1.5 倍时通过。放量突破比缩量突破更可信。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -516,29 +675,50 @@ rule_list:
     value: 1.5
     legacy_id: ["M03"]
   - rule_id: TRD-11
-    name: {en: "RSI(14)", zh: "RSI(14)"}
-    description: {en: "RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, already wired in. Scoring levels (the first matching level wins): 40 to 70 earns the full weight; 70 to 80 earns half of the weight; anything else earns nothing.", zh: "14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。计分档位（按顺序，第一个匹配的档位生效）：40–70 拿满权重；70–80 拿一半权重；其余不得分。"}
-    weight: 3
+    name: {en: "RSI(14) 40 to 70", zh: "RSI(14) 介于 40 和 70 之间"}
+    description: {en: "Passes when the 14-day RSI is between 40 and 70. RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, already wired in. Other tier: TRD-19.", zh: "14 日 RSI 介于 40 和 70 之间时通过。14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。其他分档：TRD-19。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "relative_strength_index_fourteen_day"
-    levels: [{operator: "between", value: [40, 70], score: 1.0}, {operator: "between", value: [70, 80], score: 0.5}]
-    legacy_id: ["T04", "M04"]
+    operator: "between"
+    value: [40, 70]
+    legacy_id: ["T04"]
+  - rule_id: TRD-19
+    name: {en: "RSI(14) below 80", zh: "RSI(14) 低于 80"}
+    description: {en: "Passes when the 14-day RSI is below 80. One of the RSI(14) tiers; see TRD-11 for what it measures, the source and typical values.", zh: "14 日 RSI 低于 80 时通过。RSI(14) 分档之一；含义、数据来源和常见数值见 TRD-11。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "relative_strength_index_fourteen_day"
+    operator: "less_than"
+    value: 80
+    band_of: "TRD-11"
+    legacy_id: ["M04"]
   - rule_id: TRD-12
-    name: {en: "RSI(2) oversold", zh: "RSI(2) 超卖"}
-    description: {en: "RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, already wired in. Scoring levels (the first matching level wins): below 5 earns the full weight; below 10 earns 75% of the weight; anything else earns nothing.", zh: "只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。计分档位（按顺序，第一个匹配的档位生效）：低于 5 拿满权重；低于 10 拿 75% 的权重；其余不得分。"}
-    weight: 4
+    name: {en: "RSI(2) below 5", zh: "RSI(2) 低于 5"}
+    description: {en: "Passes when the 2-day RSI is below 5. RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, already wired in. Other tier: TRD-20.", zh: "2 日 RSI 低于 5 时通过。只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。其他分档：TRD-20。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "relative_strength_index_two_day"
-    levels: [{operator: "less_than", value: 5, score: 1.0}, {operator: "less_than", value: 10, score: 0.75}]
-    legacy_id: ["R01", "R02"]
+    operator: "less_than"
+    value: 5
+    legacy_id: ["R02"]
+  - rule_id: TRD-20
+    name: {en: "RSI(2) below 10", zh: "RSI(2) 低于 10"}
+    description: {en: "Passes when the 2-day RSI is below 10. One of the RSI(2) tiers; see TRD-12 for what it measures, the source and typical values.", zh: "2 日 RSI 低于 10 时通过。RSI(2) 分档之一；含义、数据来源和常见数值见 TRD-12。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "relative_strength_index_two_day"
+    operator: "less_than"
+    value: 10
+    band_of: "TRD-12"
+    legacy_id: ["R01"]
   - rule_id: TRD-13
     name: {en: "Below 5-day", zh: "跌破 5 日线"}
     description: {en: "Passes when the close is below the 5-day average, confirming a short-term pullback is under way. Source: Yahoo Finance via yfinance, already wired in.", zh: "收盘价低于 5 日均线时通过，确认正处于短期回调中。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -548,7 +728,6 @@ rule_list:
   - rule_id: TRD-14
     name: {en: "Near support", zh: "靠近支撑位"}
     description: {en: "Passes when the price is within 3% of the nearest support, a price level where buyers have stepped in before. Near support the downside is more limited. Support is subjective; approximate it with recent lows, the 200-day average or round numbers. Source: Yahoo Finance via yfinance, calculated.", zh: "价格距最近支撑位不超过 3% 时通过。支撑位是之前有买盘接住的价格水平，靠近支撑位时下跌空间更有限。支撑位比较主观，可以用近期低点、200 日均线或整数关口近似。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
-    weight: 3
     method: "computed"
     quantifiable: "part"
     status: "todo"
@@ -556,14 +735,12 @@ rule_list:
   - rule_id: TRD-15
     name: {en: "ATR", zh: "ATR 日波动"}
     description: {en: "ATR (Average True Range) over 14 days as a share of price: how much the stock normally moves in a day. Used to set stop distance and judge risk. Large blue chips are usually about 1% to 3%. Source: Yahoo Finance via yfinance, calculated.", zh: "14 日 ATR（平均真实波幅）占价格的比例：这只股票平时一天大概波动多少，用来设置止损距离、判断风险。大型蓝筹股通常在 1%–3%。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: TRD-16
     name: {en: "SPMO holding", zh: "SPMO 持仓"}
     description: {en: "Whether the stock is held by SPMO (the Invesco S&P 500 Momentum ETF), which picks momentum stocks and rebalances every March and September, so its holdings work as a momentum list. The rule asks for the largest holding or the top 20. Source: Invesco's website holdings file; yfinance only gives the top 10.", zh: "这只股票是否被 SPMO（景顺标普 500 动量 ETF）持有。SPMO 按动量选股，每年 3 月和 9 月换仓，所以它的持仓可以当作一份动量名单。规则要求是最大一只或前 20 名。数据来源：景顺官网的持仓文件；yfinance 只给前 10 名。"}
-    weight: 3
     method: "scrape"
     quantifiable: "yes"
     status: "no_data"
@@ -573,7 +750,6 @@ rule_list:
   - rule_id: EVT-01
     name: {en: "No earnings", zh: "无财报"}
     description: {en: "Passes when there is no earnings report before the option expires. Earnings make the stock gap up or down, the most common veto for option sellers. Source: Yahoo Finance via yfinance calendar, already wired in; the date is an estimate until the company confirms it.", zh: "期权到期前没有财报时通过。财报会让股价跳空，是期权卖方最常见的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的财报日历，已接入；公司确认之前日期只是估计。"}
-    weight: 5
     method: "api_fetch"
     quantifiable: "yes"
     status: "built"
@@ -583,7 +759,6 @@ rule_list:
   - rule_id: EVT-02
     name: {en: "No FOMC", zh: "无 FOMC"}
     description: {en: "Passes when no FOMC (Federal Open Market Committee, the Fed committee that sets US interest rates) meeting falls inside the option's life. Volatility rises around the meeting. Source: the Fed's published calendar at federalreserve.gov; today kept by hand in config/settings.yaml.", zh: "期权存续期内没有 FOMC（联邦公开市场委员会，美联储负责定利率的委员会）会议时通过。会议前后波动会放大。数据来源：美联储官网 federalreserve.gov 公布的日程；目前手工维护在 config/settings.yaml 里。"}
-    weight: 3
     method: "scrape"
     quantifiable: "yes"
     status: "todo"
@@ -591,7 +766,6 @@ rule_list:
   - rule_id: EVT-03
     name: {en: "No CPI/PCE", zh: "无 CPI/PCE"}
     description: {en: "Passes when no CPI (Consumer Price Index) or PCE (Personal Consumption Expenditures price index) inflation release falls inside the option's life, and no new position is opened on a release day. Release days move markets. Source: BLS (US Bureau of Labor Statistics) and BEA (Bureau of Economic Analysis) calendars; the BLS page blocks scripts, so an AI reads it.", zh: "期权存续期内没有 CPI（消费者物价指数）或 PCE（个人消费支出物价指数）通胀数据公布，并且不在公布日开新仓时通过。公布日市场波动较大。数据来源：BLS（美国劳工统计局）和 BEA（经济分析局）的日程；BLS 网页拦截脚本，由 AI 读取。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "yes"
     status: "todo"
@@ -599,7 +773,6 @@ rule_list:
   - rule_id: EVT-04
     name: {en: "No election", zh: "无选举日"}
     description: {en: "Passes when no election day falls inside the option's life. Uncertainty rises around elections. Source: fixed dates, entered by hand.", zh: "期权存续期内没有选举日时通过。选举前后市场不确定性上升。数据来源：日期固定，手工录入。"}
-    weight: 1
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -607,7 +780,6 @@ rule_list:
   - rule_id: EVT-05
     name: {en: "No jobs report", zh: "避开非农"}
     description: {en: "Do not open a new position within 1 day of the monthly jobs report (nonfarm payrolls, the number of jobs added, usually released on the first Friday of the month). Surprises cause gaps. Source: BLS schedule; the page blocks scripts, so dates are derived by rule and corrected by hand.", zh: "不在月度非农就业报告（新增非农就业人数，通常在每月第一个周五公布）前后 1 天开新仓。数据意外会引起跳空。数据来源：BLS 日程；网页拦截脚本，所以按规则推算日期再手工校正。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -615,7 +787,6 @@ rule_list:
   - rule_id: EVT-06
     name: {en: "No ex-dividend", zh: "无除息日"}
     description: {en: "Passes when no ex-dividend date (the first day the stock trades without its next dividend) falls inside the window. When selling covered calls, there is a risk of early assignment just before it. Source: Yahoo Finance via yfinance calendar and dividends.", zh: "窗口内没有除息日（股票不再包含下一次分红的第一天）时通过。卖 Covered Call 时，除息前有被提前行权的风险。数据来源：通过 yfinance 取 Yahoo Finance 的日历和分红记录。"}
-    weight: 3
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
@@ -623,7 +794,6 @@ rule_list:
   - rule_id: EVT-07
     name: {en: "No tariff deadline", zh: "无关税截止日"}
     description: {en: "Passes when no tariff or policy deadline is close. Policy news around such dates can shock markets. Dates can be entered by hand; there is no structured feed, so an AI reads the news.", zh: "没有临近的关税或政策截止日时通过。这类日期前后的政策消息容易冲击市场。日期可以手工录入；没有结构化数据，由 AI 读新闻。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "part"
     status: "no_data"
@@ -631,7 +801,6 @@ rule_list:
   - rule_id: EVT-08
     name: {en: "No geopolitical escalation", zh: "无地缘冲突升级"}
     description: {en: "Passes when there is no escalating geopolitical conflict, which lowers risk appetite across the market. No standard threshold; the GPR (Geopolitical Risk Index by Caldara and Iacoviello) percentile can serve as a proxy. Source: matteoiacoviello.com GPR data, an Excel file that needs the xlrd package.", zh: "没有正在升级的地缘冲突时通过。地缘冲突会拉低整个市场的风险偏好。没有标准阈值，可以用 GPR（Caldara 和 Iacoviello 编制的地缘政治风险指数）的历史分位做代理。数据来源：matteoiacoviello.com 的 GPR 数据，是 Excel 文件，需要 xlrd 包解析。"}
-    weight: 2
     method: "scrape"
     quantifiable: "part"
     status: "no_data"
@@ -639,7 +808,6 @@ rule_list:
   - rule_id: EVT-09
     name: {en: "No regulation event", zh: "无监管事件"}
     description: {en: "Passes when no industry regulation or export control decision is pending; one decision can hit a whole industry at once. No numbers exist, so events must be spotted from news by an AI.", zh: "没有待决的行业监管或出口管制事件时通过。一项决定可能一次性冲击整个行业。没有数值，需要由 AI 从新闻里识别事件。"}
-    weight: 3
     method: "ai_search"
     quantifiable: "no"
     status: "no_data"
@@ -647,7 +815,6 @@ rule_list:
   - rule_id: EVT-10
     name: {en: "Industry leader earnings", zh: "同业龙头财报"}
     description: {en: "Avoid the earnings dates of the industry leader, since its report moves the whole sector. You first need to define the leader for each stock. Source: Yahoo Finance via yfinance calendar.", zh: "避开同行业龙头的财报日，因为龙头的财报会带动整个板块。需要先给每只股票定义谁是龙头。数据来源：通过 yfinance 取 Yahoo Finance 的财报日历。"}
-    weight: 2
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
@@ -655,7 +822,6 @@ rule_list:
   - rule_id: EVT-11
     name: {en: "Customer and supplier earnings", zh: "客户与供应商财报"}
     description: {en: "Avoid the earnings dates of major customers and suppliers, which spill over to this company. The customer and supplier map has to be built by hand or by an AI; dates then come from the Yahoo Finance calendar via yfinance.", zh: "避开主要客户和供应商的财报日，这些财报会连带影响这家公司。客户和供应商关系表需要手工或由 AI 建立，日期再从 yfinance 取 Yahoo Finance 的日历。"}
-    weight: 2
     method: "ai_search"
     quantifiable: "part"
     status: "no_data"
@@ -663,7 +829,6 @@ rule_list:
   - rule_id: EVT-12
     name: {en: "SPMO rebalance window", zh: "SPMO 换仓窗口"}
     description: {en: "True when now is the March or September rebalance window of SPMO (the Invesco S&P 500 Momentum ETF), the time the momentum rotation strategy trades. Source: a fixed date rule.", zh: "现在处于 SPMO（景顺标普 500 动量 ETF）3 月或 9 月的换仓窗口时为真，这是动量轮动策略的交易时点。数据来源：固定的日期规则。"}
-    weight: 1
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -671,23 +836,32 @@ rule_list:
   - rule_id: EVT-13
     name: {en: "Expiration calendar", zh: "到期日历"}
     description: {en: "Calendar effects around option expiration: the monthly expiration is the third Friday, and quadruple witching (stock options, index options and futures all expire) falls on the third Friday of March, June, September and December. Trading and prices behave oddly then. Source: computed from the calendar.", zh: "期权到期前后的日历效应：月度到期日是每月第三个周五，四巫日（个股期权、指数期权和期货同时到期）是 3、6、9、12 月的第三个周五。这些日子的成交和价格会比较特殊。数据来源：由日历计算。"}
-    weight: 1
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   # LIQ · Liquidity
   - rule_id: LIQ-01
-    name: {en: "Market cap", zh: "市值"}
-    description: {en: "Passes when market capitalization (share price times shares outstanding) is above $200 billion. Big companies trade freely and are less likely to be hit by extreme moves. Source: Yahoo Finance via yfinance.", zh: "市值（股价乘以总股数）超过 $2,000 亿时通过。大公司交易顺畅，不容易被极端行情冲击。数据来源：通过 yfinance 取 Yahoo Finance。"}
-    weight: 3
+    name: {en: "Market cap above $200B", zh: "市值高于 2,000 亿美元"}
+    description: {en: "Passes when market capitalization (share price times shares outstanding) is above $200 billion. Big companies trade freely and are less likely to be hit by extreme moves. Source: Yahoo Finance via yfinance. Other tier: LIQ-06. The rule value is in billions of dollars.", zh: "市值（股价乘以总股数）超过 $2,000 亿时通过。大公司交易顺畅，不容易被极端行情冲击。数据来源：通过 yfinance 取 Yahoo Finance。其他分档：LIQ-06。规则数值以十亿美元为单位。"}
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
+    operator: "greater_than"
+    value: 200
     legacy_id: ["E02"]
+  - rule_id: LIQ-06
+    name: {en: "Market cap above $10B", zh: "市值高于 100 亿美元"}
+    description: {en: "Passes when market capitalization is above $10 billion (the rule value is in billions of dollars). One of the market cap tiers; see LIQ-01 for what it measures, the source and typical values.", zh: "市值高于 100 亿美元（规则数值以十亿美元为单位）时通过。市值分档之一；含义、数据来源和常见数值见 LIQ-01。"}
+    method: "api_fetch"
+    quantifiable: "yes"
+    status: "todo"
+    operator: "greater_than"
+    value: 10
+    band_of: "LIQ-01"
+    legacy_id: []
   - rule_id: LIQ-02
     name: {en: "Top 100", zh: "前 100 大"}
     description: {en: "Passes when the stock is among the 100 largest by market value or by trading value. Needs the S&P 500 or Nasdaq-100 member list and a market cap for each. Source: Yahoo Finance via yfinance.", zh: "股票属于市值或成交额最大的前 100 只时通过。需要标普 500 或纳指 100 的成分股名单和每只股票的市值。数据来源：通过 yfinance 取 Yahoo Finance。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -695,14 +869,12 @@ rule_list:
   - rule_id: LIQ-03
     name: {en: "Daily trading value", zh: "日均成交额"}
     description: {en: "Average money traded in the stock per day (average volume times price). The more active it is, the easier it is to get in and out. Above about $50 million to $100 million a day is enough for an option seller. Source: Yahoo Finance via yfinance.", zh: "这只股票平均每天成交多少钱（平均成交量乘以价格）。越活跃，进出越容易。对期权卖方来说，每天超过约 $5,000 万到 $1 亿通常够用。数据来源：通过 yfinance 取 Yahoo Finance。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: LIQ-04
     name: {en: "Bid-ask spread", zh: "买卖价差"}
     description: {en: "Passes when the bid-ask spread (the gap between the best buy and sell quotes) is at most 5% of the mid price (the average of the two). A wide spread means a high real trading cost. For cheap options also check the dollar gap. Source: Yahoo Finance option chain via yfinance; bid and ask are often 0 when the market is closed.", zh: "买卖价差（最优买价与卖价的差距）不超过中间价（两者的平均）的 5% 时通过。价差越大，实际成交成本越高；便宜的期权还要看绝对金额的差距。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；休市时买价和卖价常为 0。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -710,26 +882,46 @@ rule_list:
   - rule_id: LIQ-05
     name: {en: "Open interest and volume", zh: "持仓量与成交量"}
     description: {en: "Passes when open interest (contracts still open) is at least 500 and the day's volume at least 100. Thinly traded contracts are hard to open and close. Source: Yahoo Finance option chain via yfinance; open interest updates once a day, volume builds up during trading.", zh: "未平仓量（仍未了结的合约数）至少 500，且当日成交量至少 100 时通过。成交稀少的合约很难开仓和平仓。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；未平仓量每天更新一次，成交量盘中累计。"}
-    weight: 4
     method: "api_fetch"
     quantifiable: "yes"
     status: "todo"
     legacy_id: ["Z07"]
   # VOL · Volatility
   - rule_id: VOL-01
-    name: {en: "IV percentile", zh: "IV 百分位"}
-    description: {en: "Where today's IV (implied volatility, the volatility priced into options) sits within the past year, as a percentile. A high reading means options are expensive, which favors sellers. Needs a year of daily IV history that no free source provides, so it has to be recorded daily and builds up over a year. VIX percentile can be a stopgap. Scoring levels (the first matching level wins): 70 or above earns the full weight; 50 or above earns 75% of the weight; 40 or above earns half of the weight; anything else earns nothing.", zh: "当前 IV（隐含波动率，期权价格里包含的波动率）在过去一年中处于什么百分位。数值高说明期权偏贵，对卖方有利。需要一年的每日 IV 历史，免费数据源都没有，只能自己每天记录，攒满一年才可用。VIX 的百分位可以做临时替代。计分档位（按顺序，第一个匹配的档位生效）：不低于 70 拿满权重；不低于 50 拿 75% 的权重；不低于 40 拿一半权重；其余不得分。"}
-    weight: 5
+    name: {en: "IV percentile at least 70", zh: "IV 百分位不低于 70"}
+    description: {en: "Passes when the IV percentile is at least 70. Where today's IV (implied volatility, the volatility priced into options) sits within the past year, as a percentile. A high reading means options are expensive, which favors sellers. Needs a year of daily IV history that no free source provides, so it has to be recorded daily and builds up over a year. VIX percentile can be a stopgap. Other tiers: VOL-06, VOL-07.", zh: "IV 百分位不低于 70 时通过。当前 IV（隐含波动率，期权价格里包含的波动率）在过去一年中处于什么百分位。数值高说明期权偏贵，对卖方有利。需要一年的每日 IV 历史，免费数据源都没有，只能自己每天记录，攒满一年才可用。VIX 的百分位可以做临时替代。其他分档：VOL-06、VOL-07。"}
     method: "computed"
     quantifiable: "yes"
     status: "no_data"
     indicator: "implied_volatility_percentile"
-    levels: [{operator: "greater_or_equal", value: 70, score: 1.0}, {operator: "greater_or_equal", value: 50, score: 0.75}, {operator: "greater_or_equal", value: 40, score: 0.5}]
-    legacy_id: ["A12", "A13", "A14"]
+    operator: "greater_or_equal"
+    value: 70
+    legacy_id: ["A14"]
+  - rule_id: VOL-06
+    name: {en: "IV percentile at least 50", zh: "IV 百分位不低于 50"}
+    description: {en: "Passes when the IV percentile is at least 50. One of the IV percentile tiers; see VOL-01 for what it measures, the source and typical values.", zh: "IV 百分位不低于 50 时通过。IV 百分位分档之一；含义、数据来源和常见数值见 VOL-01。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "no_data"
+    indicator: "implied_volatility_percentile"
+    operator: "greater_or_equal"
+    value: 50
+    band_of: "VOL-01"
+    legacy_id: ["A13"]
+  - rule_id: VOL-07
+    name: {en: "IV percentile at least 40", zh: "IV 百分位不低于 40"}
+    description: {en: "Passes when the IV percentile is at least 40. One of the IV percentile tiers; see VOL-01 for what it measures, the source and typical values.", zh: "IV 百分位不低于 40 时通过。IV 百分位分档之一；含义、数据来源和常见数值见 VOL-01。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "no_data"
+    indicator: "implied_volatility_percentile"
+    operator: "greater_or_equal"
+    value: 40
+    band_of: "VOL-01"
+    legacy_id: ["A12"]
   - rule_id: VOL-02
     name: {en: "IV rising", zh: "IV 抬升"}
     description: {en: "IV is higher than its recent average, meaning volatility is on the rise. Measured as VIX above its 20-day average, or IV above RV30 (realized volatility, the actual price swings over 30 days). Source: Yahoo Finance ^VIX via yfinance and the option chain.", zh: "IV 比最近的平均水平高，说明波动正在抬升。用 VIX 高于其 20 日均值，或 IV 高于 RV30（实际波动率，即过去 30 天股价的真实波动）来衡量。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX 和期权链。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -737,7 +929,6 @@ rule_list:
   - rule_id: VOL-03
     name: {en: "IV vs realized", zh: "IV 对实际波动"}
     description: {en: "Passes when ATM (at-the-money, strike near the current price) IV for 30 to 45 days is above RV30, the 30-day realized volatility. The gap is the volatility risk premium, the extra the seller is paid. Source: Yahoo Finance option chain and prices via yfinance, already wired in. Typical values: IV above RV is the normal state.", zh: "30–45 天的 ATM（平值，行权价接近现价）IV 高于 RV30，即 30 天实际波动率时通过。两者的差就是波动率风险溢价，也就是卖方额外拿到的补偿。数据来源：通过 yfinance 取 Yahoo Finance 的期权链和价格，已接入。常见情形：IV 高于 RV 是常态。"}
-    weight: 4
     method: "computed"
     quantifiable: "yes"
     status: "built"
@@ -747,42 +938,83 @@ rule_list:
   - rule_id: VOL-04
     name: {en: "Expected move", zh: "预期波动幅度"}
     description: {en: "The move the options market expects: the 1-sigma expected move is price times IV times the square root of days to expiration over 365. Also compares IV before earnings with after, the IV crush (the sharp drop in IV after the report). Source: Yahoo Finance option chain via yfinance; the before-and-after history has to be recorded.", zh: "期权市场预期的波动幅度：1σ 预期波动 = 价格 × IV × √(到期天数 ÷ 365)。同时对比财报前后的 IV，即 IV crush（财报公布后 IV 的快速回落）。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；财报前后的历史需要自己记录。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: VOL-05
     name: {en: "Put skew", zh: "Put 偏斜"}
     description: {en: "Put skew: how much more expensive downside protection is than at-the-money options (IV of puts about 10% below the price minus ATM IV). A larger gap means the market fears a fall. Source: Yahoo Finance option chain via yfinance. Typical values: put skew is usually positive.", zh: "Put 偏斜：下跌保护比平值期权贵多少（价格下方约 10% 的 Put 的 IV 减去平值 IV）。差距越大，说明市场越担心下跌。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：Put 偏斜通常为正。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   # CTR · Contract selection
   - rule_id: CTR-01
-    name: {en: "Delta", zh: "Delta"}
-    description: {en: "Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance, already wired in. Scoring levels (the first matching level wins): 0.15 to 0.2 earns the full weight; 0.15 to 0.3 earns 75% of the weight; 0.3 or below earns half of the weight; anything else earns nothing.", zh: "卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance，已接入。计分档位（按顺序，第一个匹配的档位生效）：0.15–0.2 拿满权重；0.15–0.3 拿 75% 的权重；不超过 0.3 拿一半权重；其余不得分。"}
-    weight: 5
+    name: {en: "Delta 0.15 to 0.20", zh: "Delta 介于 0.15 和 0.20 之间"}
+    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.20. Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance, already wired in. Other tiers: CTR-11, CTR-12.", zh: "期权 Delta 的绝对值介于 0.15 和 0.20 之间时通过。卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance，已接入。其他分档：CTR-11、CTR-12。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "selected_put_absolute_delta"
-    levels: [{operator: "between", value: [0.15, 0.2], score: 1.0}, {operator: "between", value: [0.15, 0.3], score: 0.75}, {operator: "less_or_equal", value: 0.3, score: 0.5}]
-    legacy_id: ["B03", "B04", "F08"]
+    operator: "between"
+    value: [0.15, 0.2]
+    legacy_id: ["B04"]
+  - rule_id: CTR-11
+    name: {en: "Delta 0.15 to 0.30", zh: "Delta 介于 0.15 和 0.30 之间"}
+    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.30. One of the Delta tiers; see CTR-01 for what it measures, the source and typical values.", zh: "期权 Delta 的绝对值介于 0.15 和 0.30 之间时通过。Delta 分档之一；含义、数据来源和常见数值见 CTR-01。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "selected_put_absolute_delta"
+    operator: "between"
+    value: [0.15, 0.3]
+    band_of: "CTR-01"
+    legacy_id: ["B03"]
+  - rule_id: CTR-12
+    name: {en: "Delta at most 0.30", zh: "Delta 不高于 0.30"}
+    description: {en: "Passes when the option's absolute Delta is at most 0.30. One of the Delta tiers; see CTR-01 for what it measures, the source and typical values.", zh: "期权 Delta 的绝对值不高于 0.30 时通过。Delta 分档之一；含义、数据来源和常见数值见 CTR-01。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "selected_put_absolute_delta"
+    operator: "less_or_equal"
+    value: 0.3
+    band_of: "CTR-01"
+    legacy_id: ["F08"]
   - rule_id: CTR-02
-    name: {en: "Days to expiration", zh: "到期天数"}
-    description: {en: "Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, already wired in. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard). Scoring levels (the first matching level wins): 30 to 45 days earns the full weight; 14 to 45 days earns half of the weight; above 30 days earns half of the weight; anything else earns nothing.", zh: "到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，已接入。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。计分档位（按顺序，第一个匹配的档位生效）：30–45 天 拿满权重；14–45 天 拿一半权重；高于 30 天 拿一半权重；其余不得分。"}
-    weight: 4
+    name: {en: "DTE 30 to 45", zh: "DTE 介于 30 和 45 之间"}
+    description: {en: "Passes when days to expiration (DTE) is between 30 and 45. Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, already wired in. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard). Other tiers: CTR-13, CTR-14.", zh: "到期天数（DTE）介于 30 和 45 之间时通过。到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，已接入。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。其他分档：CTR-13、CTR-14。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "selected_put_days_to_expiration"
-    levels: [{operator: "between", value: [30, 45], score: 1.0}, {operator: "between", value: [14, 45], score: 0.5}, {operator: "greater_than", value: 30, score: 0.5}]
-    legacy_id: ["B07", "A23", "F09", "E05"]
+    operator: "between"
+    value: [30, 45]
+    legacy_id: ["B07", "E05"]
+  - rule_id: CTR-13
+    name: {en: "DTE 14 to 45", zh: "DTE 介于 14 和 45 之间"}
+    description: {en: "Passes when days to expiration (DTE) is between 14 and 45. One of the DTE tiers; see CTR-02 for what it measures, the source and typical values.", zh: "到期天数（DTE）介于 14 和 45 之间时通过。DTE 分档之一；含义、数据来源和常见数值见 CTR-02。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "selected_put_days_to_expiration"
+    operator: "between"
+    value: [14, 45]
+    band_of: "CTR-02"
+    legacy_id: ["A23"]
+  - rule_id: CTR-14
+    name: {en: "DTE above 30", zh: "DTE 高于 30"}
+    description: {en: "Passes when days to expiration (DTE) is above 30. One of the DTE tiers; see CTR-02 for what it measures, the source and typical values.", zh: "到期天数（DTE）高于 30 时通过。DTE 分档之一；含义、数据来源和常见数值见 CTR-02。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "selected_put_days_to_expiration"
+    operator: "greater_than"
+    value: 30
+    band_of: "CTR-02"
+    legacy_id: ["F09"]
   - rule_id: CTR-03
     name: {en: "Buyer expiration", zh: "买方到期日"}
     description: {en: "Expiration of the option you buy. Buyers prefer 60 to 90 days so time decay does not eat the premium too fast. Source: option expiration dates from Yahoo Finance via yfinance.", zh: "买方期权的到期时间。买方偏好 60–90 天，避免时间损耗太快吃掉权利金。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -790,7 +1022,6 @@ rule_list:
   - rule_id: CTR-04
     name: {en: "Monthly expiration", zh: "月度期权"}
     description: {en: "Whether the option is a monthly one (expires on the third Friday of the month), which usually has better liquidity than weeklies. Source: computed from the expiration date.", zh: "是不是月度期权（每月第三个周五到期），通常比周期权流动性更好。数据来源：由到期日计算。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -798,7 +1029,6 @@ rule_list:
   - rule_id: CTR-05
     name: {en: "Strike distance", zh: "行权价距离"}
     description: {en: "How far the strike is below the current price. The Wheel strategy often picks a strike 10% to 15% (or up to 20%) below the price, where it is happy to be assigned. Source: price from Yahoo Finance via yfinance, calculated.", zh: "行权价比现价低多少。Wheel 策略常选低于现价 10%–15%（最多 20%）的位置，也就是愿意接盘的价位。数据来源：价格通过 yfinance 取 Yahoo Finance 后计算。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -806,7 +1036,6 @@ rule_list:
   - rule_id: CTR-06
     name: {en: "Strike vs support", zh: "行权价对支撑位"}
     description: {en: "Passes when the strike is below the nearest support, so a drop must break support before the put is in the money. Depends on the support level in TRD-14. Source: Yahoo Finance via yfinance, calculated.", zh: "行权价低于最近的支撑位时通过，这样股价要先跌破支撑才会进入价内。依赖 TRD-14 的支撑位。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
-    weight: 3
     method: "computed"
     quantifiable: "part"
     status: "todo"
@@ -814,7 +1043,6 @@ rule_list:
   - rule_id: CTR-07
     name: {en: "Round strike", zh: "整数行权价"}
     description: {en: "Passes when the strike is a round number near the target price and has high trading volume, since such contracts are easier to trade. Source: Yahoo Finance option chain via yfinance.", zh: "行权价是目标价附近的整数且成交量大时通过，这样的合约更容易成交。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。"}
-    weight: 1
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -822,7 +1050,6 @@ rule_list:
   - rule_id: CTR-08
     name: {en: "Covered Call strike", zh: "Covered Call 行权价"}
     description: {en: "Strike of the covered call (a call sold against shares you own) set about 10% above the current price. Source: price from Yahoo Finance via yfinance, calculated.", zh: "Covered Call（对自己持有的股票卖出的看涨期权）的行权价设在现价上方约 10%。数据来源：价格通过 yfinance 取 Yahoo Finance 后计算。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -830,7 +1057,6 @@ rule_list:
   - rule_id: CTR-09
     name: {en: "Covered Call expiration", zh: "Covered Call 到期日"}
     description: {en: "Covered call expiration, usually about 30 days. Source: option expiration dates from Yahoo Finance via yfinance.", zh: "Covered Call 的到期时间，通常选约 30 天。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -838,35 +1064,55 @@ rule_list:
   - rule_id: CTR-10
     name: {en: "Strike vs expected move", zh: "行权价对预期波动"}
     description: {en: "Passes when the strike is outside the 1-sigma expected move implied by options (see VOL-04), so the stock must fall further than the market expects before the put is assigned. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "行权价在期权隐含的 1σ 预期波动幅度之外（见 VOL-04）时通过，也就是股价要跌得比市场预期还多才会被行权。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   # RET · Return and payoff
   - rule_id: RET-01
-    name: {en: "Annualized return", zh: "年化收益"}
-    description: {en: "The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, already wired in; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers. Scoring levels (the first matching level wins): 20% or above earns the full weight; 8% or above earns half of the weight; anything else earns nothing.", zh: "把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，已接入；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。计分档位（按顺序，第一个匹配的档位生效）：不低于 20% 拿满权重；不低于 8% 拿一半权重；其余不得分。"}
-    weight: 4
+    name: {en: "Annualized return at least 20%", zh: "年化收益不低于 20%"}
+    description: {en: "Passes when the annualized return is at least 20%. The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, already wired in; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers. Other tier: RET-06.", zh: "年化收益不低于 20% 时通过。把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，已接入；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。其他分档：RET-06。"}
     method: "computed"
     quantifiable: "yes"
     status: "built"
     indicator: "selected_put_annualized_return_percent"
-    levels: [{operator: "greater_or_equal", value: 20, score: 1.0}, {operator: "greater_or_equal", value: 8, score: 0.5}]
-    legacy_id: ["A21", "E08", "B09"]
+    operator: "greater_or_equal"
+    value: 20
+    legacy_id: ["E08"]
+  - rule_id: RET-06
+    name: {en: "Annualized return at least 8%", zh: "年化收益不低于 8%"}
+    description: {en: "Passes when the annualized return is at least 8%. One of the annualized return tiers; see RET-01 for what it measures, the source and typical values.", zh: "年化收益不低于 8% 时通过。年化收益分档之一；含义、数据来源和常见数值见 RET-01。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "built"
+    indicator: "selected_put_annualized_return_percent"
+    operator: "greater_or_equal"
+    value: 8
+    band_of: "RET-01"
+    legacy_id: ["A21", "B09"]
   - rule_id: RET-02
-    name: {en: "Monthly premium", zh: "月化权利金"}
-    description: {en: "The premium as a share of the strike, scaled to one month. Monthly 2% to 4% is common for put sellers. Source: Yahoo Finance option chain via yfinance, calculated. Scoring levels (the first matching level wins): 4% or above earns the full weight; 2% or above earns half of the weight; anything else earns nothing.", zh: "权利金占行权价的比例，折算成每月。卖 Put 常见的月化是 2%–4%。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。计分档位（按顺序，第一个匹配的档位生效）：不低于 4% 拿满权重；不低于 2% 拿一半权重；其余不得分。"}
-    weight: 3
+    name: {en: "Monthly premium at least 4%", zh: "月化权利金不低于 4%"}
+    description: {en: "Passes when the monthly premium is at least 4% of the strike. The premium as a share of the strike, scaled to one month. Monthly 2% to 4% is common for put sellers. Source: Yahoo Finance option chain via yfinance, calculated. Other tier: RET-07.", zh: "月化权利金不低于行权价的 4% 时通过。权利金占行权价的比例，折算成每月。卖 Put 常见的月化是 2%–4%。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。其他分档：RET-07。"}
     method: "computed"
     quantifiable: "yes"
     status: "todo"
     indicator: "selected_put_monthly_premium_percent"
-    levels: [{operator: "greater_or_equal", value: 4, score: 1.0}, {operator: "greater_or_equal", value: 2, score: 0.5}]
-    legacy_id: ["B10", "B11", "E06", "E07"]
+    operator: "greater_or_equal"
+    value: 4
+    legacy_id: ["B11", "E07"]
+  - rule_id: RET-07
+    name: {en: "Monthly premium at least 2%", zh: "月化权利金不低于 2%"}
+    description: {en: "Passes when the monthly premium is at least 2% of the strike. One of the monthly premium tiers; see RET-02 for what it measures, the source and typical values.", zh: "月化权利金不低于行权价的 2% 时通过。月化权利金分档之一；含义、数据来源和常见数值见 RET-02。"}
+    method: "computed"
+    quantifiable: "yes"
+    status: "todo"
+    indicator: "selected_put_monthly_premium_percent"
+    operator: "greater_or_equal"
+    value: 2
+    band_of: "RET-02"
+    legacy_id: ["B10", "E06"]
   - rule_id: RET-03
     name: {en: "Implied leverage", zh: "隐含杠杆"}
     description: {en: "Leverage of an option you buy: Delta times stock price divided by the premium, meaning how much stock exposure each dollar buys. Passes at 10 times or more. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "买方期权的杠杆倍数：Delta × 股价 ÷ 权利金，也就是每一块钱能买到多少股票敞口。达到 10 倍或以上时通过。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
-    weight: 2
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -874,14 +1120,12 @@ rule_list:
   - rule_id: RET-04
     name: {en: "Breakeven and max loss", zh: "盈亏平衡与最大亏损"}
     description: {en: "Breakeven price (strike minus premium for a put) and maximum loss ((strike minus premium) times 100 per contract). Know the worst case before opening. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "盈亏平衡价（Put 为行权价减权利金）和最大亏损（每张合约为（行权价减权利金）× 100）。开仓前先算清最坏的情况。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
   - rule_id: RET-05
     name: {en: "Probability of profit", zh: "盈利概率"}
     description: {en: "POP (probability of profit), roughly the chance the trade makes money, often approximated as 1 minus |Delta|. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "POP（盈利概率），这笔交易赚钱的大致概率，常用 1 减 |Delta| 近似。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
-    weight: 3
     method: "computed"
     quantifiable: "yes"
     status: "todo"
@@ -889,7 +1133,6 @@ rule_list:
   - rule_id: POS-01
     name: {en: "Option level", zh: "期权权限"}
     description: {en: "Your brokerage account must have enough option permission: level 2 allows cash-secured puts and covered calls, level 3 allows spreads (the exact levels depend on the broker). Without it the order is rejected. Source: your brokerage account; not public data.", zh: "你的券商账户必须有足够的期权权限：2 级可以做现金担保 Put 和 Covered Call，3 级可以做价差（具体级别因券商而异）。没有权限，下单会被拒绝。数据来源：你的券商账户，不是公开数据。"}
-    weight: 5
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -897,7 +1140,6 @@ rule_list:
   - rule_id: POS-02
     name: {en: "No leverage", zh: "零杠杆"}
     description: {en: "No borrowed money, and every short put is backed by enough cash (cash-secured). Source: your brokerage account.", zh: "不借钱，并且每个卖出的 Put 都有足够现金担保（现金担保）。数据来源：你的券商账户。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -905,7 +1147,6 @@ rule_list:
   - rule_id: POS-03
     name: {en: "Cash reserve", zh: "现金储备"}
     description: {en: "Keep at least 30% of net value in cash to handle assignment and swings. Source: your brokerage account.", zh: "账户里至少保留净值 30% 的现金，用来应对被行权和行情波动。数据来源：你的券商账户。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -913,7 +1154,6 @@ rule_list:
   - rule_id: POS-04
     name: {en: "Cash to cover assignment", zh: "覆盖行权的现金"}
     description: {en: "If assigned you must pay strike times 100 per contract to buy the shares, so cash must be at least that amount. Without it do not open the trade. Source: your brokerage account.", zh: "被行权时每张合约要拿出行权价 × 100 的现金买入股票，所以现金至少要有这个数。现金不够就不该开仓。数据来源：你的券商账户。"}
-    weight: 5
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -921,7 +1161,6 @@ rule_list:
   - rule_id: POS-05
     name: {en: "Total put exposure", zh: "Put 总敞口"}
     description: {en: "Notional exposure (strike times 100 times contracts) of all your short puts, including the new one, must not exceed 70% of net value. It is the amount you would have to buy if everything were assigned. Source: your brokerage account.", zh: "你所有卖出的 Put（含新仓）的名义敞口（行权价 × 100 × 张数）不能超过净值的 70%。这是全部被行权时需要买入的总金额。数据来源：你的券商账户。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -929,7 +1168,6 @@ rule_list:
   - rule_id: POS-06
     name: {en: "Single-stock exposure", zh: "单股敞口"}
     description: {en: "Notional exposure to any one stock must stay under 35% of net value, to avoid concentration. Source: your brokerage account.", zh: "对任何一只股票的名义敞口不能超过净值的 35%，避免过度集中。数据来源：你的券商账户。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -937,7 +1175,6 @@ rule_list:
   - rule_id: POS-07
     name: {en: "Sector exposure", zh: "板块敞口"}
     description: {en: "One sector must not exceed 50% of total exposure, so one sector's trouble does not hurt everything. Source: your brokerage account.", zh: "同一板块的敞口不能超过总敞口的 50%，避免一个板块出事时全线受损。数据来源：你的券商账户。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -945,7 +1182,6 @@ rule_list:
   - rule_id: POS-08
     name: {en: "Max loss per trade", zh: "单笔最大亏损"}
     description: {en: "The worst loss on one trade, measured to the stop, must not exceed 2% of net value. This is the most basic risk control. Source: your brokerage account.", zh: "单笔交易到止损为止的最大亏损不能超过净值的 2%，这是最基本的风控。数据来源：你的券商账户。"}
-    weight: 5
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -953,7 +1189,6 @@ rule_list:
   - rule_id: POS-09
     name: {en: "Single option size", zh: "单只期权仓位"}
     description: {en: "A single option position you buy must be at most 10% of net value, because it can go to zero. Source: your brokerage account.", zh: "你买入的单只期权仓位不能超过净值的 10%，因为它可能归零。数据来源：你的券商账户。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -961,7 +1196,6 @@ rule_list:
   - rule_id: POS-10
     name: {en: "Long premium total", zh: "多头权利金总额"}
     description: {en: "Total premium paid for long options must stay under 20% of net value, so many small bets cannot add up to a large loss. Source: your brokerage account.", zh: "买入期权支付的权利金总额不能超过净值的 20%，防止多笔小额亏损累计成大额亏损。数据来源：你的券商账户。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -969,7 +1203,6 @@ rule_list:
   - rule_id: POS-11
     name: {en: "Spread switch", zh: "改用价差"}
     description: {en: "When one leg ties up more than 20% of net value, switch to a spread (buying a farther option to cap the risk). Source: your brokerage account.", zh: "单腿占用的资金超过净值的 20% 时，改用价差（再买一张更远的期权把风险封顶）。数据来源：你的券商账户。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -977,7 +1210,6 @@ rule_list:
   - rule_id: POS-12
     name: {en: "Scale in", zh: "分批建仓"}
     description: {en: "Build the position in 2 or more steps instead of all at once, so you do not buy at the worst price. A trade plan item.", zh: "分 2 批或更多批建仓，不要一次买满，避免买在最差的价位。这是交易计划里的一项。"}
-    weight: 2
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -985,7 +1217,6 @@ rule_list:
   - rule_id: POS-13
     name: {en: "Covered Call size", zh: "Covered Call 张数"}
     description: {en: "Covered call contracts must equal shares owned divided by 100, never more; otherwise the extra calls are naked (uncovered). Source: your brokerage account.", zh: "Covered Call 的张数必须等于持股数除以 100，不能多；多出的部分就成了裸卖（没有股票覆盖）。数据来源：你的券商账户。"}
-    weight: 5
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -993,21 +1224,18 @@ rule_list:
   - rule_id: POS-14
     name: {en: "Portfolio Greeks", zh: "组合希腊字母"}
     description: {en: "The Greeks of the whole option book: Delta (direction), Vega (sensitivity to volatility), Theta (daily time decay) and beta-weighted Delta (everything converted to S&P 500 equivalent). Thresholds differ by person. Source: your brokerage account, or computed from positions and option chains.", zh: "整个期权组合的希腊字母：Delta（方向敞口）、Vega（对波动率的敏感度）、Theta（每日时间损耗）和 beta 加权 Delta（统一折算成标普 500 的等价敞口）。阈值因人而异。数据来源：你的券商账户，或由持仓和期权链计算。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
   - rule_id: POS-15
     name: {en: "Margin usage", zh: "保证金占用"}
     description: {en: "How much of your margin or buying power is already used. If it is too full, a market swing can force the broker to close positions. Many traders stay under half. Source: your brokerage account.", zh: "已经用掉多少保证金或购买力。用得太满，行情一波动，券商可能强制平仓。很多交易者控制在一半以内。数据来源：你的券商账户。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
   - rule_id: POS-16
     name: {en: "Correlation and stress", zh: "相关性与压力测试"}
     description: {en: "Whether your positions move together (correlation), and how much you would lose in a stress test such as a 20% drop with volatility up 50%. Thresholds differ by person. Source: your brokerage account, calculated.", zh: "你的持仓是否同涨同跌（相关性），以及压力测试下会亏多少，比如标的下跌 20% 且波动率上升 50%。阈值因人而异。数据来源：你的券商账户，自行计算。"}
-    weight: 2
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1015,21 +1243,18 @@ rule_list:
   - rule_id: THS-01
     name: {en: "Circle of competence", zh: "能力圈"}
     description: {en: "You can explain in plain words how the company makes money. If you cannot, stay away. Source: your own judgment.", zh: "你能用大白话说清这家公司怎么赚钱。说不清的公司不要碰。数据来源：你自己的判断。"}
-    weight: 3
     method: "manual"
     quantifiable: "no"
     status: "no_data"
   - rule_id: THS-02
     name: {en: "Written thesis", zh: "书面逻辑"}
     description: {en: "Write down the reason before you open: why you trade and what you expect. If you cannot write it, it is probably an impulse. Source: your own notes.", zh: "开仓前把理由写下来：为什么做、预期什么。写不出来多半是冲动。数据来源：你自己的记录。"}
-    weight: 4
     method: "manual"
     quantifiable: "no"
     status: "no_data"
   - rule_id: THS-03
     name: {en: "Willing to hold", zh: "愿意持有"}
     description: {en: "Selling a put may leave you owning the stock, so you must be willing to hold it for the long term. Source: your own answer.", zh: "卖 Put 可能让你被行权接下股票，所以你必须愿意长期持有它。数据来源：你自己的回答。"}
-    weight: 5
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1037,7 +1262,6 @@ rule_list:
   - rule_id: THS-04
     name: {en: "Trade purpose", zh: "交易目的"}
     description: {en: "Be clear whether the trade is to earn rent (the premium) or to buy the stock. The purpose changes how you manage it. Source: your own answer.", zh: "要清楚这笔交易是想收租金（权利金），还是想接盘买股。目的不同，处理方式也不同。数据来源：你自己的回答。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1045,14 +1269,12 @@ rule_list:
   - rule_id: THS-05
     name: {en: "Falsification", zh: "证伪条件"}
     description: {en: "Write down what would prove you wrong, and exit when it happens instead of finding reasons afterwards. For it to be testable, state it as a price or indicator, such as a close below a moving average. Source: your own notes.", zh: "写下什么情况证明你的判断错了，发生时就认错离场，不要事后找理由。要能检验，就写成价格或指标，比如收盘跌破某条均线。数据来源：你自己的记录。"}
-    weight: 5
     method: "manual"
     quantifiable: "part"
     status: "no_data"
   - rule_id: THS-06
     name: {en: "Sleep test", zh: "睡眠测试"}
     description: {en: "Ask whether you could still sleep if the stock fell to its 52-week low. Convert the loss into dollars and a share of net value. Source: your own answer.", zh: "问自己：股价跌到 52 周低点时，你还睡得着觉吗？把亏损换算成金额和占净值的比例。数据来源：你自己的回答。"}
-    weight: 3
     method: "manual"
     quantifiable: "part"
     status: "no_data"
@@ -1060,7 +1282,6 @@ rule_list:
   - rule_id: THS-07
     name: {en: "Trade frequency", zh: "出手频率"}
     description: {en: "Passes when you made at most 2 trades in the last 30 days. Trading too often usually means chasing prices. Source: your trade records.", zh: "近 30 天出手不超过 2 次时通过。出手过于频繁通常说明在追涨杀跌。数据来源：你的成交记录。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1069,7 +1290,6 @@ rule_list:
   - rule_id: EXT-01
     name: {en: "Seller take profit", zh: "卖方止盈"}
     description: {en: "Sellers buy the option back once half (50%) or 70% of the premium is earned, to lock in the profit and free the capital. Source: a trade plan, with prices from the option chain.", zh: "卖方赚到一半（50%）或七成权利金时买回平仓，把利润落袋，释放资金。数据来源：交易计划，价格来自期权链。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1077,7 +1297,6 @@ rule_list:
   - rule_id: EXT-02
     name: {en: "Buyer take profit", zh: "买方止盈"}
     description: {en: "Buyers take profit once the option is up 60% or 100%, so gains do not melt away. Source: a trade plan, with prices from the option chain.", zh: "买方在期权上涨 60% 或 100% 时止盈，避免利润回吐。数据来源：交易计划，价格来自期权链。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1085,7 +1304,6 @@ rule_list:
   - rule_id: EXT-03
     name: {en: "Stop loss", zh: "止损"}
     description: {en: "Close the trade when the loss reaches 2 times the premium collected. Source: a trade plan, with prices from the option chain.", zh: "亏损达到收取权利金的 2 倍时平仓离场。数据来源：交易计划，价格来自期权链。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1093,7 +1311,6 @@ rule_list:
   - rule_id: EXT-04
     name: {en: "Buyer stop", zh: "买方止损"}
     description: {en: "For buyers: if the stock has reached your target but the option still loses money, time decay or falling volatility is hurting you, so exit. Source: a trade plan.", zh: "买方：正股已经到了目标位，但期权仍然亏损，说明时间损耗或波动率下降在拖累你，应该离场。数据来源：交易计划。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1101,7 +1318,6 @@ rule_list:
   - rule_id: EXT-05
     name: {en: "Time stop or roll", zh: "时间止损或展期"}
     description: {en: "With 21 days left, either close early or roll (close and reopen further out in time), to avoid the sharp swings near expiration. Source: a trade plan, with dates from the option chain.", zh: "剩 21 天左右时，要么提前平仓，要么展期（平掉后在更远的到期日重新开仓），避免临近到期的剧烈波动。数据来源：交易计划，日期来自期权链。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1109,7 +1325,6 @@ rule_list:
   - rule_id: EXT-06
     name: {en: "Holding period", zh: "持有期"}
     description: {en: "Decide how long you will hold in advance: 3 to 10 days for buyers, at least six months for the SPMO rotation. Source: a trade plan.", zh: "事先定好持有多久：买方 3–10 天，SPMO 轮动至少半年。数据来源：交易计划。"}
-    weight: 2
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1117,7 +1332,6 @@ rule_list:
   - rule_id: EXT-07
     name: {en: "Rebalance execution", zh: "换仓执行"}
     description: {en: "On the SPMO rebalance day, trade at the closing price so execution stays consistent. Source: a trade plan.", zh: "在 SPMO 换仓日用收盘价执行，保持执行方式一致。数据来源：交易计划。"}
-    weight: 1
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1125,7 +1339,6 @@ rule_list:
   - rule_id: EXT-08
     name: {en: "Covered Call plan", zh: "Covered Call 计划"}
     description: {en: "Once you hold the shares, plan the covered calls in advance rather than just holding. Source: a trade plan.", zh: "持股后要提前计划卖 Covered Call，而不是被动持有。数据来源：交易计划。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1133,7 +1346,6 @@ rule_list:
   - rule_id: EXT-09
     name: {en: "Covered Call strike floor", zh: "Covered Call 行权价下限"}
     description: {en: "The covered call strike must be at or above your cost basis (what you paid for the shares), so assignment does not lock in a loss. Source: your brokerage account.", zh: "Covered Call 的行权价必须不低于你的成本价（买入股票时的成本），这样被行权不会锁定亏损。数据来源：你的券商账户。"}
-    weight: 4
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
@@ -1141,7 +1353,6 @@ rule_list:
   - rule_id: EXT-10
     name: {en: "Cost basis check", zh: "成本价检查"}
     description: {en: "Passes when cost basis is at most 1.15 times the current price; if it is much higher, pause covered calls so you are not assigned at a low price and lock in a loss. Source: your brokerage account.", zh: "成本价不超过现价的 1.15 倍时通过；成本比现价高很多时，先暂停卖 Covered Call，避免在低价被行权而锁定亏损。数据来源：你的券商账户。"}
-    weight: 3
     method: "manual"
     quantifiable: "yes"
     status: "no_data"
