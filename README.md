@@ -23,22 +23,22 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 
 | Path | What |
 |---|---|
-| `config/rules.yaml` | every rule, defined once; strategies reference rules by id |
+| `config/rules.yaml` | every rule, defined once, in 15 categories from macro to detail (190 rules: 156 with a data source, 34 manual; 154 can be backtested); strategies reference rules by id |
 | `config/settings.yaml` | refresh interval, indicator cards, watchlist, option expiration windows |
-| `strategies/*.yaml` | strategies: gates, rules, weights (see `docs/strategy.md`) |
+| `strategies/*.yaml` | strategies: gates, rules, per-strategy weights and veto flags (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, shape and states, five element families, status badges, layout) |
 | `docs/indicator.md` | every indicator, its meaning and source |
 | `docs/language.md` | English and Chinese glossary and writing rules |
 | `docs/strategy.md` | strategy file format, scoring, pass veto |
 | `stockboard_backend/` | Python package, one module per job, function names are `module_verb_object` |
-| `static/index.html`, `static/rules.html`, `static/base.css`, `static/language.js` | dashboard, rule catalog page (`/rules`), shared design tokens, interface text in both languages |
+| `static/index.html`, `static/rules.html`, `static/base.css`, `static/language.js`, `static/rule-card.js` | dashboard, rule catalog page (`/rules`), shared design tokens, interface text in both languages, the hover card that shows a rule's full record |
 | `docs/deployment.md` | where it runs (Oracle VM, Tailscale), the firewall, how to operate and update it |
 | `docs/api.md` | JSON API (`/api/v1`) for the page and any future client |
 | `.claude/skills/` | skills that point Claude at the design and strategy docs |
 
 ## Two results per symbol
 
-- **Pass**: false if any weight 5 rule fails (veto).
+- **Pass**: false if any rule marked `veto: true` fails.
 - **Score**: weighted share of passed rules, 0 to 100.
 
 They are independent. Rules with missing data show 未知 and are left out of the score. Option rules need live bid and ask quotes, so they show 未知 while the market is closed.

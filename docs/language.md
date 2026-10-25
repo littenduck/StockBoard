@@ -5,7 +5,7 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 
 ## Writing both languages
 
-- Every text in `config/rules.yaml`, `strategies/*.yaml` and `config/settings.yaml` that a person reads is an object `{en: "...", zh: "..."}`. Both are required and non-empty; the app refuses to start otherwise.
+- Every text in `config/rules.yaml`, `strategies/*.yaml` and `config/settings.yaml` that a person reads is an object `{en: "...", zh: "..."}`. Both are required and non-empty; the app refuses to start otherwise. A rule has a short `name` and a longer `description`, both `{en, zh}`; the description spells out every abbreviation (FOMC, CPI, IV and so on) and names the data source. The `quantifiable` field is English only.
 - English must not contain Chinese characters. Use the glossary below; do not invent variants.
 - Technical terms stay English in both languages: GATE, VIX, SPX, DTE, IV, RV30, FGI, HY, bp, Delta, Put, Call.
 - Interface strings live in `static/language.js` (`UI_TEXT`), with the same rule.
@@ -14,4 +14,18 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 ## Glossary
 
 | 中文 | English |
-|
+|---|---|
+| 权重 | weight |
+| 一票否决 | veto |
+| 分档 | tier |
+| 阈值 | threshold |
+| 通过 | pass |
+| 不通过 | fail |
+| 未知 | unknown |
+| 低于 | below |
+| 不高于 | at most |
+| 高于 | above |
+| 不低于 | at least |
+| 介于 … 之间 | between |
+| 规则 | rule |
+| 策略 | strategy |

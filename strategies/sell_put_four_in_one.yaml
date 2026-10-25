@@ -13,7 +13,7 @@ help:
 
     Order of evaluation: GATE 0 macro and sentiment (rates, credit spread, VIX, market trend) → GATE 1 stock screen (no earnings before expiration, 52-week position, 200-day average) → GATE 2 contract (in each expiration window, take the out-of-the-money Put with Delta closest to 0.25, then check Delta, DTE, annualized return and whether IV is above realized volatility).
 
-    Rules with weight 5 (currently A22, no earnings before expiration) veto the result. Capital structure (GATE 3) and position limits (GATE 4) need account data and are not built yet.
+    A veto rule (currently EVT-01, no earnings before expiration) forces a fail when it fails. Capital structure (GATE 3) and position limits (GATE 4) need account data and are not built yet.
 
     Option quotes are live only while the US market is open; while it is closed GATE 2 shows Unknown. Not investment advice.
   zh: |
@@ -23,41 +23,41 @@ help:
 
     评估顺序：GATE 0 宏观/情绪开关（利率、信用利差、VIX、大盘趋势）→ GATE 1 标的筛选（到期前无财报、52 周位置、200 日均线）→ GATE 2 合约选择（在每个到期窗口里选 Delta 最接近 0.25 的虚值 Put，再看 Delta、DTE、年化收益、IV 是否高于实际波动）。
 
-    权重 5 的规则（目前是 A22「到期前无财报」）一票否决。资金结构（GATE 3）和仓位上限（GATE 4）需要账户数据，这一版没有接入。
+    一票否决规则（目前是 EVT-01「到期前无财报」）不通过时，结果就是不通过。资金结构（GATE 3）和仓位上限（GATE 4）需要账户数据，这一版没有接入。
 
     期权数据只在美股开盘时有实时报价，休市时 GATE 2 显示「未知」。不构成投资建议。
 # Not built yet (need account data or manual answers): GATE 3 capital structure,
 # GATE 4 position limits, rules tagged ASK / PLAN, Fed / FOMC / CPI / oil rules.
-# Rules are defined in config/rules.yaml; here only the id, this strategy's weight and the variant group.
-# Variant groups: list the loose rule first, the strict rule after it.
+# Rules are defined in config/rules.yaml; here only the id, this strategy's weight and an optional veto flag.
+# A measure with several lines (VIX, Delta, DTE ...) is listed as several rules; each line the value passes adds its weight.
 gates:
   - gate_id: gate_0_macro
     display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}
     rules:
-      - {rule_id: A07, weight: 2, variant_group: ten_year_level}
-      - {rule_id: A02, weight: 4, variant_group: ten_year_level}
-      - {rule_id: A03, weight: 3}
-      - {rule_id: A04, weight: 4}
-      - {rule_id: A08, weight: 2, variant_group: fear_greed}
-      - {rule_id: A09, weight: 2, variant_group: fear_greed}
-      - {rule_id: A10, weight: 3, variant_group: vix_floor}
-      - {rule_id: A11, weight: 3, variant_group: vix_floor}
-      - {rule_id: Z18, weight: 4}
-      - {rule_id: Z19, weight: 3}
+      - {rule_id: MAC-13, weight: 2}   # 10Y below 5.0%
+      - {rule_id: MAC-03, weight: 2}   # 10Y below 4.5%
+      - {rule_id: MAC-04, weight: 3}   # 10Y 20-day rise below 25bp
+      - {rule_id: MAC-05, weight: 4}   # HY spread below 400bp
+      - {rule_id: SEN-17, weight: 1}   # Fear and Greed at most 55
+      - {rule_id: SEN-16, weight: 1}   # Fear and Greed below 45
+      - {rule_id: SEN-10, weight: 1}   # VIX at least 12
+      - {rule_id: SEN-01, weight: 2}   # VIX at least 15
+      - {rule_id: TRD-01, weight: 4}   # Market above 200-day
+      - {rule_id: SEN-02, weight: 3}   # VIX term structure
   - gate_id: gate_1_underlying
     display_name: {en: "GATE 1 Stock screen", zh: "GATE 1 标的筛选"}
     rules:
-      - {rule_id: A22, weight: 5}
-      - {rule_id: F03, weight: 2, variant_group: range_position}
-      - {rule_id: F02, weight: 3, variant_group: range_position}
-      - {rule_id: Z20, weight: 3}
+      - {rule_id: EVT-01, weight: 5, veto: true}   # No earnings
+      - {rule_id: TRD-18, weight: 1}   # 52-week position at most 50
+      - {rule_id: TRD-07, weight: 2}   # 52-week position at most 25
+      - {rule_id: TRD-03, weight: 3}   # Stock above 200-day
   - gate_id: gate_2_contract
     display_name: {en: "GATE 2 Contract", zh: "GATE 2 合约选择"}
     per_expiration_window: true   # evaluated once per window in settings.yaml, best window wins
     rules:
-      - {rule_id: B03, weight: 4, variant_group: delta_range}
-      - {rule_id: B04, weight: 3, variant_group: delta_range}
-      - {rule_id: B07, weight: 4}
-      - {rule_id: A21, weight: 3, variant_group: annualized_return}
-      - {rule_id: E08, weight: 2, variant_group: annualized_return}
-      - {rule_id: Z05, weight: 4}
+      - {rule_id: CTR-11, weight: 3}   # Delta 0.15 to 0.30
+      - {rule_id: CTR-01, weight: 1}   # Delta 0.15 to 0.20
+      - {rule_id: CTR-02, weight: 4}   # DTE 30 to 45
+      - {rule_id: RET-06, weight: 2}   # Annualized return at least 8%
+      - {rule_id: RET-01, weight: 1}   # Annualized return at least 20%
+      - {rule_id: VOL-03, weight: 4}   # IV vs realized

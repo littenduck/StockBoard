@@ -26,16 +26,16 @@ gates:
   - gate_id: gate_0_market
     display_name: {en: "GATE 0 Market", zh: "GATE 0 市场环境"}
     rules:
-      - {rule_id: Z18, weight: 3}
-      - {rule_id: T01, weight: 2}
+      - {rule_id: TRD-01, weight: 3}   # Market above 200-day
+      - {rule_id: SEN-12, weight: 2}   # VIX below 25
   - gate_id: gate_1_momentum
     display_name: {en: "GATE 1 Trend and momentum", zh: "GATE 1 趋势与动量"}
     rules:
-      - {rule_id: M01, weight: 4}
-      - {rule_id: T02, weight: 4}
+      - {rule_id: TRD-08, weight: 4}   # 6-month gain
+      - {rule_id: TRD-04, weight: 4}   # Golden cross state
   - gate_id: gate_2_breakout
     display_name: {en: "GATE 2 Breakout", zh: "GATE 2 突破确认"}
     rules:
-      - {rule_id: M02, weight: 5}
-      - {rule_id: M03, weight: 3}
-      - {rule_id: M04, weight: 2}
+      - {rule_id: TRD-06, weight: 5, veto: true}   # Within 5% of 52-week high
+      - {rule_id: TRD-10, weight: 3}   # Volume surge
+      - {rule_id: TRD-19, weight: 2}   # RSI(14) below 80

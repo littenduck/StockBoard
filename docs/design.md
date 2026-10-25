@@ -50,7 +50,7 @@ Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows, except the one soft shadow under the rule hover card, which floats over the page.
 
 ## Status
 
@@ -111,6 +111,10 @@ Text is done by tags. There are 7 element classes (6 styled in `base.css` plus `
 | Helper | `.icon` (16px svg, `flex:none`), `.placeholder` (loading row, `--separator` fill), `.is-target` (row named by the URL hash), `.panel-enter` (fade-in animation, page-local in `index.html`) | icons, loading rows, rule row from the hash, main panel on symbol change |
 
 Layout-only containers (not elements, styled by the page only for layout): page grid (`.layout`), `aside`, `main`, `#strategy-help` (the popover, a `.box`), `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.usage`, `.rule-meta`, dividers.
+
+## Rule hover card
+
+Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), name (`h3`) and description (`p`), each with its English companion in Chinese mode. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`). The full record of every field is on the rule catalog page, where each rule row shows its name and description, then a grid of every other field in `config/rules.yaml` order (a `small` field name above a `p` value, a gray dash when empty, `band_of` as a link, identifiers breaking at underscores) and a last line for `note` and `used_by` (strategy chips with weight and veto). The grid fills as many columns as fit, two on a phone. Built by `static/rule-card.js` from `/api/v1/rules`.
 
 ## Language
 

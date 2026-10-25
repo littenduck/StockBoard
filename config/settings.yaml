@@ -36,5 +36,49 @@ market_holiday_list: [
 # NYSE days that close at 13:00 ET. 2027 not yet listed: add from the NYSE calendar.
 market_early_close_list: [2026-11-27, 2026-12-24]
 
-# Kept by hand, for example [{event_name: FOMC, event_date: "2026-12-09"}]
-macro_event_calendar: []
+# Release calendar for the event rules, kept by hand from the official schedules (Fed: federalreserve.gov/monetarypolicy/fomccalendars.htm;
+# CPI and jobs: bls.gov/schedule/news_release; PCE: bea.gov/news/schedule). The 2027 FOMC dates are tentative until the Fed confirms them.
+# An event rule reads unknown when its window reaches past macro_event_covered_until, so add the next year's dates before that day.
+macro_event_covered_until: {FOMC: 2027-12-31, CPI: 2027-12-31, JOBS: 2027-12-31, PCE: 2026-12-31}
+macro_event_calendar:
+  - {event_name: FOMC, event_date: "2026-10-27", event_end_date: "2026-10-28"}
+  - {event_name: FOMC, event_date: "2026-12-08", event_end_date: "2026-12-09"}
+  - {event_name: FOMC, event_date: "2027-01-26", event_end_date: "2027-01-27"}
+  - {event_name: FOMC, event_date: "2027-03-16", event_end_date: "2027-03-17"}
+  - {event_name: FOMC, event_date: "2027-04-27", event_end_date: "2027-04-28"}
+  - {event_name: FOMC, event_date: "2027-06-08", event_end_date: "2027-06-09"}
+  - {event_name: FOMC, event_date: "2027-07-27", event_end_date: "2027-07-28"}
+  - {event_name: FOMC, event_date: "2027-09-14", event_end_date: "2027-09-15"}
+  - {event_name: FOMC, event_date: "2027-10-26", event_end_date: "2027-10-27"}
+  - {event_name: FOMC, event_date: "2027-12-07", event_end_date: "2027-12-08"}
+  - {event_name: CPI, event_date: "2026-11-10"}
+  - {event_name: CPI, event_date: "2026-12-10"}
+  - {event_name: CPI, event_date: "2027-01-13"}
+  - {event_name: CPI, event_date: "2027-02-11"}
+  - {event_name: CPI, event_date: "2027-03-10"}
+  - {event_name: CPI, event_date: "2027-04-13"}
+  - {event_name: CPI, event_date: "2027-05-12"}
+  - {event_name: CPI, event_date: "2027-06-10"}
+  - {event_name: CPI, event_date: "2027-07-14"}
+  - {event_name: CPI, event_date: "2027-08-11"}
+  - {event_name: CPI, event_date: "2027-09-14"}
+  - {event_name: CPI, event_date: "2027-10-14"}
+  - {event_name: CPI, event_date: "2027-11-10"}
+  - {event_name: CPI, event_date: "2027-12-10"}
+  - {event_name: JOBS, event_date: "2026-11-06"}
+  - {event_name: JOBS, event_date: "2026-12-04"}
+  - {event_name: JOBS, event_date: "2027-01-08"}
+  - {event_name: JOBS, event_date: "2027-02-05"}
+  - {event_name: JOBS, event_date: "2027-03-05"}
+  - {event_name: JOBS, event_date: "2027-04-02"}
+  - {event_name: JOBS, event_date: "2027-05-07"}
+  - {event_name: JOBS, event_date: "2027-06-04"}
+  - {event_name: JOBS, event_date: "2027-07-02"}
+  - {event_name: JOBS, event_date: "2027-08-06"}
+  - {event_name: JOBS, event_date: "2027-09-03"}
+  - {event_name: JOBS, event_date: "2027-10-08"}
+  - {event_name: JOBS, event_date: "2027-11-05"}
+  - {event_name: JOBS, event_date: "2027-12-03"}
+  - {event_name: PCE, event_date: "2026-10-29"}
+  - {event_name: PCE, event_date: "2026-11-25"}
+  - {event_name: PCE, event_date: "2026-12-23"}

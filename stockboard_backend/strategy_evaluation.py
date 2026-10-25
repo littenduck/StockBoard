@@ -8,7 +8,6 @@ STATUS_PASS = "pass"
 STATUS_FAIL = "fail"
 STATUS_UNKNOWN = "unknown"
 STATUS_NOT_APPLICABLE = "not_applicable"
-VETO_WEIGHT = 5
 
 
 @dataclass
@@ -23,12 +22,15 @@ class IndicatorValue:
 @dataclass
 class RuleDefinition:
     rule_id: str
+    name: LocalizedText
     description: LocalizedText
-    indicator: str
-    operator: str
+    indicator: Optional[str]
+    operator: Optional[str]
     weight: int
     value: Any = None
-    variant_group: Optional[str] = None
+    veto: bool = False
+    method: Optional[str] = None
+    status: Optional[str] = None
 
 
 @dataclass
@@ -58,11 +60,12 @@ class StrategyDefinition:
 @dataclass
 class RuleEvaluationResult:
     rule_id: str
-    description: LocalizedText
+    name: LocalizedText
     status: str
     measured_value: Any
     weight: int
-    variant_group: Optional[str] = None
+    veto: bool = False
+    method: Optional[str] = None
 
 
 @dataclass
@@ -89,10 +92,11 @@ def strategy_evaluation_evaluate_rule_against_indicator_values(
     rule_definition: RuleDefinition,
     indicator_value_by_id: Dict[str, IndicatorValue],
 ) -> RuleEvaluationResult:
-    indicator_value = indicator_value_by_id.get(rule_definition.indicator)
+    indicator_value = indicator_value_by_id.get(rule_definition.indicator) if rule_definition.indicator else None
     measured_value = None if indicator_value is None else indicator_value.value
     status = STATUS_UNKNOWN
-    if measured_value is not None:
+    # A rule without an indicator or without a line to test (a manual rule, a rule not built yet) stays unknown.
+    if measured_value is not None and rule_definition.operator is not None:
         operator, threshold = rule_definition.operator, rule_definition.value
         if operator == "less_than":
             is_satisfied = measured_value < threshold
@@ -111,44 +115,21 @@ def strategy_evaluation_evaluate_rule_against_indicator_values(
         status = STATUS_PASS if is_satisfied else STATUS_FAIL
     return RuleEvaluationResult(
         rule_id=rule_definition.rule_id,
-        description=rule_definition.description,
+        name=rule_definition.name,
         status=status,
         measured_value=measured_value,
         weight=rule_definition.weight,
-        variant_group=rule_definition.variant_group,
+        veto=rule_definition.veto,
+        method=rule_definition.method,
     )
-
-
-def strategy_evaluation_apply_variant_group_strictest_pass(
-    rule_result_list: List[RuleEvaluationResult],
-) -> List[RuleEvaluationResult]:
-    """Rules in one variant group are listed loose to strict. Keep only the strictest passing one;
-    if none pass, keep only the loosest one. The others become not_applicable."""
-    member_list_by_group: Dict[str, List[RuleEvaluationResult]] = {}
-    for rule_result in rule_result_list:
-        if rule_result.variant_group:
-            member_list_by_group.setdefault(rule_result.variant_group, []).append(rule_result)
-    kept_rule_id_set = set()
-    for member_list in member_list_by_group.values():
-        passing_list = [member for member in member_list if member.status == STATUS_PASS]
-        kept_rule_id_set.add((passing_list[-1] if passing_list else member_list[0]).rule_id)
-    adjusted_list = []
-    for rule_result in rule_result_list:
-        is_dropped = rule_result.variant_group and rule_result.rule_id not in kept_rule_id_set
-        adjusted_list.append(
-            RuleEvaluationResult(**{**rule_result.__dict__, "status": STATUS_NOT_APPLICABLE})
-            if is_dropped else rule_result
-        )
-    return adjusted_list
 
 
 def strategy_evaluation_determine_pass_from_rule_results(
     rule_result_list: List[RuleEvaluationResult],
 ) -> Optional[bool]:
-    """Veto: any failed weight 5 rule gives False. All weight 5 rules passing gives True.
-    Unknown weight 5 rules with no failure give None."""
-    veto_status_list = [r.status for r in rule_result_list
-                        if r.weight == VETO_WEIGHT and r.status != STATUS_NOT_APPLICABLE]
+    """Veto: any failed rule marked veto gives False. All veto rules passing gives True.
+    Unknown veto rules with no failure give None."""
+    veto_status_list = [r.status for r in rule_result_list if r.veto and r.status != STATUS_NOT_APPLICABLE]
     if STATUS_FAIL in veto_status_list:
         return False
     if STATUS_UNKNOWN in veto_status_list:
@@ -167,8 +148,10 @@ def strategy_evaluation_calculate_strategy_score_percent_from_rule_results(
 def strategy_evaluation_calculate_unknown_weight_ratio_from_rule_results(
     rule_result_list: List[RuleEvaluationResult],
 ) -> float:
-    counted_weight = sum(r.weight for r in rule_result_list if r.status != STATUS_NOT_APPLICABLE)
-    unknown_weight = sum(r.weight for r in rule_result_list if r.status == STATUS_UNKNOWN)
+    """Manual rules are always unknown, so they are left out; otherwise one manual rule would grey every score."""
+    counted_list = [r for r in rule_result_list if r.status != STATUS_NOT_APPLICABLE and r.method != "manual"]
+    counted_weight = sum(r.weight for r in counted_list)
+    unknown_weight = sum(r.weight for r in counted_list if r.status == STATUS_UNKNOWN)
     return 0.0 if counted_weight == 0 else round(unknown_weight / counted_weight, 3)
 
 
@@ -176,10 +159,10 @@ def strategy_evaluation_evaluate_gate_from_indicator_values(
     gate_definition: GateDefinition,
     indicator_value_by_id: Dict[str, IndicatorValue],
 ) -> GateEvaluationResult:
-    rule_result_list = strategy_evaluation_apply_variant_group_strictest_pass([
+    rule_result_list = [
         strategy_evaluation_evaluate_rule_against_indicator_values(rule, indicator_value_by_id)
         for rule in gate_definition.rule_list
-    ])
+    ]
     return GateEvaluationResult(
         gate_id=gate_definition.gate_id,
         display_name=gate_definition.display_name,
