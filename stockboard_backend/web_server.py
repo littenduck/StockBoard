@@ -137,7 +137,8 @@ def web_server_get_rule_catalog() -> dict:
         "rule_list": [{
             "rule_id": entry.rule_id, "name": dataclasses.asdict(entry.name),
             "description": dataclasses.asdict(entry.description), "method": entry.method,
-            "quantifiable": entry.quantifiable, "backtestable": entry.backtestable, "status": entry.status,
+            "quantifiable": entry.quantifiable, "backtestable": entry.backtestable,
+            "history_source": entry.history_source, "history_start": entry.history_start, "status": entry.status,
             "indicator": entry.indicator,
             "operator": entry.operator, "value": entry.value, "band_of": entry.band_of, "legacy_id": entry.legacy_id,
             "note": dataclasses.asdict(entry.note) if entry.note else None,

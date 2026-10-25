@@ -4,7 +4,7 @@ import pytest
 
 from stockboard_backend import indicator_calculation
 from stockboard_backend.localized_text import CHINESE_CHARACTER_PATTERN, LocalizedText
-from stockboard_backend.rule_catalog import RuleCatalog, RuleCatalogEntry, RuleGroup, \
+from stockboard_backend.rule_catalog import RetiredRule, RuleCatalog, RuleCatalogEntry, RuleGroup, \
     rule_catalog_load_rule_catalog_from_yaml_file, rule_catalog_validate_rule_catalog_against_known_indicators
 from stockboard_backend.settings_loader import PROJECT_DIRECTORY, settings_loader_load_settings_from_yaml_file
 from stockboard_backend.strategy_loader import strategy_loader_build_rule_definition_from_catalog, \
@@ -68,6 +68,23 @@ def test_catalog_validation_finds_problems():
                             build_entry("TST-06", backtestable="maybe"),
                             build_entry("ZZZ-01", indicator="x"))
     assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})) == 7
+
+
+def test_history_fields_follow_the_format():
+    catalog = build_catalog(build_entry("TST-01", history_source="fred:DGS10", history_start="1962-01-02"),
+                            build_entry("TST-02", history_source="fred", history_start="1962"),
+                            build_entry("TST-03", history_source="fred:DGS10"),
+                            build_entry("TST-04", history_source="paid_vendor", history_start="2020-01-01"),
+                            build_entry("TST-05", history_source="fred", history_start="last year"))
+    errors = rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})
+    assert len(errors) == 3 and all(rule_id in " ".join(errors) for rule_id in ("TST-03", "TST-04", "TST-05"))
+
+
+def test_a_retired_id_cannot_come_back():
+    catalog = build_catalog(build_entry("TST-01"))
+    catalog.retired_rule_list = [RetiredRule("TST-01", [], LocalizedText("gone", "没了")), RetiredRule("TST-02", ["A01"], LocalizedText("gone", "没了"))]
+    errors = rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})
+    assert len(errors) == 1 and "TST-01" in errors[0]
 
 
 def test_manual_rules_are_never_backtestable():

@@ -1,4 +1,5 @@
 """Load config/rules.yaml: the one place where every rule is defined. A rule has no weight; strategies give it one."""
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
@@ -13,6 +14,19 @@ METHOD_SET = {"api_fetch", "scrape", "computed", "ai_search", "manual"}
 OPERATOR_SET = {"less_than", "less_or_equal", "greater_than", "greater_or_equal", "between", "is_true"}
 QUANTIFIABLE_SET = {"yes", "part", "no"}
 BACKTESTABLE_SET = {"yes", "no"}
+# history_source is "name" or "name:detail" (for example fred:DGS10); the name must be one of these free sources.
+KNOWN_HISTORY_SOURCE_NAME_SET = {
+    "fred", "alfred", "cboe", "edgar", "dolthub", "yfinance", "cnn", "aaii", "naaim", "finra", "shiller", "damodaran",
+    "gpr", "federalreserve", "sec", "fja05680", "wayback", "ritter", "rule",
+}
+HISTORY_START_PATTERN = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")  # a year, a month or a day
+
+
+@dataclass
+class RetiredRule:
+    rule_id: str
+    legacy_id: List[str]
+    reason: LocalizedText
 
 
 @dataclass
@@ -36,6 +50,8 @@ class RuleCatalogEntry:
     operator: Optional[str] = None
     value: Any = None
     band_of: Optional[str] = None
+    history_source: Optional[str] = None
+    history_start: Optional[str] = None
     legacy_id: List[str] = field(default_factory=list)
     note: Optional[LocalizedText] = None
 
@@ -48,6 +64,7 @@ class RuleCatalogEntry:
 class RuleCatalog:
     rule_group_list: List[RuleGroup]
     rule_entry_by_id: Dict[str, RuleCatalogEntry]
+    retired_rule_list: List[RetiredRule] = field(default_factory=list)
 
 
 def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str) -> RuleCatalog:
@@ -65,9 +82,14 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str) -
         description=localized_text_build_from_raw_value(raw_group.get("description"), "group {} description".format(raw_group["group_id"])),
         aspect=localized_text_build_optional_from_raw_value(raw_group.get("aspect"), "group {} aspect".format(raw_group["group_id"])),
     ) for raw_group in raw["rule_group_list"]]
+    retired_rule_list = [RetiredRule(
+        rule_id=raw_retired["rule_id"], legacy_id=raw_retired.get("legacy_id") or [],
+        reason=localized_text_build_from_raw_value(raw_retired.get("reason"), "retired rule {} reason".format(raw_retired["rule_id"])),
+    ) for raw_retired in raw.get("retired_rule_list") or []]
     return RuleCatalog(
         rule_group_list=group_list,
         rule_entry_by_id={entry.rule_id: entry for entry in entry_list},
+        retired_rule_list=retired_rule_list,
     )
 
 
@@ -93,6 +115,12 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
             error_list.append("rule {} has unknown operator {}".format(entry.rule_id, entry.operator))
         if entry.operator not in (None, "is_true") and entry.value is None:
             error_list.append("rule {} has an operator but no value".format(entry.rule_id))
+        if (entry.history_source is None) != (entry.history_start is None):
+            error_list.append("rule {} needs history_source and history_start together".format(entry.rule_id))
+        if entry.history_source is not None and entry.history_source.split(":")[0] not in KNOWN_HISTORY_SOURCE_NAME_SET:
+            error_list.append("rule {} has unknown history source {}".format(entry.rule_id, entry.history_source))
+        if entry.history_start is not None and not HISTORY_START_PATTERN.match(str(entry.history_start)):
+            error_list.append("rule {} has a bad history_start {}".format(entry.rule_id, entry.history_start))
         if entry.band_of and entry.band_of not in rule_catalog.rule_entry_by_id:
             error_list.append("rule {} points to missing rule {}".format(entry.rule_id, entry.band_of))
         if entry.status == "built":
@@ -100,4 +128,7 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
                 error_list.append("rule {} is built but has no indicator".format(entry.rule_id))
             elif entry.indicator not in known_indicator_id_set:
                 error_list.append("rule {} uses unknown indicator {}".format(entry.rule_id, entry.indicator))
+    for retired in rule_catalog.retired_rule_list:
+        if retired.rule_id in rule_catalog.rule_entry_by_id:
+            error_list.append("retired rule {} is back in the catalog; ids are never reused".format(retired.rule_id))
     return error_list
