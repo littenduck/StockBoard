@@ -90,8 +90,27 @@ def test_a_retired_id_cannot_come_back():
 def test_manual_rules_are_never_backtestable():
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
     for entry in catalog.rule_entry_by_id.values():
-        if entry.method == "manual" and entry.rule_id != "EVT-04":  # EVT-04 is a fixed date list, not an answer from you
+        if entry.method == "manual":
             assert entry.backtestable == "no", entry.rule_id
+
+
+def test_every_backtestable_rule_names_its_free_history():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    for entry in catalog.rule_entry_by_id.values():
+        if entry.backtestable == "yes":
+            assert entry.history_source and entry.history_start, entry.rule_id
+            assert entry.method != "manual" and entry.status != "no_data", entry.rule_id
+            assert entry.operator, entry.rule_id + " has no line to test"
+        else:
+            assert entry.history_source is None and entry.history_start is None, entry.rule_id
+
+
+def test_the_project_catalog_has_no_retired_id_and_keeps_every_legacy_id():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    assert {retired.rule_id for retired in catalog.retired_rule_list} == {"VAL-02", "LIQ-02", "EVT-09"}
+    kept = {legacy for entry in catalog.rule_entry_by_id.values() for legacy in entry.legacy_id}
+    kept |= {legacy for retired in catalog.retired_rule_list for legacy in retired.legacy_id}
+    assert len(kept) == 119
 
 
 def test_todo_rule_may_name_an_indicator_that_does_not_exist_yet():
