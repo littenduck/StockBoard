@@ -27,6 +27,7 @@ SPARKLINE_TRADING_DAY_COUNT = 60
 TREASURY_INDICATOR_ID_LIST = ["treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points"]
 HIGH_YIELD_INDICATOR_ID_LIST = ["high_yield_credit_spread_basis_points"]
 fetch_cache_holder: Dict[str, Optional[FetchCache]] = {"cache": None}
+price_reload_state: Dict[str, Optional[datetime.date]] = {"day": None}
 
 
 def refresh_scheduler_get_fetch_cache(settings: ApplicationSettings) -> FetchCache:
@@ -208,6 +209,34 @@ def refresh_scheduler_build_calendar_indicator_value_by_id(
     return {key: IndicatorValue(key, value, "calendar") for key, value in value_by_id.items() if value is not None}
 
 
+def refresh_scheduler_load_price_history_by_symbol(
+    symbol_list: List[str], fetch_cache: FetchCache,
+) -> Tuple[Dict[str, object], Optional[float]]:
+    """Daily history once a day (and again after the close), with today's bar taken from one batched quote request.
+    Returns (history by symbol, time the prices were taken)."""
+    def download():
+        return market_data.market_data_fetch_daily_price_history_for_symbol_list(symbol_list, HISTORY_PERIOD)
+
+    history_by_symbol, history_fetched_at = fetch_cache.get("yahoo_history", "all", download, default={})
+    quote_by_symbol, quote_fetched_at = fetch_cache.get(
+        "yahoo_quote", "all", lambda: market_data.market_data_fetch_latest_quote_by_symbol(symbol_list), default={})
+    if not quote_by_symbol:
+        return history_by_symbol, history_fetched_at  # the batched request failed: yesterday's close until it works again
+    merged_by_symbol, needs_reload = {}, False
+    for symbol, history in history_by_symbol.items():
+        if symbol in quote_by_symbol:
+            merged_by_symbol[symbol], symbol_needs_reload = market_data.market_data_merge_quote_into_history(history, quote_by_symbol[symbol])
+            needs_reload = needs_reload or symbol_needs_reload
+        else:
+            merged_by_symbol[symbol] = history
+    today = datetime.date.today()
+    if needs_reload and price_reload_state["day"] != today:  # a split or an ex-dividend day: the adjusted history must be loaded again, once a day
+        price_reload_state["day"] = today
+        fetch_cache.force_due("yahoo_history", "all")
+        return refresh_scheduler_load_price_history_by_symbol(symbol_list, fetch_cache)
+    return merged_by_symbol, quote_fetched_at
+
+
 def refresh_scheduler_build_dashboard_snapshot(
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition], fetch_cache: Optional[FetchCache] = None,
 ) -> dict:
@@ -216,9 +245,10 @@ def refresh_scheduler_build_dashboard_snapshot(
     now = time.time()
     today = datetime.date.today()
     failed_symbol_list: List[str] = []
-    market_history_by_symbol, market_fetched_at = fetch_cache.get(
-        "yahoo_quote", "market", lambda: market_data.market_data_fetch_daily_price_history_for_symbol_list(MARKET_GAUGE_SYMBOL_LIST, HISTORY_PERIOD),
-        default={})
+    all_symbol_list = list(dict.fromkeys(MARKET_GAUGE_SYMBOL_LIST + settings.watchlist_symbol_list))
+    history_by_symbol, price_fetched_at = refresh_scheduler_load_price_history_by_symbol(all_symbol_list, fetch_cache)
+    market_history_by_symbol = {symbol: history_by_symbol[symbol] for symbol in MARKET_GAUGE_SYMBOL_LIST if symbol in history_by_symbol}
+    market_fetched_at = price_fetched_at
     ten_year_series, high_yield_series = live_indicators.live_indicators_fetch_treasury_series(fetch_cache)
     shared_indicator_value_by_id = live_indicators.live_indicators_stamp(
         indicator_calculation.indicator_calculation_build_market_indicator_value_by_id(
@@ -236,9 +266,8 @@ def refresh_scheduler_build_dashboard_snapshot(
         live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, "SPY"), None if ten_year_yield is None else ten_year_yield.value))
     shared_indicator_value_by_id = indicator_registry.indicator_registry_drop_stale_values(shared_indicator_value_by_id, registry, now)
 
-    symbol_history_by_symbol, symbol_fetched_at = fetch_cache.get(
-        "yahoo_quote", "watchlist", lambda: market_data.market_data_fetch_daily_price_history_for_symbol_list(
-            settings.watchlist_symbol_list, HISTORY_PERIOD), default={})
+    symbol_history_by_symbol = {symbol: history_by_symbol[symbol] for symbol in settings.watchlist_symbol_list if symbol in history_by_symbol}
+    symbol_fetched_at = price_fetched_at
     symbol_list = [s for s in settings.watchlist_symbol_list if s in symbol_history_by_symbol]
     failed_symbol_list += [s for s in settings.watchlist_symbol_list if s not in symbol_history_by_symbol]
 

@@ -26,6 +26,7 @@ class FetchCache:
         self.clock = clock
         self._entry_by_key: Dict[Tuple[str, Optional[str]], Tuple[float, Any]] = {}
         self._retry_after_by_key: Dict[Tuple[str, Optional[str]], float] = {}
+        self._forced_due_key_set = set()
         self._lock_by_key: Dict[Tuple[str, Optional[str]], threading.Lock] = {}
         self._guard = threading.Lock()
         self.request_count_by_group: Dict[str, int] = {}
@@ -69,7 +70,8 @@ class FetchCache:
             entry = self._entry_by_key.get(cache_key)
             if entry is None and default is not RAISE and self._retry_after_by_key.get(cache_key, 0) > now:
                 return default, None
-            if entry is not None and (not self.is_due(group_id, entry[0], now) or self._retry_after_by_key.get(cache_key, 0) > now):
+            forced = cache_key in self._forced_due_key_set
+            if entry is not None and not forced and (not self.is_due(group_id, entry[0], now) or self._retry_after_by_key.get(cache_key, 0) > now):
                 return entry[1], entry[0]
             try:
                 value = fetch_function()
@@ -80,9 +82,14 @@ class FetchCache:
                 print("fetch failed:", group_id, key, error)
                 return (default, None) if entry is None else (entry[1], entry[0])
             self._retry_after_by_key.pop(cache_key, None)
+            self._forced_due_key_set.discard(cache_key)
             self.request_count_by_group[group_id] = self.request_count_by_group.get(group_id, 0) + 1
             self._entry_by_key[cache_key] = (now, value)
             return value, now
+
+    def force_due(self, group_id: str, key: Optional[str]) -> None:
+        """The next get asks the source again whatever the schedule says."""
+        self._forced_due_key_set.add((group_id, key))
 
     def is_anything_due(self) -> bool:
         """True when some answer already kept is due again (a group never asked is handled by the first refresh)."""
