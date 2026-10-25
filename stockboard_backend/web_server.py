@@ -107,6 +107,11 @@ def web_server_get_language_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "language.js"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/rule-text.js")
+def web_server_get_rule_text_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rule-text.js"), headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/rule-card.js")
 def web_server_get_rule_card_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rule-card.js"), headers={"Cache-Control": "no-cache"})
@@ -149,7 +154,11 @@ def web_server_get_rule_catalog() -> dict:
             "description": dataclasses.asdict(entry.description), "method": entry.method,
             "quantifiable": entry.quantifiable, "backtestable": entry.backtestable,
             "history_source": entry.history_source, "history_start": entry.history_start, "status": entry.status,
-            "indicator_id": entry.indicator_id, "indicator": entry.indicator, "fetch_group": entry.fetch_group, "fetch_every": entry.fetch_every, "max_age": entry.max_age,
+            "indicator_id": entry.indicator_id, "indicator": entry.indicator,
+            "indicator_description": dataclasses.asdict(entry.indicator_description) if entry.indicator_description else None,
+            "indicator_line_list": [{"rule_id": other.rule_id, "line": rule_catalog.rule_catalog_describe_line(other)}
+                                    for other in rule_catalog.rule_catalog_find_rule_list_of_indicator(application_rule_catalog, entry.indicator)]
+            if entry.indicator else [], "fetch_group": entry.fetch_group, "fetch_every": entry.fetch_every, "max_age": entry.max_age,
             "operator": entry.operator, "value": entry.value, "band_of": entry.band_of, "legacy_id": entry.legacy_id,
             "note": dataclasses.asdict(entry.note) if entry.note else None,
             "used_by": usage_list_by_rule_id.get(entry.rule_id, []),

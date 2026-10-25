@@ -46,6 +46,7 @@ const UI_TEXT = {
     zh:'有多条分界线的指标（如 VIX）被拆成一线一条规则（VIX 不低于 12、不低于 15、低于 25 ……）。策略自己挑要用的线，并给每条线单独的权重，所以越过的线越多，得到的权重越多。同一指标的其他线都指向它的主规则。' },
   status_label: { en:'Status', zh:'状态' },
   show: { en:'Show', zh:'显示' },
+  indicator_lines: { en:'Lines of {id}', zh:'{id} 的各档' },
   all_rules: { en:'All rules', zh:'全部规则' },
   used_rules: { en:'Used by a strategy', zh:'已被策略使用的规则' },
   built_rules: { en:'Built (the dashboard computes them)', zh:'已接入（看板在计算）的规则' },

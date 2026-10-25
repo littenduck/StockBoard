@@ -22,7 +22,7 @@ function ruleCardHide() {
 function ruleCardShow(trigger) {
   const rule = ruleById[trigger.dataset.rule];
   if (!rule) return;
-  ruleCard.innerHTML = `<small>${languageEscape(rule.rule_id)}</small><h3>${languageRenderText(rule.name)}</h3><p>${languageRenderText(rule.description)}</p>`;
+  ruleCard.innerHTML = `<small>${languageEscape(rule.rule_id)}</small><h3>${languageRenderText(rule.name)}</h3><p>${languageRenderText(rule.description)}</p>${ruleTextRenderIndicator(rule, false)}`;
   if (!ruleCard.matches(':popover-open')) ruleCard.showPopover();
   const anchor = trigger.getBoundingClientRect(), card = ruleCard.getBoundingClientRect();
   const wantedTop = anchor.bottom + card.height + 8 <= window.innerHeight ? anchor.bottom + 4 : anchor.top - card.height - 4;

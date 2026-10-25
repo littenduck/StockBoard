@@ -58,6 +58,7 @@ class RuleCatalogEntry:
     history_start: Optional[str] = None
     legacy_id: List[str] = field(default_factory=list)
     note: Optional[LocalizedText] = None
+    indicator_description: Optional[LocalizedText] = None  # what the indicator measures, from config/indicators.yaml
     fetch_group: Optional[str] = None  # the three below come from the indicator
     fetch_every: Optional[str] = None
     max_age: Optional[str] = None
@@ -89,7 +90,24 @@ def rule_catalog_merge_indicator_fields(raw_rule: dict, registry: Optional[Indic
             raw_rule["rule_id"], ", ".join(repeated), indicator.indicator_name))
     return {**raw_rule, "indicator": indicator.indicator_name, "indicator_id": indicator.indicator_id,
             **{name: getattr(indicator, name) for name in INDICATOR_OWNED_FIELD_LIST},
-            "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age}
+            "indicator_description": indicator.description, "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age}
+
+
+LINE_SYMBOL_BY_OPERATOR = {"less_than": "<", "less_or_equal": "≤", "greater_than": ">", "greater_or_equal": "≥"}
+
+
+def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> str:
+    """The test of a rule in a few characters: '< 4.5', '15 to 20', 'yes'."""
+    if entry.operator == "is_true":
+        return "yes"
+    if entry.operator == "between":
+        return "{} to {}".format(*entry.value)
+    return "{} {}".format(LINE_SYMBOL_BY_OPERATOR.get(entry.operator, "?"), entry.value)
+
+
+def rule_catalog_find_rule_list_of_indicator(rule_catalog: "RuleCatalog", indicator_name: str) -> list:
+    """Every rule that tests this indicator, in catalog order: the lines of one measure."""
+    return [entry for entry in rule_catalog.rule_entry_by_id.values() if entry.indicator == indicator_name]
 
 
 def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, indicator_file_path: Optional[str] = None) -> RuleCatalog:

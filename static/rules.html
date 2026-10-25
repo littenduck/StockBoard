@@ -42,9 +42,9 @@
   <div id="rule-group-list"><small id="loading-rules"></small></div>
 </main>
 <script src="/language.js"></script>
+<script src="/rule-text.js"></script>
 <script>
-const STATUS_COLOR = { built:'positive', todo:'caution', no_data:'muted' };
-const escapeText = languageEscape;
+const STATUS_COLOR = { built:'positive', todo:'caution', no_data:'muted' }; const escapeText = languageEscape;
 const primaryText = localizedText => localizedText[languageGetActive()];
 let ruleCatalog = null, loadFailed = false;
 
@@ -67,7 +67,7 @@ function renderRuleRow(rule) {
   const field = name => `<div><small>${name}</small>${renderFieldValue(rule, name)}</div>`;
   const usage = rule.used_by.map(use => `<small class="box">${escapeText(primaryText(use.display_name))} · W${use.weight}${use.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('');
   return `<div class="row" id="rule-${rule.rule_id}"><small>${rule.rule_id}</small>
-    <div>${languageRenderText(rule.name)}<small>${languageRenderText(rule.description)}</small>
+    <div>${languageRenderText(rule.name)}<small>${languageRenderText(rule.description)}</small>${ruleTextRenderIndicator(rule, true)}
       <div class="rule-meta">${RECORD_FIELD_LIST.map(field).join('')}</div>
       <div class="rule-meta"><div><small>note</small>${rule.note ? `<p>${languageRenderText(rule.note)}</p>` : DASH}</div>
         <div><small>used_by</small>${usage ? `<div class="usage">${usage}</div>` : DASH}</div></div></div></div>`;

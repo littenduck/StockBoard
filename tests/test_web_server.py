@@ -110,3 +110,18 @@ def test_replaced_snapshot_file_is_loaded_again(snapshot_file_path):
 def test_rule_card_script_is_served():
     response = web_server.web_server_get_rule_card_script()
     assert os.path.exists(response.path) and "ruleCardBind" in open(response.path, encoding="utf8").read()
+
+
+def test_rule_text_script_is_served():
+    response = web_server.web_server_get_rule_text_script()
+    assert os.path.exists(response.path) and "ruleTextRenderIndicator" in open(response.path, encoding="utf8").read()
+
+
+def test_the_rule_list_carries_the_indicator_text_and_the_lines_of_the_measure():
+    group_list = web_server.web_server_get_rule_catalog()["group_list"]
+    rule_by_id = {rule["rule_id"]: rule for group in group_list for rule in group["rule_list"]}
+    rule = rule_by_id["MAC-03"]
+    assert rule["indicator_description"]["en"].startswith("Yield on the 10-year")
+    assert [item["rule_id"] for item in rule["indicator_line_list"]] == ["MAC-03", "MAC-13"]
+    assert [item["line"] for item in rule["indicator_line_list"]] == ["< 4.5", "< 5.0"]
+    assert rule_by_id["POS-01"]["indicator_description"] is None and rule_by_id["POS-01"]["indicator_line_list"] == []

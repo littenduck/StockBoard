@@ -164,3 +164,28 @@ def test_every_strategy_and_indicator_text_is_bilingual():
     assert settings.default_language == "en"
     for indicator_setting in settings.market_indicator_list:
         assert_localized_text_is_complete(indicator_setting.display_name, indicator_setting.indicator_name)
+
+
+def test_a_rule_text_holds_only_its_line_and_the_indicator_text_holds_the_rest():
+    import re
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    leftovers = re.compile(r"Backtest history|Other tiers?:|\bsee [A-Z]{3}-\d\d for|^See |Source:|Typical values:|数据来源|回测历史|常见情形|其他分档")
+    for entry in catalog.rule_entry_by_id.values():
+        if not entry.indicator:
+            continue
+        for text in (entry.description.en, entry.description.zh):
+            assert not leftovers.search(text), (entry.rule_id, text[:80])
+        assert re.match(r"(Passes when|True when)", entry.description.en), entry.rule_id
+
+
+def test_every_indicator_explains_itself_in_both_languages():
+    import re
+    registry = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH).indicator_registry
+    chinese = re.compile(r"[一-鿿]")
+    for indicator in registry.indicator_by_name.values():
+        assert indicator.description is not None, indicator.indicator_name
+        assert len(indicator.description.en) > 60 and not chinese.search(indicator.description.en), indicator.indicator_name
+        assert chinese.search(indicator.description.zh), indicator.indicator_name
+        sentence_count = lambda text, mark: len([part for part in re.split(mark, text) if part.strip()])
+        assert abs(sentence_count(indicator.description.en, r"(?<=[.!?])\s") - sentence_count(indicator.description.zh, r"(?<=。)")) <= 1, (
+            indicator.indicator_name)
