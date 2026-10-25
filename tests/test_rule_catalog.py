@@ -263,8 +263,8 @@ def test_every_rule_reads_as_one_pass_sentence_in_both_languages():
         assert "Source:" not in entry.description.en and "数据来源" not in entry.description.zh, entry.rule_id
 
 
-CHINESE_TERM_BANNED_LIST = ["小于", "大于", "超过", "至少", "不超过", "美债", "看跌期权", "看涨期权", "备兑", "平价", "股本回报率", "消费者物价", "初请", "过去十二个月", "10Y"]
-CHATTER_LIST = ["(measured)", "not verified here", "first guess", "ifficulty", "could be backtested later", "EDGAR_CONTACT", "Referer"]
+CHINESE_TERM_BANNED_LIST = ["小于", "大于", "至少", "美债", "物价指数", "看跌期权", "看涨期权", "备兑", "平价", "股本回报率", "消费者物价", "初请", "过去十二个月", "10Y"]
+CHATTER_LIST = ["(measured)", "not verified here", "first guess", "ifficulty", "could be backtested later", "EDGAR_CONTACT", "Referer", "updated daily", "checked daily", "updated monthly", "updated weekly", "updated every", "Not built yet", "Not live yet", "not verified"]
 
 
 def test_the_chinese_text_follows_the_glossary_of_docs_language():
@@ -272,6 +272,7 @@ def test_the_chinese_text_follows_the_glossary_of_docs_language():
     for entry in catalog.rule_entry_by_id.values():
         for term in CHINESE_TERM_BANNED_LIST:
             assert term not in entry.description.zh, "{} uses {}".format(entry.rule_id, term)
+        assert not re.search(r"(?<!不)超过|(?<!增加)不超过", entry.description.zh), entry.rule_id
     for indicator in catalog.indicator_registry.indicator_by_name.values():
         for term in ("美债", "看跌期权", "看涨期权", "备兑", "平价", "股本回报率", "消费者物价", "初请", "过去十二个月"):
             assert term not in indicator.description.zh, "{} uses {}".format(indicator.indicator_id, term)
@@ -306,3 +307,42 @@ def test_no_config_file_repeats_a_key():
             if file_name.endswith(".yaml"):
                 with open(os.path.join(directory, file_name), encoding="utf8") as config_file:
                     yaml.load(config_file, Loader=StrictLoader)
+
+
+def test_english_and_chinese_pass_lines_carry_the_same_numbers():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+
+    def number_list(text):
+        text = text.replace(",", "")
+        text = re.sub(r"(\d+) billion", lambda match: str(int(match.group(1)) * 10 ** 9), text)
+        text = re.sub(r"(\d+) million", lambda match: str(int(match.group(1)) * 10 ** 6), text)
+        text = re.sub(r"(\d+) 亿", lambda match: str(int(match.group(1)) * 10 ** 8), text)
+        text = re.sub(r"(\d+) 万", lambda match: str(int(match.group(1)) * 10 ** 4), text)
+        text = re.sub(r"(?:\d+、)*\d+ 月|\d+ 个月|\d+-months?|\d+ months?", "", text)  # months are spelled out in English
+        return sorted(re.findall(r"\d+(?:\.\d+)?", text))
+
+    for entry in catalog.rule_entry_by_id.values():
+        assert number_list(entry.description.en) == number_list(entry.description.zh), entry.rule_id
+
+
+def test_every_indicator_a_rule_tests_with_a_number_names_its_unit():
+    import yaml
+    raw_indicator_list = yaml.safe_load(open(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"), encoding="utf8"))["indicator_list"]
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    numeric_id_set = {entry.indicator_id for entry in catalog.rule_entry_by_id.values() if entry.indicator_id and entry.operator != "is_true"}
+    for raw in raw_indicator_list:
+        if raw["indicator_id"] in numeric_id_set:
+            assert "unit" in raw, raw["indicator_id"] + " needs a unit, or unit: \"\" for a pure ratio"
+
+
+def test_indicator_ids_follow_the_first_rule_that_uses_them():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    first_use_list = []
+    for entry in catalog.rule_entry_by_id.values():
+        if entry.indicator_id and entry.indicator_id not in first_use_list:
+            first_use_list.append(entry.indicator_id)
+    number_list = [int(indicator_id[2:]) for indicator_id in first_use_list]
+    skipped = sorted(set(range(1, max(number_list) + 1)) - set(number_list))
+    sidebar_list = [indicator.indicator_id for indicator in catalog.indicator_registry.indicator_by_name.values() if indicator.display_name and indicator.indicator_id not in first_use_list]
+    assert [number for number in number_list if number > max(number_list[:1])] == sorted(number_list)[1:]  # ids rise along the rule order
+    assert len(skipped) == len(sidebar_list), (skipped, sidebar_list)  # the gaps are the sidebar-only indicators

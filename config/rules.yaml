@@ -164,7 +164,7 @@ rule_list:
   - rule_id: R-MAC-15
     rule_name: "core_pce_below_2_5pct"
     topic: "inflation_jobs"
-    description: {en: "Passes when core PCE (Personal Consumption Expenditures price index excluding food and energy, the Fed's preferred gauge) inflation is below 2.5% year over year.", zh: "核心 PCE（剔除食品和能源的个人消费支出物价指数，美联储偏好的指标）同比低于 2.5% 时通过。"}
+    description: {en: "Passes when core PCE (Personal Consumption Expenditures price index excluding food and energy, the Fed's preferred gauge) inflation is below 2.5% year over year.", zh: "核心 PCE（剔除食品和能源的个人消费支出价格指数，美联储偏好的指标）同比低于 2.5% 时通过。"}
     indicator: "I-011"
     operator: "less_than"
     value: 2.5
@@ -180,7 +180,7 @@ rule_list:
   - rule_id: R-MAC-17
     rule_name: "jobless_claims_below_300k"
     topic: "inflation_jobs"
-    description: {en: "Passes when the 4-week average of initial jobless claims (weekly new unemployment filings) is below 300,000.", zh: "首次申请失业救济人数（每周新增失业申请）的 4 周均值低于 30 万时通过。"}
+    description: {en: "Passes when the 4-week average of initial jobless claims (weekly new unemployment filings) is below 300,000.", zh: "首次申请失业救济人数（每周新增失业申请）的 4 周均值低于 300,000 时通过。"}
     indicator: "I-013"
     operator: "less_than"
     value: 300000
@@ -409,7 +409,7 @@ rule_list:
   - rule_id: R-MGT-04
     rule_name: "share_count_up_at_most_2pct"
     topic: "shares_dividends"
-    description: {en: "Passes when the share count is at most 2% higher than a year ago.", zh: "总股数比一年前多出不高于 2% 时通过。"}
+    description: {en: "Passes when the share count is at most 2% higher than a year ago.", zh: "总股数比一年前增加不超过 2% 时通过。"}
     indicator: "I-038"
     operator: "less_or_equal"
     value: 2
@@ -442,7 +442,7 @@ rule_list:
   - rule_id: R-VAL-02
     rule_name: "equity_premium_positive"
     topic: "market_valuation"
-    description: {en: "Passes when the S&P 500 earnings yield (1 divided by the PE) minus the 10-year Treasury yield is above 0.", zh: "标普 500 的盈利收益率（市盈率的倒数）减 10 年期国债收益率高于 0 时通过。"}
+    description: {en: "Passes when the S&P 500 earnings yield (the inverse of the PE) minus the 10-year Treasury yield is above 0.", zh: "标普 500 的盈利收益率（市盈率的倒数）减 10 年期国债收益率高于 0 时通过。"}
     indicator: "I-042"
     operator: "greater_than"
     value: 0
@@ -622,7 +622,7 @@ rule_list:
     operator: "less_than"
     value: 25
     legacy_id: ["SEN-04"]
-    note: {en: "Contrarian seller view. R-SEN-13 (above 75) points the opposite way and belongs to a bearish strategy", zh: "逆向的卖方视角。R-SEN-13（高于 75）方向相反，属于看空策略"}
+    note: {en: "Contrarian seller view. R-SEN-13 (above 75) points the opposite way and belongs to a bearish strategy.", zh: "逆向的卖方视角。R-SEN-13（高于 75）方向相反，属于看空策略。"}
   - rule_id: R-SEN-11
     rule_name: "fear_and_greed_below_45"
     topic: "fear_greed"
@@ -787,7 +787,7 @@ rule_list:
   - rule_id: R-TRD-09
     rule_name: "within_5pct_of_52_week_high"
     topic: "highs_lows"
-    description: {en: "Passes when the price is within 5% of its 52-week high.", zh: "价格距 52 周高点不高于 5% 时通过。"}
+    description: {en: "Passes when the price is within 5% of its 52-week high.", zh: "价格在 52 周高点下方 5% 以内时通过。"}
     indicator: "I-070"
     operator: "less_or_equal"
     value: 5
@@ -795,7 +795,7 @@ rule_list:
   - rule_id: R-TRD-10
     rule_name: "within_15pct_of_52_week_high"
     topic: "highs_lows"
-    description: {en: "Passes when the price is within 15% of its 52-week high.", zh: "价格距 52 周高点不高于 15% 时通过。"}
+    description: {en: "Passes when the price is within 15% of its 52-week high.", zh: "价格在 52 周高点下方 15% 以内时通过。"}
     indicator: "I-070"
     operator: "less_or_equal"
     value: 15
@@ -809,7 +809,7 @@ rule_list:
     operator: "less_or_equal"
     value: 25
     legacy_id: ["TRD-07", "F02"]
-    note: {en: "Low zone is the Wheel view; momentum strategies want the opposite and use R-TRD-09", zh: "低位是 Wheel 的视角；动量策略方向相反，用 R-TRD-09"}
+    note: {en: "Low zone is the Wheel view; momentum strategies want the opposite and use R-TRD-09.", zh: "低位是 Wheel 的视角；动量策略方向相反，用 R-TRD-09。"}
   - rule_id: R-TRD-12
     rule_name: "range_position_at_most_50"
     topic: "highs_lows"
@@ -895,7 +895,7 @@ rule_list:
   - rule_id: R-TRD-22
     rule_name: "near_200_day_average"
     topic: "support_volatility"
-    description: {en: "Passes when the price is within 3% of its 200-day average.", zh: "价格距 200 日均线不高于 3% 时通过。"}
+    description: {en: "Passes when the price is within 3% of its 200-day average.", zh: "价格与 200 日均线相差 3% 以内时通过。"}
     indicator: "I-079"
     operator: "less_or_equal"
     value: 3
@@ -964,7 +964,7 @@ rule_list:
   - rule_id: R-EVT-06
     rule_name: "no_cpi_pce"
     topic: "scheduled_releases"
-    description: {en: "Passes when no CPI (Consumer Price Index) or PCE (Personal Consumption Expenditures price index) inflation release falls inside the option's life, and no new position is opened on a release day.", zh: "期权存续期内没有 CPI（消费者价格指数）或 PCE（个人消费支出物价指数）通胀数据公布，并且不在公布日开新仓时通过。"}
+    description: {en: "Passes when no CPI (Consumer Price Index) or PCE (Personal Consumption Expenditures price index) inflation release falls inside the option's life.", zh: "期权存续期内没有 CPI（消费者价格指数）或 PCE（个人消费支出价格指数）通胀数据公布时通过。"}
     indicator: "I-087"
     operator: "is_true"
     legacy_id: ["EVT-03", "F07", "Z14"]
@@ -1366,7 +1366,7 @@ rule_list:
   - rule_id: R-POS-05
     rule_name: "margin_usage"
     topic: "account_leverage"
-    description: {en: "Passes when your margin usage (how much of your margin or buying power is used) is under your own limit.", zh: "保证金使用率（已用掉多少保证金或购买力）低于你自己设定的上限时通过。"}
+    description: {en: "Passes when your margin usage is at most the limit you set.", zh: "保证金使用率不高于你自己设定的上限时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1384,7 +1384,7 @@ rule_list:
   - rule_id: R-POS-07
     rule_name: "single_stock_exposure"
     topic: "exposure_limits"
-    description: {en: "Passes when the notional exposure to any one stock is below 35% of net value.", zh: "对任何一只股票的名义敞口低于净值的 35% 时通过。"}
+    description: {en: "Passes when the notional exposure to any one stock is at most 35% of net value.", zh: "对任何一只股票的名义敞口不高于净值的 35% 时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1420,7 +1420,7 @@ rule_list:
   - rule_id: R-POS-11
     rule_name: "long_premium_total"
     topic: "sizing_building"
-    description: {en: "Passes when the total premium paid for long options is below 20% of net value.", zh: "买入期权支付的权利金总额低于净值的 20% 时通过。"}
+    description: {en: "Passes when the total premium paid for long options is at most 20% of net value.", zh: "买入期权支付的权利金总额不高于净值的 20% 时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1429,7 +1429,7 @@ rule_list:
   - rule_id: R-POS-12
     rule_name: "spread_switch"
     topic: "sizing_building"
-    description: {en: "Passes when no single leg ties up more than 20% of net value (otherwise use a spread: buy a farther option to cap the risk).", zh: "没有单腿占用的资金高于净值的 20% 时通过（否则改用价差：再买一张更远的期权把风险封顶）。"}
+    description: {en: "Passes when no single leg ties up more than 20% of net value.", zh: "没有单腿占用的资金高于净值的 20% 时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1447,7 +1447,7 @@ rule_list:
   - rule_id: R-POS-14
     rule_name: "covered_call_size"
     topic: "sizing_building"
-    description: {en: "Passes when the covered call contracts equal the shares owned divided by 100; extra calls would be naked (uncovered).", zh: "Covered Call 的张数等于持股数除以 100 时通过；多出的部分就成了裸卖（没有股票覆盖）。"}
+    description: {en: "Passes when the covered call contracts equal the shares owned divided by 100.", zh: "Covered Call 的张数等于持股数除以 100 时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1456,7 +1456,7 @@ rule_list:
   - rule_id: R-POS-15
     rule_name: "portfolio_greeks"
     topic: "portfolio_risk"
-    description: {en: "Passes when the Delta (direction), Vega (sensitivity to volatility), Theta (daily time decay) and beta-weighted Delta (converted to S&P 500 equivalent) of your whole option book are within your own limits.", zh: "整个期权组合的 Delta（方向敞口）、Vega（对波动率的敏感度）、Theta（每日时间损耗）和 beta 加权 Delta（折算成标普 500 的等价敞口）都在你自己设定的范围内时通过。"}
+    description: {en: "Passes when the Delta, Vega, Theta and beta-weighted Delta of your whole option book are each within the range you set.", zh: "整个期权组合的 Delta、Vega、Theta 和 beta 加权 Delta 都在你自己设定的范围内时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1465,7 +1465,7 @@ rule_list:
   - rule_id: R-POS-16
     rule_name: "correlation_and_stress"
     topic: "portfolio_risk"
-    description: {en: "Passes when your positions do not move together too much (correlation) and the loss in a stress test, such as a 20% drop with volatility up 50%, is within your own limit.", zh: "持仓之间的相关性不过高，并且压力测试（比如标的下跌 20% 且波动率上升 50%）的亏损在你自己设定的上限内时通过。"}
+    description: {en: "Passes when the loss in your stress test, such as a 20% drop with volatility up 50%, is at most the limit you set.", zh: "压力测试（比如标的下跌 20% 且波动率上升 50%）的亏损不高于你自己设定的上限时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1620,7 +1620,7 @@ rule_list:
   - rule_id: R-EXT-10
     rule_name: "cost_basis_check"
     topic: "covered_call_exit"
-    description: {en: "Passes when the cost basis is at most 1.15 times the current price; otherwise pause covered calls.", zh: "成本价不高于现价的 1.15 倍时通过；否则先暂停卖 Covered Call。"}
+    description: {en: "Passes when the cost basis is at most 1.15 times the current price.", zh: "成本价不高于现价的 1.15 倍时通过。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
@@ -1630,7 +1630,7 @@ rule_list:
 retired_rule_list:
   - {old_id: "VAL-02", legacy_id: [], reason: {en: "No free history and not a well-known indicator; market valuation is covered by R-VAL-01, R-VAL-03 and R-VAL-04.", zh: "没有免费历史，也不是知名指标；大盘估值由 R-VAL-01、R-VAL-03 和 R-VAL-04 覆盖。"}}
   - {old_id: "EVT-09", legacy_id: ["Z11"], reason: {en: "Could not be measured: a pending regulation event is news, not a number. R-EVT-12 (policy uncertainty) measures the nearest thing.", zh: "无法量化：待决的监管事件是新闻，不是数字。R-EVT-12（政策不确定性）度量最接近的东西。"}}
-  - {old_id: "LIQ-02", legacy_id: [], reason: {en: "A ranking line drifts over time and needs point-in-time data for 500 stocks. Replaced by the fixed size line R-LIQ-02; its old id D01 moved there.", zh: "排名分界线会随时间漂移，还要 500 只股票的时点数据。已由固定的规模线 R-LIQ-02 取代，旧编号 D01 已移到那里。"}}
+  - {old_id: "LIQ-02", legacy_id: [], reason: {en: "A ranking line drifts over time and needs point-in-time data for 500 stocks. Replaced by the fixed size line R-LIQ-02 (market cap above $100 billion), which also took the old id D01.", zh: "排名分界线会随时间漂移，还要 500 只股票的时点数据。已由固定的规模线 R-LIQ-02（市值高于 1000 亿美元）取代，它同时接过了旧编号 D01。"}}
 
 # Old rules that did not become a rule here (strategy choices or strategy-level checks, move them into strategy files):
 #   B12 margin account path, D15 trade direction, C06 12-month Sharpe against SPY.
