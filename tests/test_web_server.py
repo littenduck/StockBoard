@@ -75,7 +75,7 @@ def test_rule_catalog_lists_usage():
     assert rule_by_id["THS-03"]["used_by"] == [] and rule_by_id["THS-03"]["status"] == "no_data"
     assert rule_by_id["THS-03"]["method"] == "manual"
     assert rule_by_id["SEN-12"]["band_of"] == "SEN-01" and rule_by_id["SEN-12"]["operator"] == "less_than"
-    assert set(rule_by_id["SEN-01"]["name"]) == {"en", "zh"} and "weight" not in rule_by_id["SEN-01"]
+    assert rule_by_id["SEN-01"]["rule_name"] == "vix_at_least_15" and "weight" not in rule_by_id["SEN-01"]
 
 
 def test_strategy_list_is_bilingual_with_english_default():

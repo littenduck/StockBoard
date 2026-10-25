@@ -43,7 +43,7 @@ class RuleGroup:
 @dataclass
 class RuleCatalogEntry:
     rule_id: str
-    name: LocalizedText
+    rule_name: str  # a short lower case name with underscores, like an indicator_name
     description: LocalizedText
     method: Optional[str] = None
     quantifiable: Optional[str] = None
@@ -76,6 +76,7 @@ class RuleCatalog:
     indicator_registry: Optional[IndicatorRegistry] = None
 
 
+RULE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 INDICATOR_OWNED_FIELD_LIST = ["method", "quantifiable", "backtestable", "history_source", "history_start", "status"]
 
 
@@ -119,7 +120,6 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, i
         raw = yaml.safe_load(rule_catalog_file)
     entry_list = [RuleCatalogEntry(**{
         **rule_catalog_merge_indicator_fields(raw_rule, registry),
-        "name": localized_text_build_from_raw_value(raw_rule.get("name"), "rule {} name".format(raw_rule["rule_id"])),
         "description": localized_text_build_from_raw_value(raw_rule.get("description"), "rule {} description".format(raw_rule["rule_id"])),
         "note": localized_text_build_optional_from_raw_value(raw_rule.get("note"), "rule {} note".format(raw_rule["rule_id"])),
     }) for raw_rule in raw["rule_list"]]
@@ -150,6 +150,8 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
     group_id_set = {group.group_id for group in rule_catalog.rule_group_list}
     registry = rule_catalog.indicator_registry
     for entry in rule_catalog.rule_entry_by_id.values():
+        if not RULE_NAME_PATTERN.match(entry.rule_name or ""):
+            error_list.append("rule {} needs a rule_name of lower case words joined by underscores".format(entry.rule_id))
         if entry.group_id not in group_id_set:
             error_list.append("rule {} has no group {}".format(entry.rule_id, entry.group_id))
         if entry.status not in STATUS_SET:
@@ -181,6 +183,9 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
                 error_list.append("rule {} is built but has no indicator".format(entry.rule_id))
             elif entry.indicator not in known_indicator_name_set:
                 error_list.append("rule {} uses unknown indicator {}".format(entry.rule_id, entry.indicator))
+    rule_name_list = [entry.rule_name for entry in rule_catalog.rule_entry_by_id.values()]
+    for rule_name in sorted({name for name in rule_name_list if rule_name_list.count(name) > 1}):
+        error_list.append("two rules share the rule_name {}".format(rule_name))
     for retired in rule_catalog.retired_rule_list:
         if retired.rule_id in rule_catalog.rule_entry_by_id:
             error_list.append("retired rule {} is back in the catalog; ids are never reused".format(retired.rule_id))

@@ -45,27 +45,27 @@ rule_group_list:
 rule_list:
   # MAC · Macro
   - rule_id: MAC-01
-    name: {en: "Fed target not raised", zh: "联储目标利率未上调"}
+    rule_name: "fed_target_not_raised"
     description: {en: "Passes when the Fed has not raised its federal funds target rate (upper bound) in the last 182 days.", zh: "美联储在最近 182 天内没有上调联邦基金目标利率（上限）时通过。"}
     indicator: "I-001"
     operator: "is_true"
     legacy_id: ["A01"]
   - rule_id: MAC-02
-    name: {en: "Hike not priced", zh: "市场未定价加息"}
+    rule_name: "hike_not_priced"
     description: {en: "Passes when the market is not pricing a rate hike: the 6-month Treasury bill yield minus the effective federal funds rate is below 0.25 percentage points.", zh: "市场没有在定价加息时通过：6 个月国债收益率减有效联邦基金利率，低于 0.25 个百分点。"}
     indicator: "I-002"
     operator: "less_than"
     value: 0.25
     legacy_id: ["A06"]
   - rule_id: MAC-03
-    name: {en: "10Y below 4.5%", zh: "10Y 低于 4.5%"}
+    rule_name: "ten_year_below_4_5pct"
     description: {en: "Passes when the 10-year Treasury yield is below 4.5%.", zh: "10 年期美债收益率低于 4.5% 时通过。"}
     indicator: "I-003"
     operator: "less_than"
     value: 4.5
     legacy_id: ["A02"]
   - rule_id: MAC-13
-    name: {en: "10Y below 5.0%", zh: "10Y 低于 5.0%"}
+    rule_name: "ten_year_below_5_0pct"
     description: {en: "Passes when the 10-year Treasury yield is below 5.0%.", zh: "10 年期美债收益率低于 5.0% 时通过。"}
     indicator: "I-003"
     operator: "less_than"
@@ -73,14 +73,14 @@ rule_list:
     band_of: "MAC-03"
     legacy_id: ["A07"]
   - rule_id: MAC-04
-    name: {en: "10Y 20-day rise below 25bp", zh: "10Y 20 日升幅低于 25bp"}
+    rule_name: "ten_year_20_day_rise_below_25bp"
     description: {en: "Passes when the 10-year Treasury yield has risen less than 25bp over the last 20 trading days.", zh: "10 年期国债收益率在最近 20 个交易日里的升幅小于 25bp 时通过。"}
     indicator: "I-004"
     operator: "less_than"
     value: 25
     legacy_id: ["A03"]
   - rule_id: MAC-14
-    name: {en: "10Y 20-day rise below 50bp", zh: "10Y 20 日升幅低于 50bp"}
+    rule_name: "ten_year_20_day_rise_below_50bp"
     description: {en: "Passes when the 10-year yield has risen less than 50bp over 20 days.", zh: "10Y 收益率 20 日升幅低于 50bp 时通过。"}
     indicator: "I-004"
     operator: "less_than"
@@ -88,14 +88,14 @@ rule_list:
     band_of: "MAC-04"
     legacy_id: []
   - rule_id: MAC-05
-    name: {en: "HY spread below 400bp", zh: "HY 利差低于 400bp"}
+    rule_name: "hy_spread_below_400bp"
     description: {en: "Passes when the HY credit spread is below 400bp.", zh: "HY 信用利差低于 400bp 时通过。"}
     indicator: "I-007"
     operator: "less_than"
     value: 400
     legacy_id: ["A04"]
   - rule_id: MAC-15
-    name: {en: "HY spread below 500bp", zh: "HY 利差低于 500bp"}
+    rule_name: "hy_spread_below_500bp"
     description: {en: "Passes when the HY credit spread is below 500bp.", zh: "HY 信用利差低于 500bp 时通过。"}
     indicator: "I-007"
     operator: "less_than"
@@ -103,21 +103,21 @@ rule_list:
     band_of: "MAC-05"
     legacy_id: []
   - rule_id: MAC-06
-    name: {en: "Credit spread, 20-day change", zh: "信用利差 20 日变动"}
+    rule_name: "credit_spread_20_day_change"
     description: {en: "Passes when the HY credit spread has widened by less than 50bp over the last 20 trading days.", zh: "HY 信用利差在最近 20 个交易日里的走阔幅度小于 50bp 时通过。"}
     indicator: "I-008"
     operator: "less_than"
     value: 50
     legacy_id: ["A04"]
   - rule_id: MAC-22
-    name: {en: "Baa spread below 2.8", zh: "Baa 利差低于 2.8"}
+    rule_name: "baa_spread_below_2_8"
     description: {en: "Passes when Moody's seasoned Baa corporate bond yield minus the 10-year Treasury yield is below 2.8 percentage points.", zh: "穆迪 Baa 级公司债收益率减 10 年期国债收益率，低于 2.8 个百分点时通过。"}
     indicator: "I-009"
     operator: "less_than"
     value: 2.8
     legacy_id: []
   - rule_id: MAC-23
-    name: {en: "Baa spread below 3.3", zh: "Baa 利差低于 3.3"}
+    rule_name: "baa_spread_below_3_3"
     description: {en: "Passes when the Baa minus 10-year Treasury spread is below 3.3 percentage points, the 95th percentile since 1986 (measured).", zh: "Baa 减 10 年期国债利差低于 3.3 个百分点时通过，这是 1986 年以来的第 95 百分位（实测）。"}
     indicator: "I-009"
     operator: "less_than"
@@ -125,79 +125,79 @@ rule_list:
     band_of: "MAC-22"
     legacy_id: []
   - rule_id: MAC-07
-    name: {en: "10Y minus 2Y above 0", zh: "10Y 减 2Y 大于 0"}
+    rule_name: "ten_year_minus_2y_above_0"
     description: {en: "Passes when the 10-year Treasury yield is above the 2-year yield, meaning the yield curve is not inverted.", zh: "10 年期国债收益率高于 2 年期，即收益率曲线没有倒挂时通过。"}
     indicator: "I-005"
     operator: "greater_than"
     value: 0
   - rule_id: MAC-17
-    name: {en: "10Y minus 3M above 0", zh: "10Y 减 3M 大于 0"}
+    rule_name: "ten_year_minus_3m_above_0"
     description: {en: "Passes when the 10-year Treasury yield is above the 3-month yield.", zh: "10 年期国债收益率高于 3 个月期时通过。"}
     indicator: "I-006"
     operator: "greater_than"
     value: 0
     legacy_id: []
   - rule_id: MAC-08
-    name: {en: "CPI below 3%", zh: "CPI 低于 3%"}
+    rule_name: "cpi_below_3pct"
     description: {en: "Passes when CPI (Consumer Price Index) inflation is below 3.0% year over year.", zh: "CPI（消费者物价指数）同比低于 3.0% 时通过。"}
     indicator: "I-010"
     operator: "less_than"
     value: 3.0
   - rule_id: MAC-18
-    name: {en: "Core PCE below 2.5%", zh: "核心 PCE 低于 2.5%"}
+    rule_name: "core_pce_below_2_5pct"
     description: {en: "Passes when core PCE (Personal Consumption Expenditures price index excluding food and energy, the Fed's preferred gauge) inflation is below 2.5% year over year.", zh: "核心 PCE（剔除食品和能源的个人消费支出物价指数，美联储偏好的指标）同比低于 2.5% 时通过。"}
     indicator: "I-011"
     operator: "less_than"
     value: 2.5
     legacy_id: []
   - rule_id: MAC-09
-    name: {en: "Sahm rule below 0.5", zh: "Sahm 指标低于 0.5"}
+    rule_name: "sahm_rule_below_0_5"
     description: {en: "Passes when the Sahm rule recession indicator is below 0.5.", zh: "Sahm 衰退指标低于 0.5 时通过。"}
     indicator: "I-012"
     operator: "less_than"
     value: 0.5
   - rule_id: MAC-19
-    name: {en: "Jobless claims below 300k", zh: "初请失业金低于 30 万"}
+    rule_name: "jobless_claims_below_300k"
     description: {en: "Passes when the 4-week average of initial jobless claims (weekly new unemployment filings) is below 300,000.", zh: "初请失业金人数（每周新增失业申请）的 4 周均值低于 30 万时通过。"}
     indicator: "I-013"
     operator: "less_than"
     value: 300000
     legacy_id: []
   - rule_id: MAC-20
-    name: {en: "Activity index above -0.7", zh: "活动指数高于 -0.7"}
+    rule_name: "activity_index_above_minus_0_7"
     description: {en: "Passes when the 3-month average of the CFNAI (Chicago Fed National Activity Index, a broad gauge of US economic activity) is above -0.7, the level the Chicago Fed links to recession risk (from its documentation, not verified here).", zh: "CFNAI（芝加哥联储全国活动指数，衡量美国经济整体活动）的 3 个月均值高于 -0.7 时通过，芝加哥联储把这个水平与衰退风险联系起来（来自其文档，这里没有验证）。"}
     indicator: "I-014"
     operator: "greater_than"
     value: -0.7
     legacy_id: []
   - rule_id: MAC-10
-    name: {en: "Dollar 20-day rise below 2%", zh: "美元 20 日升幅低于 2%"}
+    rule_name: "dollar_20_day_rise_below_2pct"
     description: {en: "Passes when the US dollar index (DXY) rose less than 2% over the last 20 trading days.", zh: "美元指数（DXY）最近 20 个交易日涨幅小于 2% 时通过。"}
     indicator: "I-015"
     operator: "less_than"
     value: 2
   - rule_id: MAC-11
-    name: {en: "WTI below $100", zh: "WTI 低于 $100"}
+    rule_name: "wti_below_usd_100"
     description: {en: "Passes when WTI crude oil (West Texas Intermediate, the US oil benchmark) is below $100 a barrel.", zh: "WTI 原油（西德州中质原油，美国原油基准）低于每桶 $100 时通过。"}
     indicator: "I-016"
     operator: "less_than"
     value: 100
     legacy_id: ["Z12"]
   - rule_id: MAC-16
-    name: {en: "WTI 1-month rise below 15%", zh: "WTI 月涨幅低于 15%"}
+    rule_name: "wti_1_month_rise_below_15pct"
     description: {en: "Passes when the one-month rise in WTI crude oil is below 15%.", zh: "WTI 原油月涨幅低于 15% 时通过。"}
     indicator: "I-017"
     operator: "less_than"
     value: 15
     legacy_id: ["Z12"]
   - rule_id: MAC-12
-    name: {en: "M2 growing", zh: "M2 在增长"}
+    rule_name: "m2_growing"
     description: {en: "Passes when M2 (a broad measure of money in the economy) is higher than a year ago.", zh: "M2（广义货币供应）比一年前高时通过。"}
     indicator: "I-018"
     operator: "greater_than"
     value: 0
   - rule_id: MAC-21
-    name: {en: "Fed assets not shrinking", zh: "美联储资产未缩表"}
+    rule_name: "fed_assets_not_shrinking"
     description: {en: "Passes when the Fed's total assets did not fall over the last 13 weeks, meaning its balance sheet is not shrinking.", zh: "美联储总资产在最近 13 周没有下降，即资产负债表没有缩小时通过。"}
     indicator: "I-019"
     operator: "greater_or_equal"
@@ -205,13 +205,13 @@ rule_list:
     legacy_id: []
   # IND · Industry
   - rule_id: IND-01
-    name: {en: "Sector beats SPY", zh: "行业跑赢 SPY"}
+    rule_name: "sector_beats_spy"
     description: {en: "Passes when the sector ETF of the stock's industry beat SPY over the last 126 trading days.", zh: "该股所属行业的 ETF 在最近 126 个交易日跑赢 SPY 时通过。"}
     indicator: "I-020"
     operator: "greater_than"
     value: 0
   - rule_id: IND-02
-    name: {en: "Industry estimates rising", zh: "行业预期上调"}
+    rule_name: "industry_estimates_rising"
     description: {en: "Passes when the median 4-week change of next-year EPS (earnings per share) estimates across the industry's S&P 500 stocks is above 0.", zh: "该行业的标普 500 成分股，下一年 EPS（每股收益）预期的 4 周变化中位数大于 0 时通过。"}
     indicator: "I-021"
     operator: "greater_than"
@@ -219,72 +219,72 @@ rule_list:
     note: {en: "Difficulty 5, not planned yet: it needs the next-year EPS estimates of every stock in the sector, hundreds of requests per refresh.", zh: "难度 5，暂不实现：需要抓取行业内每只股票的下一年 EPS 预期，每次刷新要几百次请求。"}
   # QUA · Company quality
   - rule_id: QUA-01
-    name: {en: "Profitable", zh: "盈利为正"}
+    rule_name: "profitable"
     description: {en: "Passes when the company made a profit over the last 12 months (EPS, earnings per share, TTM, trailing twelve months, above 0).", zh: "公司最近 12 个月赚钱（EPS，每股收益，TTM 即过去十二个月，大于 0）时通过。"}
     indicator: "I-022"
     operator: "greater_than"
     value: 0
     legacy_id: ["F01"]
   - rule_id: QUA-02
-    name: {en: "Revenue growth", zh: "营收增长"}
+    rule_name: "revenue_growth"
     description: {en: "Passes when revenue is higher than a year earlier.", zh: "营收比去年同期增长时通过。"}
     indicator: "I-023"
     operator: "greater_than"
     value: 0
     legacy_id: ["F01"]
   - rule_id: QUA-03
-    name: {en: "Revenue 3-year growth", zh: "营收 3 年增速"}
+    rule_name: "revenue_3_year_growth"
     description: {en: "Passes when the 3-year CAGR (compound annual growth rate) of revenue is at least 10%.", zh: "营收的 3 年 CAGR（复合年增长率）不低于 10% 时通过。"}
     indicator: "I-024"
     operator: "greater_or_equal"
     value: 10
   - rule_id: QUA-13
-    name: {en: "EPS 3-year growth", zh: "EPS 3 年增速"}
+    rule_name: "eps_3_year_growth"
     description: {en: "Passes when the 3-year CAGR of EPS (earnings per share) is at least 10%.", zh: "EPS（每股收益）的 3 年 CAGR 不低于 10% 时通过。"}
     indicator: "I-025"
     operator: "greater_or_equal"
     value: 10
     legacy_id: []
   - rule_id: QUA-04
-    name: {en: "ROIC at least 15%", zh: "ROIC 不低于 15%"}
+    rule_name: "roic_at_least_15pct"
     description: {en: "Passes when ROIC (return on invested capital: operating profit after 21% tax, divided by debt plus equity minus cash) is at least 15%.", zh: "ROIC（投入资本回报率：扣除 21% 税后的营业利润，除以债务加权益减现金）不低于 15% 时通过。"}
     indicator: "I-026"
     operator: "greater_or_equal"
     value: 15
   - rule_id: QUA-14
-    name: {en: "ROE at least 15%", zh: "ROE 不低于 15%"}
+    rule_name: "roe_at_least_15pct"
     description: {en: "Passes when ROE (return on equity) is at least 15%.", zh: "ROE（股本回报率）不低于 15% 时通过。"}
     indicator: "I-027"
     operator: "greater_or_equal"
     value: 15
     legacy_id: []
   - rule_id: QUA-05
-    name: {en: "Gross margin at least 40%", zh: "毛利率不低于 40%"}
+    rule_name: "gross_margin_at_least_40pct"
     description: {en: "Passes when the gross margin is at least 40%.", zh: "毛利率不低于 40% 时通过。"}
     indicator: "I-028"
     operator: "greater_or_equal"
     value: 40
   - rule_id: QUA-06
-    name: {en: "FCF positive", zh: "自由现金流为正"}
+    rule_name: "fcf_positive"
     description: {en: "Passes when TTM (trailing twelve months) FCF (free cash flow, the cash left after capital spending) is above 0.", zh: "TTM（过去十二个月）FCF（自由现金流，扣除资本开支后剩下的现金）大于 0 时通过。"}
     indicator: "I-029"
     operator: "greater_than"
     value: 0
   - rule_id: QUA-15
-    name: {en: "FCF growing", zh: "自由现金流增长"}
+    rule_name: "fcf_growing"
     description: {en: "Passes when TTM free cash flow is higher than a year earlier.", zh: "TTM 自由现金流比一年前高时通过。"}
     indicator: "I-030"
     operator: "greater_than"
     value: 0
     legacy_id: []
   - rule_id: QUA-07
-    name: {en: "Net debt to EBITDA below 2", zh: "净负债/EBITDA 低于 2"}
+    rule_name: "net_debt_to_ebitda_below_2"
     description: {en: "Passes when net debt to EBITDA is below 2.", zh: "净负债/EBITDA 低于 2 时通过。"}
     indicator: "I-032"
     operator: "less_than"
     value: 2
   - rule_id: QUA-11
-    name: {en: "Net debt to EBITDA below 4", zh: "净负债/EBITDA 低于 4"}
+    rule_name: "net_debt_to_ebitda_below_4"
     description: {en: "Passes when net debt to EBITDA is below 4.", zh: "净负债/EBITDA 低于 4 时通过。"}
     indicator: "I-032"
     operator: "less_than"
@@ -292,20 +292,20 @@ rule_list:
     band_of: "QUA-07"
     legacy_id: []
   - rule_id: QUA-12
-    name: {en: "Interest coverage above 5", zh: "利息保障倍数高于 5"}
+    rule_name: "interest_coverage_above_5"
     description: {en: "Passes when interest coverage (how many times operating profit covers interest payments) is above 5.", zh: "利息保障倍数（营业利润能覆盖利息支出几倍）高于 5 时通过。"}
     indicator: "I-033"
     operator: "greater_than"
     value: 5
     legacy_id: []
   - rule_id: QUA-08
-    name: {en: "Cash flow covers profit", zh: "现金流覆盖利润"}
+    rule_name: "cash_flow_covers_profit"
     description: {en: "Passes when TTM operating cash flow divided by net income is at least 1.0.", zh: "TTM 经营现金流除以净利润不低于 1.0 时通过。"}
     indicator: "I-031"
     operator: "greater_or_equal"
     value: 1.0
   - rule_id: QUA-16
-    name: {en: "Cash flow covers 80% of profit", zh: "现金流覆盖 80% 利润"}
+    rule_name: "cash_flow_covers_80pct_of_profit"
     description: {en: "Passes when TTM operating cash flow divided by net income is at least 0.8.", zh: "TTM 经营现金流除以净利润不低于 0.8 时通过。"}
     indicator: "I-031"
     operator: "greater_or_equal"
@@ -313,14 +313,14 @@ rule_list:
     band_of: "QUA-08"
     legacy_id: []
   - rule_id: QUA-09
-    name: {en: "Estimates rising", zh: "预期上调"}
+    rule_name: "estimates_rising"
     description: {en: "Passes when the consensus next-year EPS (earnings per share) estimate is higher than four weeks ago.", zh: "下一年 EPS（每股收益）的一致预期比四周前高时通过。"}
     indicator: "I-034"
     operator: "greater_than"
     value: 0
     legacy_id: ["Z17"]
   - rule_id: QUA-10
-    name: {en: "Buy ratings above 60%", zh: "买入评级超过 60%"}
+    rule_name: "buy_ratings_above_60pct"
     description: {en: "Passes when more than 60% of the brokers that changed or repeated a rating in the last 12 months have a buy-type latest rating (Buy, Outperform or Overweight).", zh: "最近 12 个月里调整或重申过评级的券商中，最新评级是买入类（Buy、Outperform、Overweight）的占比超过 60% 时通过。"}
     indicator: "I-035"
     operator: "greater_than"
@@ -328,26 +328,26 @@ rule_list:
     legacy_id: ["F01"]
   # MGT · Management and governance
   - rule_id: MGT-01
-    name: {en: "Insider selling small", zh: "内部人卖出很少"}
+    rule_name: "insider_selling_small"
     description: {en: "Passes when net open-market selling by insiders (transaction code S minus P) over the last 180 days is below 0.5% of shares outstanding.", zh: "内部人最近 180 天的公开市场净卖出（交易代码 S 减 P）低于总股数的 0.5% 时通过。"}
     indicator: "I-036"
     operator: "less_than"
     value: 0.5
   - rule_id: MGT-05
-    name: {en: "Insider bought", zh: "内部人买入"}
+    rule_name: "insider_bought"
     description: {en: "Passes when at least one insider bought shares on the open market (transaction code P) in the last 90 days.", zh: "最近 90 天内至少有一位内部人在公开市场买入（交易代码 P）时通过。"}
     indicator: "I-037"
     operator: "greater_or_equal"
     value: 1
     legacy_id: []
   - rule_id: MGT-02
-    name: {en: "Share count not rising", zh: "股数没有增加"}
+    rule_name: "share_count_not_rising"
     description: {en: "Passes when the share count is not higher than a year ago (the company is buying back).", zh: "总股数不比一年前多（公司在回购）时通过。"}
     indicator: "I-038"
     operator: "less_or_equal"
     value: 0
   - rule_id: MGT-06
-    name: {en: "Share count up at most 2%", zh: "股数增幅不超过 2%"}
+    rule_name: "share_count_up_at_most_2pct"
     description: {en: "Passes when the share count is at most 2% higher than a year ago.", zh: "总股数比一年前多出不超过 2% 时通过。"}
     indicator: "I-038"
     operator: "less_or_equal"
@@ -355,52 +355,52 @@ rule_list:
     band_of: "MGT-02"
     legacy_id: []
   - rule_id: MGT-03
-    name: {en: "Dividend covered", zh: "分红被覆盖"}
+    rule_name: "dividend_covered"
     description: {en: "Passes when dividends paid divided by TTM FCF (free cash flow) are at most 0.8, or the company pays no dividend.", zh: "分红除以 TTM FCF（自由现金流）不超过 0.8，或公司不分红时通过。"}
     indicator: "I-039"
     operator: "less_or_equal"
     value: 0.8
   - rule_id: MGT-04
-    name: {en: "No audit red flags", zh: "无审计预警"}
+    rule_name: "no_audit_red_flags"
     description: {en: "Passes when the company has no auditor change (8-K Item 4.01), no statement that past financials can no longer be relied on (8-K Item 4.02) and no late-filing notice (NT 10-K or NT 10-Q) in the last 365 days.", zh: "最近 365 天内没有更换审计师（8-K 第 4.01 项）、没有声明过往财报不可再依赖（8-K 第 4.02 项）、也没有迟交财报通知（NT 10-K 或 NT 10-Q）时通过。"}
     indicator: "I-040"
     operator: "is_true"
   # VAL · Valuation
   - rule_id: VAL-01
-    name: {en: "S&P 500 forward PE below 22", zh: "标普 500 Forward PE 低于 22"}
+    rule_name: "sp500_forward_pe_below_22"
     description: {en: "Passes when the S&P 500 forward PE is below 22.", zh: "标普 500 的 Forward PE 低于 22 时通过。"}
     indicator: "I-041"
     operator: "less_than"
     value: 22
     note: {en: "Difficulty 5, not planned yet: the only free source is the weekly FactSet Earnings Insight PDF, whose layout changes and has to be read by hand or by an AI.", zh: "难度 5，暂不实现：唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，版式会变，只能人工或用 AI 读取。"}
   - rule_id: VAL-03
-    name: {en: "Equity premium positive", zh: "股权风险溢价为正"}
+    rule_name: "equity_premium_positive"
     description: {en: "Passes when the S&P 500 earnings yield (1 divided by the PE) minus the 10-year Treasury yield is above 0.", zh: "标普 500 的盈利收益率（市盈率的倒数）减 10 年期国债收益率大于 0 时通过。"}
     indicator: "I-042"
     operator: "greater_than"
     value: 0
   - rule_id: VAL-11
-    name: {en: "Shiller CAPE below 30", zh: "Shiller CAPE 低于 30"}
+    rule_name: "shiller_cape_below_30"
     description: {en: "Passes when the Shiller CAPE (cyclically adjusted PE: the S&P 500 price divided by its 10-year average of inflation-adjusted earnings) is below 30.", zh: "Shiller CAPE（周期调整市盈率：标普 500 价格除以 10 年通胀调整后盈利的均值）低于 30 时通过。"}
     indicator: "I-043"
     operator: "less_than"
     value: 30
     legacy_id: []
   - rule_id: VAL-12
-    name: {en: "Implied ERP at least 4%", zh: "隐含 ERP 不低于 4%"}
+    rule_name: "implied_erp_at_least_4pct"
     description: {en: "Passes when Damodaran's implied ERP (equity risk premium: the extra return the market is pricing for holding stocks instead of Treasuries) is at least 4%.", zh: "Damodaran 的隐含 ERP（股权风险溢价：市场为持有股票而不是国债所要求的额外回报）不低于 4% 时通过。"}
     indicator: "I-044"
     operator: "greater_or_equal"
     value: 4
     legacy_id: []
   - rule_id: VAL-04
-    name: {en: "Market cap to GDP below 200%", zh: "市值/GDP 低于 200%"}
+    rule_name: "market_cap_to_gdp_below_200pct"
     description: {en: "Passes when US non-financial corporate equities (Fed Z.1 report) divided by GDP are below 200%.", zh: "美国非金融企业股权市值（美联储 Z.1 报告）除以 GDP 低于 200% 时通过。"}
     indicator: "I-045"
     operator: "less_than"
     value: 200
   - rule_id: VAL-14
-    name: {en: "Market cap to GDP below 150%", zh: "市值/GDP 低于 150%"}
+    rule_name: "market_cap_to_gdp_below_150pct"
     description: {en: "Passes when US non-financial corporate equities divided by GDP are below 150%.", zh: "美国非金融企业股权市值除以 GDP 低于 150% 时通过。"}
     indicator: "I-045"
     operator: "less_than"
@@ -408,38 +408,38 @@ rule_list:
     band_of: "VAL-04"
     legacy_id: []
   - rule_id: VAL-05
-    name: {en: "PE below own median", zh: "PE 低于自身中位数"}
+    rule_name: "pe_below_own_median"
     description: {en: "Passes when the TTM PE is below its own 5-year median (the ratio is below 1.0).", zh: "TTM 市盈率低于它自己 5 年的中位数（比值小于 1.0）时通过。"}
     indicator: "I-046"
     operator: "less_than"
     value: 1.0
   - rule_id: VAL-06
-    name: {en: "Forward PE below TTM PE", zh: "Forward PE 低于 TTM PE"}
+    rule_name: "forward_pe_below_ttm_pe"
     description: {en: "Passes when the forward PE is below the TTM PE (the market expects earnings to grow).", zh: "Forward PE 低于 TTM 市盈率（市场预期盈利增长）时通过。"}
     indicator: "I-047"
     operator: "less_than"
     value: 1.0
   - rule_id: VAL-07
-    name: {en: "EV/EBITDA below 15", zh: "EV/EBITDA 低于 15"}
+    rule_name: "ev_ebitda_below_15"
     description: {en: "Passes when EV/EBITDA is below 15.", zh: "EV/EBITDA 低于 15 时通过。"}
     indicator: "I-048"
     operator: "less_than"
     value: 15
   - rule_id: VAL-13
-    name: {en: "PEG below 1.5", zh: "PEG 低于 1.5"}
+    rule_name: "peg_below_1_5"
     description: {en: "Passes when the PEG (forward PE divided by the expected earnings growth rate, taken from next-year over this-year consensus EPS) is below 1.5.", zh: "PEG（Forward PE 除以预期盈利增速，增速取下一年对今年的一致预期 EPS）低于 1.5 时通过。"}
     indicator: "I-049"
     operator: "less_than"
     value: 1.5
     legacy_id: []
   - rule_id: VAL-08
-    name: {en: "FCF yield at least 5%", zh: "自由现金流收益率不低于 5%"}
+    rule_name: "fcf_yield_at_least_5pct"
     description: {en: "Passes when the FCF yield is at least 5%.", zh: "自由现金流收益率不低于 5% 时通过。"}
     indicator: "I-050"
     operator: "greater_or_equal"
     value: 5
   - rule_id: VAL-10
-    name: {en: "FCF yield at least 3%", zh: "自由现金流收益率不低于 3%"}
+    rule_name: "fcf_yield_at_least_3pct"
     description: {en: "Passes when the FCF yield is at least 3%.", zh: "自由现金流收益率不低于 3% 时通过。"}
     indicator: "I-050"
     operator: "greater_or_equal"
@@ -447,7 +447,7 @@ rule_list:
     band_of: "VAL-08"
     legacy_id: []
   - rule_id: VAL-09
-    name: {en: "Safety margin", zh: "安全边际"}
+    rule_name: "safety_margin"
     description: {en: "Passes when the strike of the put you sell is no higher than the price you would be happy to pay for the stock. This is the core safety margin of selling puts. Source: your own answer; no data feed.", zh: "你卖出的 Put 的行权价不高于你愿意买入这只股票的价格时通过，这是卖 Put 最核心的安全边际。数据来源：你自己的回答，没有数据源。"}
     method: "manual"
     quantifiable: "yes"
@@ -456,14 +456,14 @@ rule_list:
     legacy_id: ["A16"]
   # SEN · Sentiment and positioning
   - rule_id: SEN-01
-    name: {en: "VIX at least 15", zh: "VIX 不低于 15"}
+    rule_name: "vix_at_least_15"
     description: {en: "Passes when the VIX is at least 15.", zh: "VIX 不低于 15 时通过。"}
     indicator: "I-051"
     operator: "greater_or_equal"
     value: 15
     legacy_id: ["A11"]
   - rule_id: SEN-10
-    name: {en: "VIX at least 12", zh: "VIX 不低于 12"}
+    rule_name: "vix_at_least_12"
     description: {en: "Passes when the VIX is at least 12.", zh: "VIX 不低于 12 时通过。"}
     indicator: "I-051"
     operator: "greater_or_equal"
@@ -471,7 +471,7 @@ rule_list:
     band_of: "SEN-01"
     legacy_id: ["A10"]
   - rule_id: SEN-11
-    name: {en: "VIX below 20", zh: "VIX 低于 20"}
+    rule_name: "vix_below_20"
     description: {en: "Passes when the VIX is below 20.", zh: "VIX 低于 20 时通过。"}
     indicator: "I-051"
     operator: "less_than"
@@ -479,7 +479,7 @@ rule_list:
     band_of: "SEN-01"
     legacy_id: []
   - rule_id: SEN-12
-    name: {en: "VIX below 25", zh: "VIX 低于 25"}
+    rule_name: "vix_below_25"
     description: {en: "Passes when the VIX is below 25.", zh: "VIX 低于 25 时通过。"}
     indicator: "I-051"
     operator: "less_than"
@@ -487,7 +487,7 @@ rule_list:
     band_of: "SEN-01"
     legacy_id: ["T01"]
   - rule_id: SEN-13
-    name: {en: "VIX below 30", zh: "VIX 低于 30"}
+    rule_name: "vix_below_30"
     description: {en: "Passes when the VIX is below 30.", zh: "VIX 低于 30 时通过。"}
     indicator: "I-051"
     operator: "less_than"
@@ -495,7 +495,7 @@ rule_list:
     band_of: "SEN-01"
     legacy_id: []
   - rule_id: SEN-14
-    name: {en: "VIX at least 30", zh: "VIX 不低于 30"}
+    rule_name: "vix_at_least_30"
     description: {en: "Passes when the VIX is at least 30.", zh: "VIX 不低于 30 时通过。"}
     indicator: "I-051"
     operator: "greater_or_equal"
@@ -503,7 +503,7 @@ rule_list:
     band_of: "SEN-01"
     legacy_id: ["D02"]
   - rule_id: SEN-15
-    name: {en: "VIX at least 40", zh: "VIX 不低于 40"}
+    rule_name: "vix_at_least_40"
     description: {en: "Passes when the VIX is at least 40.", zh: "VIX 不低于 40 时通过。"}
     indicator: "I-051"
     operator: "greater_or_equal"
@@ -511,20 +511,20 @@ rule_list:
     band_of: "SEN-01"
     legacy_id: []
   - rule_id: SEN-02
-    name: {en: "VIX term structure", zh: "VIX 期限结构"}
+    rule_name: "vix_term_structure"
     description: {en: "Passes when the VIX is below the VIX3M, the shape called contango.", zh: "VIX 低于 VIX3M 时通过，这种形态叫 contango。"}
     indicator: "I-054"
     operator: "is_true"
     legacy_id: ["Z19"]
   - rule_id: SEN-03
-    name: {en: "VXN/VIX below 1.3", zh: "VXN/VIX 低于 1.3"}
+    rule_name: "vxn_vix_below_1_3"
     description: {en: "Passes when the VXN to VIX ratio is below 1.3.", zh: "VXN 与 VIX 的比值低于 1.3 时通过。"}
     indicator: "I-055"
     operator: "less_than"
     value: 1.3
     note: {en: "Measured since 2009: median ratio about 1.17, 80th percentile about 1.29; 1.3 sits just above that", zh: "2009 年以来实测：比值中位数约 1.17，第 80 百分位约 1.29；1.3 刚好在其上方"}
   - rule_id: SEN-04
-    name: {en: "Fear and Greed below 25", zh: "恐惧贪婪低于 25"}
+    rule_name: "fear_and_greed_below_25"
     description: {en: "Passes when the CNN Fear and Greed Index is below 25 (extreme fear).", zh: "CNN 恐惧贪婪指数低于 25（极度恐惧）时通过。"}
     indicator: "I-056"
     operator: "less_than"
@@ -532,7 +532,7 @@ rule_list:
     legacy_id: ["D02"]
     note: {en: "Contrarian seller view. SEN-18 (above 75) points the opposite way and belongs to a bearish strategy", zh: "逆向的卖方视角。SEN-18（高于 75）方向相反，属于看空策略"}
   - rule_id: SEN-16
-    name: {en: "Fear and Greed below 45", zh: "恐惧贪婪低于 45"}
+    rule_name: "fear_and_greed_below_45"
     description: {en: "Passes when the CNN Fear and Greed Index is below 45 (fear or worse).", zh: "CNN 恐惧贪婪指数低于 45（恐惧或更低）时通过。"}
     indicator: "I-056"
     operator: "less_than"
@@ -540,7 +540,7 @@ rule_list:
     band_of: "SEN-04"
     legacy_id: ["A09", "B02"]
   - rule_id: SEN-17
-    name: {en: "Fear and Greed at most 55", zh: "恐惧贪婪不高于 55"}
+    rule_name: "fear_and_greed_at_most_55"
     description: {en: "Passes when the CNN Fear and Greed Index is at most 55 (not in greed).", zh: "CNN 恐惧贪婪指数不高于 55（没有进入贪婪）时通过。"}
     indicator: "I-056"
     operator: "less_or_equal"
@@ -548,7 +548,7 @@ rule_list:
     band_of: "SEN-04"
     legacy_id: ["A08"]
   - rule_id: SEN-18
-    name: {en: "Fear and Greed above 75", zh: "恐惧贪婪高于 75"}
+    rule_name: "fear_and_greed_above_75"
     description: {en: "Passes when the CNN Fear and Greed Index is above 75 (extreme greed).", zh: "CNN 恐惧贪婪指数高于 75（极度贪婪）时通过。"}
     indicator: "I-056"
     operator: "greater_than"
@@ -556,13 +556,13 @@ rule_list:
     band_of: "SEN-04"
     legacy_id: ["D03"]
   - rule_id: SEN-05
-    name: {en: "AAII bulls minus bears below 0", zh: "AAII 看多减看空小于 0"}
+    rule_name: "aaii_bulls_minus_bears_below_0"
     description: {en: "Passes when, in the weekly AAII (American Association of Individual Investors) survey, the bullish share minus the bearish share is below 0.", zh: "AAII（美国个人投资者协会）每周问卷里，看多比例减看空比例小于 0 时通过。"}
     indicator: "I-057"
     operator: "less_than"
     value: 0
   - rule_id: SEN-20
-    name: {en: "AAII bulls below 50%", zh: "AAII 看多低于 50%"}
+    rule_name: "aaii_bulls_below_50pct"
     description: {en: "Passes when the AAII bullish share is below 50%.", zh: "AAII 看多比例低于 50% 时通过。"}
     indicator: "I-058"
     operator: "less_than"
@@ -570,13 +570,13 @@ rule_list:
     band_of: "SEN-05"
     legacy_id: []
   - rule_id: SEN-06
-    name: {en: "NAAIM below 80", zh: "NAAIM 低于 80"}
+    rule_name: "naaim_below_80"
     description: {en: "Passes when the NAAIM exposure index is below 80 (managers are not crowded into stocks).", zh: "NAAIM 仓位指数低于 80（经理人没有挤在股票里）时通过。"}
     indicator: "I-059"
     operator: "less_than"
     value: 80
   - rule_id: SEN-21
-    name: {en: "NAAIM below 40", zh: "NAAIM 低于 40"}
+    rule_name: "naaim_below_40"
     description: {en: "Passes when the NAAIM exposure index is below 40 (managers are defensive).", zh: "NAAIM 仓位指数低于 40（经理人偏防守）时通过。"}
     indicator: "I-059"
     operator: "less_than"
@@ -584,13 +584,13 @@ rule_list:
     band_of: "SEN-06"
     legacy_id: []
   - rule_id: SEN-07
-    name: {en: "Put/Call at least 0.7", zh: "Put/Call 不低于 0.7"}
+    rule_name: "put_call_at_least_0_7"
     description: {en: "Passes when the 5-day average of the total put/call ratio is at least 0.7.", zh: "总 Put/Call 比率的 5 日均值不低于 0.7 时通过。"}
     indicator: "I-060"
     operator: "greater_or_equal"
     value: 0.7
   - rule_id: SEN-22
-    name: {en: "Put/Call at least 1.0", zh: "Put/Call 不低于 1.0"}
+    rule_name: "put_call_at_least_1_0"
     description: {en: "Passes when the 5-day average of the total put/call ratio is at least 1.0, a sign of fear.", zh: "总 Put/Call 比率的 5 日均值不低于 1.0 时通过，这是恐惧的迹象。"}
     indicator: "I-060"
     operator: "greater_or_equal"
@@ -598,19 +598,19 @@ rule_list:
     band_of: "SEN-07"
     legacy_id: []
   - rule_id: SEN-08
-    name: {en: "Mega IPO", zh: "超大型 IPO"}
+    rule_name: "mega_ipo"
     description: {en: "Passes when no IPO (initial public offering, a company's first stock sale) of $10 billion or more was priced in the last 30 trading days.", zh: "最近 30 个交易日内没有 ≥ $100 亿的 IPO（首次公开募股，公司第一次卖股票）定价时通过。"}
     indicator: "I-062"
     operator: "is_true"
     legacy_id: ["A05"]
   - rule_id: SEN-09
-    name: {en: "Short interest below 10%", zh: "空头比例低于 10%"}
+    rule_name: "short_interest_below_10pct"
     description: {en: "Passes when short interest (shares sold short) is below 10% of the shares outstanding.", zh: "空头（被卖空的股数）占总股数的比例低于 10% 时通过。"}
     indicator: "I-061"
     operator: "less_than"
     value: 10
   - rule_id: SEN-19
-    name: {en: "Short interest below 20%", zh: "空头比例低于 20%"}
+    rule_name: "short_interest_below_20pct"
     description: {en: "Passes when short interest is below 20% of the shares outstanding.", zh: "空头占总股数的比例低于 20% 时通过。"}
     indicator: "I-061"
     operator: "less_than"
@@ -619,20 +619,20 @@ rule_list:
     legacy_id: []
   # TRD · Trend and momentum
   - rule_id: TRD-01
-    name: {en: "Market above 200-day", zh: "大盘在 200 日线上"}
+    rule_name: "market_above_200_day"
     description: {en: "Passes when the S&P 500 closes above its 200-day moving average (the average close of the last 200 days), which marks an uptrend for the whole market.", zh: "标普 500 收盘价在 200 日均线（最近 200 天收盘价的平均值）之上时通过，表示整个市场处于上升趋势。"}
     indicator: "I-063"
     operator: "is_true"
     legacy_id: ["Z18"]
   - rule_id: TRD-02
-    name: {en: "Breadth at least 60%", zh: "广度不低于 60%"}
+    rule_name: "breadth_at_least_60pct"
     description: {en: "Passes when at least 60% of the S&P 500 members at that time are above their 200-day average.", zh: "当时的标普 500 成分股中，至少 60% 站在自己的 200 日线上方时通过。"}
     indicator: "I-064"
     operator: "greater_or_equal"
     value: 60
     note: {en: "Difficulty 5, not planned yet: it needs the daily closes of all 500 index members and the list of members.", zh: "难度 5，暂不实现：需要 500 只成分股的每日收盘价和成分股名单。"}
   - rule_id: TRD-21
-    name: {en: "Breadth at least 40%", zh: "广度不低于 40%"}
+    rule_name: "breadth_at_least_40pct"
     description: {en: "Passes when at least 40% of the S&P 500 members at that time are above their 200-day average.", zh: "当时的标普 500 成分股中，至少 40% 站在自己的 200 日线上方时通过。"}
     indicator: "I-064"
     operator: "greater_or_equal"
@@ -641,44 +641,44 @@ rule_list:
     legacy_id: []
     note: {en: "Difficulty 5, not planned yet: same data as TRD-02 (all 500 index members).", zh: "难度 5，暂不实现：数据同 TRD-02（500 只成分股）。"}
   - rule_id: TRD-22
-    name: {en: "Equal weight leads", zh: "等权跑赢市值加权"}
+    rule_name: "equal_weight_leads"
     description: {en: "Passes when the ratio of RSP (the equal-weight S&P 500 fund) to SPY (the market-weight fund) is above its own 200-day average.", zh: "RSP（等权标普 500 基金）与 SPY（市值加权基金）的比值站在自己的 200 日均线上方时通过。"}
     indicator: "I-065"
     operator: "is_true"
     legacy_id: []
   - rule_id: TRD-03
-    name: {en: "Stock above 200-day", zh: "个股在 200 日线上"}
+    rule_name: "stock_above_200_day"
     description: {en: "Passes when the stock closes above its own 200-day average.", zh: "这只股票收盘价在自己的 200 日均线之上时通过。"}
     indicator: "I-066"
     operator: "is_true"
     legacy_id: ["Z20"]
   - rule_id: TRD-23
-    name: {en: "No new 52-week low", zh: "未创 52 周新低"}
+    rule_name: "no_new_52_week_low"
     description: {en: "Passes when the stock made no new 52-week low in the last 20 trading days.", zh: "该股在最近 20 个交易日没有创 52 周新低时通过。"}
     indicator: "I-067"
     operator: "is_true"
     legacy_id: ["Z20"]
   - rule_id: TRD-04
-    name: {en: "Golden cross state", zh: "黄金交叉状态"}
+    rule_name: "golden_cross_state"
     description: {en: "Passes when the 50-day moving average is above the 200-day moving average, called the golden cross state, the most common trend confirmation.", zh: "50 日均线在 200 日均线之上时通过，称为黄金交叉状态，是最常见的趋势确认。"}
     indicator: "I-068"
     operator: "is_true"
     legacy_id: ["T02"]
   - rule_id: TRD-05
-    name: {en: "Above 50-day", zh: "在 50 日线上"}
+    rule_name: "above_50_day"
     description: {en: "Passes when the close is above the 50-day average, showing the medium-term trend is healthy.", zh: "收盘价在 50 日均线之上时通过，说明中期走势健康。"}
     indicator: "I-069"
     operator: "is_true"
     legacy_id: ["T03"]
   - rule_id: TRD-06
-    name: {en: "Within 5% of 52-week high", zh: "距 52 周高点 5% 以内"}
+    rule_name: "within_5pct_of_52_week_high"
     description: {en: "Passes when the price is within 5% of its 52-week high.", zh: "价格距 52 周高点不超过 5% 时通过。"}
     indicator: "I-070"
     operator: "less_or_equal"
     value: 5
     legacy_id: ["M02"]
   - rule_id: TRD-17
-    name: {en: "Within 15% of 52-week high", zh: "距 52 周高点 15% 以内"}
+    rule_name: "within_15pct_of_52_week_high"
     description: {en: "Passes when the price is within 15% of its 52-week high.", zh: "价格距 52 周高点不超过 15% 时通过。"}
     indicator: "I-070"
     operator: "less_or_equal"
@@ -686,7 +686,7 @@ rule_list:
     band_of: "TRD-06"
     legacy_id: ["T05"]
   - rule_id: TRD-07
-    name: {en: "52-week position at most 25", zh: "52 周位置不高于 25"}
+    rule_name: "range_position_at_most_25"
     description: {en: "Passes when the price sits in the lowest quarter of its 52-week range (position 25 or below).", zh: "价格处于 52 周区间的最低四分之一（位置不高于 25）时通过。"}
     indicator: "I-071"
     operator: "less_or_equal"
@@ -694,7 +694,7 @@ rule_list:
     legacy_id: ["F02"]
     note: {en: "Low zone is the Wheel view; momentum strategies want the opposite and use TRD-06", zh: "低位是 Wheel 的视角；动量策略方向相反，用 TRD-06"}
   - rule_id: TRD-18
-    name: {en: "52-week position at most 50", zh: "52 周位置不高于 50"}
+    rule_name: "range_position_at_most_50"
     description: {en: "Passes when the price sits in the lower half of its 52-week range (position 50 or below).", zh: "价格处于 52 周区间的下半部分（位置不高于 50）时通过。"}
     indicator: "I-071"
     operator: "less_or_equal"
@@ -702,34 +702,34 @@ rule_list:
     band_of: "TRD-07"
     legacy_id: ["F03"]
   - rule_id: TRD-08
-    name: {en: "6-month gain", zh: "6 个月涨幅"}
+    rule_name: "six_month_gain"
     description: {en: "Passes when the stock is up more than 10% over the last 6 months.", zh: "股票最近 6 个月涨幅超过 10% 时通过。"}
     indicator: "I-072"
     operator: "greater_than"
     value: 10
     legacy_id: ["M01"]
   - rule_id: TRD-09
-    name: {en: "Beats SPY", zh: "跑赢 SPY"}
+    rule_name: "beats_spy"
     description: {en: "Passes when the stock's 126-day return is higher than SPY's.", zh: "该股 126 日收益高于 SPY 时通过。"}
     indicator: "I-073"
     operator: "greater_than"
     value: 0
   - rule_id: TRD-10
-    name: {en: "Volume surge", zh: "放量"}
+    rule_name: "volume_surge"
     description: {en: "Passes when the latest day's volume is at least 1.5 times the 20-day average volume.", zh: "最近一天的成交量至少是 20 日平均成交量的 1.5 倍时通过。"}
     indicator: "I-074"
     operator: "greater_or_equal"
     value: 1.5
     legacy_id: ["M03"]
   - rule_id: TRD-11
-    name: {en: "RSI(14) 40 to 70", zh: "RSI(14) 介于 40 和 70 之间"}
+    rule_name: "rsi_14_40_to_70"
     description: {en: "Passes when the 14-day RSI is between 40 and 70.", zh: "14 日 RSI 介于 40 和 70 之间时通过。"}
     indicator: "I-075"
     operator: "between"
     value: [40, 70]
     legacy_id: ["T04"]
   - rule_id: TRD-19
-    name: {en: "RSI(14) below 80", zh: "RSI(14) 低于 80"}
+    rule_name: "rsi_14_below_80"
     description: {en: "Passes when the 14-day RSI is below 80.", zh: "14 日 RSI 低于 80 时通过。"}
     indicator: "I-075"
     operator: "less_than"
@@ -737,14 +737,14 @@ rule_list:
     band_of: "TRD-11"
     legacy_id: ["M04"]
   - rule_id: TRD-12
-    name: {en: "RSI(2) below 5", zh: "RSI(2) 低于 5"}
+    rule_name: "rsi_2_below_5"
     description: {en: "Passes when the 2-day RSI is below 5.", zh: "2 日 RSI 低于 5 时通过。"}
     indicator: "I-076"
     operator: "less_than"
     value: 5
     legacy_id: ["R02"]
   - rule_id: TRD-20
-    name: {en: "RSI(2) below 10", zh: "RSI(2) 低于 10"}
+    rule_name: "rsi_2_below_10"
     description: {en: "Passes when the 2-day RSI is below 10.", zh: "2 日 RSI 低于 10 时通过。"}
     indicator: "I-076"
     operator: "less_than"
@@ -752,33 +752,33 @@ rule_list:
     band_of: "TRD-12"
     legacy_id: ["R01"]
   - rule_id: TRD-13
-    name: {en: "Below 5-day", zh: "跌破 5 日线"}
+    rule_name: "below_5_day"
     description: {en: "Passes when the close is below the 5-day average, confirming a short-term pullback is under way.", zh: "收盘价低于 5 日均线时通过，确认正处于短期回调中。"}
     indicator: "I-077"
     operator: "is_true"
     legacy_id: ["R03"]
   - rule_id: TRD-14
-    name: {en: "Near 60-day low", zh: "靠近 60 日低点"}
+    rule_name: "near_60_day_low"
     description: {en: "Passes when the price is within 3% above its lowest close of the last 60 trading days.", zh: "价格在最近 60 个交易日最低收盘价上方 3% 以内时通过。"}
     indicator: "I-078"
     operator: "less_or_equal"
     value: 3
     legacy_id: ["B06", "F04"]
   - rule_id: TRD-24
-    name: {en: "Near 200-day average", zh: "靠近 200 日线"}
+    rule_name: "near_200_day_average"
     description: {en: "Passes when the price is within 3% of its 200-day average, another common support level.", zh: "价格距 200 日均线不超过 3% 时通过，这是另一个常见的支撑位。"}
     indicator: "I-079"
     operator: "less_or_equal"
     value: 3
     legacy_id: []
   - rule_id: TRD-15
-    name: {en: "ATR at most 3%", zh: "ATR 不高于 3%"}
+    rule_name: "atr_at_most_3pct"
     description: {en: "Passes when the 14-day ATR is at most 3% of the price.", zh: "14 日 ATR 不超过价格的 3% 时通过。"}
     indicator: "I-080"
     operator: "less_or_equal"
     value: 3
   - rule_id: TRD-16
-    name: {en: "SPMO top 20", zh: "SPMO 前 20 大"}
+    rule_name: "spmo_top_20"
     description: {en: "Passes when the stock ranks in the top 20 holdings of SPMO.", zh: "该股排在 SPMO 持仓的前 20 名时通过。"}
     indicator: "I-081"
     operator: "less_or_equal"
@@ -786,7 +786,7 @@ rule_list:
     legacy_id: ["C03", "C05"]
     note: {en: "Depends on an external holdings list", zh: "依赖外部持仓名单"}
   - rule_id: TRD-25
-    name: {en: "SPMO largest holding", zh: "SPMO 第一大持仓"}
+    rule_name: "spmo_largest_holding"
     description: {en: "Passes when the stock is the largest holding of SPMO.", zh: "该股是 SPMO 的第一大持仓时通过。"}
     indicator: "I-081"
     operator: "less_or_equal"
@@ -795,95 +795,95 @@ rule_list:
     legacy_id: []
   # EVT · Events
   - rule_id: EVT-01
-    name: {en: "No earnings", zh: "无财报"}
+    rule_name: "no_earnings"
     description: {en: "Passes when there is no earnings report before the option expires.", zh: "期权到期前没有财报时通过。"}
     indicator: "I-082"
     operator: "is_true"
     legacy_id: ["A22", "F05"]
   - rule_id: EVT-02
-    name: {en: "No FOMC", zh: "无 FOMC"}
+    rule_name: "no_fomc"
     description: {en: "Passes when no FOMC (Federal Open Market Committee, the Fed committee that sets US interest rates) meeting falls inside the option's life.", zh: "期权存续期内没有 FOMC（联邦公开市场委员会，美联储负责定利率的委员会）会议时通过。"}
     indicator: "I-086"
     operator: "is_true"
     legacy_id: ["F06"]
   - rule_id: EVT-03
-    name: {en: "No CPI/PCE", zh: "无 CPI/PCE"}
+    rule_name: "no_cpi_pce"
     description: {en: "Passes when no CPI (Consumer Price Index) or PCE (Personal Consumption Expenditures price index) inflation release falls inside the option's life, and no new position is opened on a release day.", zh: "期权存续期内没有 CPI（消费者物价指数）或 PCE（个人消费支出物价指数）通胀数据公布，并且不在公布日开新仓时通过。"}
     indicator: "I-087"
     operator: "is_true"
     legacy_id: ["F07", "Z14"]
   - rule_id: EVT-04
-    name: {en: "No election", zh: "无选举日"}
+    rule_name: "no_election"
     description: {en: "Passes when no election day falls inside the option's life.", zh: "期权存续期内没有选举日时通过。"}
     indicator: "I-089"
     operator: "is_true"
     legacy_id: ["F07"]
   - rule_id: EVT-05
-    name: {en: "No jobs report", zh: "避开非农"}
+    rule_name: "no_jobs_report"
     description: {en: "Passes when the monthly jobs report (nonfarm payrolls, the number of jobs added, usually released on the first Friday of the month) is not due yesterday, today or tomorrow.", zh: "月度非农就业报告（新增非农就业人数，通常在每月第一个周五公布）不在昨天、今天或明天时通过。"}
     indicator: "I-088"
     operator: "is_true"
     legacy_id: ["Z13"]
   - rule_id: EVT-06
-    name: {en: "No ex-dividend", zh: "无除息日"}
+    rule_name: "no_ex_dividend"
     description: {en: "Passes when no ex-dividend date (the first day the stock trades without its next dividend) falls inside the option's life.", zh: "期权存续期内没有除息日（股票不再含有下一次分红的第一天）时通过。"}
     indicator: "I-083"
     operator: "is_true"
     legacy_id: ["Z08"]
   - rule_id: EVT-07
-    name: {en: "Trade uncertainty low", zh: "贸易不确定性低"}
+    rule_name: "trade_uncertainty_low"
     description: {en: "Passes when the trade policy uncertainty index (EPU, Economic Policy Uncertainty, built from newspaper coverage) is below its 90th percentile of the past 10 years.", zh: "贸易政策不确定性指数（EPU，经济政策不确定性指数，由报纸报道量编制）低于它过去 10 年的第 90 百分位时通过。"}
     indicator: "I-092"
     operator: "less_than"
     value: 90
     legacy_id: ["Z09"]
   - rule_id: EVT-08
-    name: {en: "Geopolitical risk low", zh: "地缘风险低"}
+    rule_name: "geopolitical_risk_low"
     description: {en: "Passes when the 30-day average of the GPR (Geopolitical Risk Index by Caldara and Iacoviello, built from newspaper coverage) is below its 90th percentile of the past 5 years.", zh: "GPR（Caldara 和 Iacoviello 编制的地缘政治风险指数，由报纸报道量编制）的 30 日均值低于它过去 5 年的第 90 百分位时通过。"}
     indicator: "I-094"
     operator: "less_than"
     value: 90
     legacy_id: ["Z10"]
   - rule_id: EVT-14
-    name: {en: "Policy uncertainty low", zh: "政策不确定性低"}
+    rule_name: "policy_uncertainty_low"
     description: {en: "Passes when the 30-day average of the daily US EPU (Economic Policy Uncertainty index) is below its 90th percentile of the past 5 years.", zh: "美国每日 EPU（经济政策不确定性指数）的 30 日均值低于它过去 5 年的第 90 百分位时通过。"}
     indicator: "I-093"
     operator: "less_than"
     value: 90
     legacy_id: []
   - rule_id: EVT-10
-    name: {en: "Industry leader earnings", zh: "同业龙头财报"}
+    rule_name: "industry_leader_earnings"
     description: {en: "Passes when the industry leader listed for the stock reports no earnings inside the option's life.", zh: "期权存续期内，该股所列的行业龙头没有财报时通过。"}
     indicator: "I-084"
     operator: "is_true"
     legacy_id: ["Z15"]
   - rule_id: EVT-11
-    name: {en: "Customer and supplier earnings", zh: "客户与供应商财报"}
+    rule_name: "customer_and_supplier_earnings"
     description: {en: "Passes when the major customers and suppliers listed for the stock report no earnings inside the option's life.", zh: "期权存续期内，该股所列的主要客户和供应商没有财报时通过。"}
     indicator: "I-085"
     operator: "is_true"
     legacy_id: ["Z16"]
   - rule_id: EVT-12
-    name: {en: "SPMO rebalance window", zh: "SPMO 换仓窗口"}
+    rule_name: "spmo_rebalance_window"
     description: {en: "True when it is March or September, the months in which SPMO (the Invesco S&P 500 Momentum ETF) rebalances and the momentum rotation strategy trades.", zh: "处于 3 月或 9 月时为真，这是 SPMO（景顺标普 500 动量 ETF）换仓、动量轮动策略交易的月份。"}
     indicator: "I-090"
     operator: "is_true"
     legacy_id: ["C01"]
   - rule_id: EVT-13
-    name: {en: "No witching soon", zh: "近期无四巫日"}
+    rule_name: "no_witching_soon"
     description: {en: "Passes when no quadruple witching day (the third Friday of March, June, September or December) falls within the next 5 trading days.", zh: "未来 5 个交易日内没有四巫日（3、6、9、12 月的第三个周五）时通过。"}
     indicator: "I-091"
     operator: "is_true"
   # LIQ · Liquidity
   - rule_id: LIQ-01
-    name: {en: "Market cap above $200B", zh: "市值高于 2,000 亿美元"}
+    rule_name: "market_cap_above_usd_200b"
     description: {en: "Passes when market capitalization (share price times shares outstanding) is above $200 billion.", zh: "市值（股价乘以总股数）超过 $2,000 亿时通过。"}
     indicator: "I-095"
     operator: "greater_than"
     value: 200
     legacy_id: ["E02"]
   - rule_id: LIQ-06
-    name: {en: "Market cap above $10B", zh: "市值高于 100 亿美元"}
+    rule_name: "market_cap_above_usd_10b"
     description: {en: "Passes when market capitalization is above $10 billion (the rule value is in billions of dollars).", zh: "市值高于 100 亿美元（规则数值以十亿美元为单位）时通过。"}
     indicator: "I-095"
     operator: "greater_than"
@@ -891,7 +891,7 @@ rule_list:
     band_of: "LIQ-01"
     legacy_id: []
   - rule_id: LIQ-07
-    name: {en: "Market cap above $100B", zh: "市值高于 1000 亿美元"}
+    rule_name: "market_cap_above_usd_100b"
     description: {en: "Passes when market capitalization is above $100 billion, a fixed size line because a ranking line such as 'top 100' drifts over time.", zh: "市值高于 1000 亿美元时通过，这是一条固定的规模线，因为“前 100 大”这类排名的分界线会随时间漂移。"}
     indicator: "I-095"
     operator: "greater_than"
@@ -899,13 +899,13 @@ rule_list:
     band_of: "LIQ-01"
     legacy_id: ["D01"]
   - rule_id: LIQ-03
-    name: {en: "Daily value at least $100M", zh: "日成交额不低于 1 亿美元"}
+    rule_name: "daily_value_at_least_usd_100m"
     description: {en: "Passes when the 20-day average daily trading value is at least $100 million.", zh: "20 日平均日成交额不低于 1 亿美元时通过。"}
     indicator: "I-096"
     operator: "greater_or_equal"
     value: 100000000
   - rule_id: LIQ-08
-    name: {en: "Daily value at least $50M", zh: "日成交额不低于 5000 万美元"}
+    rule_name: "daily_value_at_least_usd_50m"
     description: {en: "Passes when the 20-day average daily trading value is at least $50 million.", zh: "20 日平均日成交额不低于 5000 万美元时通过。"}
     indicator: "I-096"
     operator: "greater_or_equal"
@@ -913,21 +913,21 @@ rule_list:
     band_of: "LIQ-03"
     legacy_id: []
   - rule_id: LIQ-04
-    name: {en: "Bid-ask spread", zh: "买卖价差"}
+    rule_name: "bid_ask_spread"
     description: {en: "Passes when the bid-ask spread (the gap between the best buy and sell quotes) is at most 5% of the mid price (the average of the two).", zh: "买卖价差（最优买价与卖价的差距）不超过中间价（两者的平均）的 5% 时通过。"}
     indicator: "I-097"
     operator: "less_or_equal"
     value: 5
     legacy_id: ["Z06"]
   - rule_id: LIQ-05
-    name: {en: "Open interest and volume", zh: "持仓量与成交量"}
+    rule_name: "open_interest_and_volume"
     description: {en: "Passes when open interest (contracts still open) is at least 500 and the day's volume at least 100.", zh: "未平仓量（仍未了结的合约数）至少 500，且当日成交量至少 100 时通过。"}
     indicator: "I-098"
     operator: "greater_or_equal"
     value: 500
     legacy_id: ["Z07"]
   - rule_id: LIQ-09
-    name: {en: "Volume at least 100", zh: "成交量不低于 100"}
+    rule_name: "volume_at_least_100"
     description: {en: "Passes when the option's volume for the day is at least 100 contracts.", zh: "期权当日成交量至少 100 张时通过。"}
     indicator: "I-099"
     operator: "greater_or_equal"
@@ -936,14 +936,14 @@ rule_list:
     legacy_id: []
   # VOL · Volatility
   - rule_id: VOL-01
-    name: {en: "IV percentile at least 70", zh: "IV 百分位不低于 70"}
+    rule_name: "iv_percentile_at_least_70"
     description: {en: "Passes when the IV percentile is at least 70.", zh: "IV 百分位不低于 70 时通过。"}
     indicator: "I-100"
     operator: "greater_or_equal"
     value: 70
     legacy_id: ["A14"]
   - rule_id: VOL-06
-    name: {en: "IV percentile at least 50", zh: "IV 百分位不低于 50"}
+    rule_name: "iv_percentile_at_least_50"
     description: {en: "Passes when the IV percentile is at least 50.", zh: "IV 百分位不低于 50 时通过。"}
     indicator: "I-100"
     operator: "greater_or_equal"
@@ -951,7 +951,7 @@ rule_list:
     band_of: "VOL-01"
     legacy_id: ["A13"]
   - rule_id: VOL-07
-    name: {en: "IV percentile at least 40", zh: "IV 百分位不低于 40"}
+    rule_name: "iv_percentile_at_least_40"
     description: {en: "Passes when the IV percentile is at least 40.", zh: "IV 百分位不低于 40 时通过。"}
     indicator: "I-100"
     operator: "greater_or_equal"
@@ -959,47 +959,47 @@ rule_list:
     band_of: "VOL-01"
     legacy_id: ["A12"]
   - rule_id: VOL-02
-    name: {en: "VIX above its average", zh: "VIX 高于均值"}
+    rule_name: "vix_above_its_average"
     description: {en: "Passes when the VIX is above its own 20-day average, meaning volatility is on the rise.", zh: "VIX 高于它自己的 20 日均值，即波动在抬升时通过。"}
     indicator: "I-102"
     operator: "greater_than"
     value: 1.0
     legacy_id: ["B01"]
   - rule_id: VOL-08
-    name: {en: "IV above last month", zh: "IV 高于一个月前"}
+    rule_name: "iv_above_last_month"
     description: {en: "Passes when the stock's IV (implied volatility, the volatility priced into options) is higher than it was one month ago.", zh: "该股的 IV（隐含波动率，期权价格里包含的波动率）比一个月前高时通过。"}
     indicator: "I-101"
     operator: "greater_than"
     value: 1.0
     legacy_id: []
   - rule_id: VOL-03
-    name: {en: "IV vs realized", zh: "IV 对实际波动"}
+    rule_name: "iv_vs_realized"
     description: {en: "Passes when ATM (at-the-money, strike near the current price) IV for 30 to 45 days is above RV30, the 30-day realized volatility.", zh: "30–45 天的 ATM（平值，行权价接近现价）IV 高于 RV30，即 30 天实际波动率时通过。"}
     indicator: "I-103"
     operator: "is_true"
     legacy_id: ["Z05"]
   - rule_id: VOL-04
-    name: {en: "Expected move below 10%", zh: "预期波动低于 10%"}
+    rule_name: "expected_move_below_10pct"
     description: {en: "Passes when the 30-day 1-sigma expected move implied by the options (price times IV times the square root of days to expiration over 365) is below 10% of the price.", zh: "期权隐含的 30 天 1σ 预期波动（价格 × IV × √(到期天数 ÷ 365)）低于价格的 10% 时通过。"}
     indicator: "I-104"
     operator: "less_than"
     value: 10
   - rule_id: VOL-05
-    name: {en: "Put skew at most 5 points", zh: "Put 偏斜不超过 5 点"}
+    rule_name: "put_skew_at_most_5_points"
     description: {en: "Passes when the IV of puts about 10% below the price minus the ATM IV is at most 5 volatility points (a first guess, to be tuned on history).", zh: "价格下方约 10% 的 Put 的 IV 减平值 IV 不超过 5 个波动率点（第一版猜测，要用历史数据校准）时通过。"}
     indicator: "I-105"
     operator: "less_or_equal"
     value: 5
   # CTR · Contract selection
   - rule_id: CTR-01
-    name: {en: "Delta 0.15 to 0.20", zh: "Delta 介于 0.15 和 0.20 之间"}
+    rule_name: "delta_0_15_to_0_20"
     description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.20.", zh: "期权 Delta 的绝对值介于 0.15 和 0.20 之间时通过。"}
     indicator: "I-106"
     operator: "between"
     value: [0.15, 0.2]
     legacy_id: ["B04"]
   - rule_id: CTR-11
-    name: {en: "Delta 0.15 to 0.30", zh: "Delta 介于 0.15 和 0.30 之间"}
+    rule_name: "delta_0_15_to_0_30"
     description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.30.", zh: "期权 Delta 的绝对值介于 0.15 和 0.30 之间时通过。"}
     indicator: "I-106"
     operator: "between"
@@ -1007,7 +1007,7 @@ rule_list:
     band_of: "CTR-01"
     legacy_id: ["B03"]
   - rule_id: CTR-12
-    name: {en: "Delta at most 0.30", zh: "Delta 不高于 0.30"}
+    rule_name: "delta_at_most_0_30"
     description: {en: "Passes when the option's absolute Delta is at most 0.30.", zh: "期权 Delta 的绝对值不高于 0.30 时通过。"}
     indicator: "I-106"
     operator: "less_or_equal"
@@ -1015,14 +1015,14 @@ rule_list:
     band_of: "CTR-01"
     legacy_id: ["F08"]
   - rule_id: CTR-02
-    name: {en: "DTE 30 to 45", zh: "DTE 介于 30 和 45 之间"}
+    rule_name: "dte_30_to_45"
     description: {en: "Passes when days to expiration (DTE) is between 30 and 45.", zh: "到期天数（DTE）介于 30 和 45 之间时通过。"}
     indicator: "I-107"
     operator: "between"
     value: [30, 45]
     legacy_id: ["B07", "E05"]
   - rule_id: CTR-13
-    name: {en: "DTE 14 to 45", zh: "DTE 介于 14 和 45 之间"}
+    rule_name: "dte_14_to_45"
     description: {en: "Passes when days to expiration (DTE) is between 14 and 45.", zh: "到期天数（DTE）介于 14 和 45 之间时通过。"}
     indicator: "I-107"
     operator: "between"
@@ -1030,7 +1030,7 @@ rule_list:
     band_of: "CTR-02"
     legacy_id: ["A23"]
   - rule_id: CTR-14
-    name: {en: "DTE above 30", zh: "DTE 高于 30"}
+    rule_name: "dte_above_30"
     description: {en: "Passes when days to expiration (DTE) is above 30.", zh: "到期天数（DTE）高于 30 时通过。"}
     indicator: "I-107"
     operator: "greater_than"
@@ -1038,66 +1038,66 @@ rule_list:
     band_of: "CTR-02"
     legacy_id: ["F09"]
   - rule_id: CTR-03
-    name: {en: "Buyer DTE 60 to 90", zh: "买方 DTE 60–90"}
+    rule_name: "buyer_dte_60_to_90"
     description: {en: "Passes when the days to expiration of the option you buy are between 60 and 90.", zh: "你买入期权的到期天数在 60 到 90 之间时通过。"}
     indicator: "I-115"
     operator: "between"
     value: [60, 90]
     legacy_id: ["D06"]
   - rule_id: CTR-04
-    name: {en: "Monthly expiration", zh: "月度期权"}
+    rule_name: "monthly_expiration"
     description: {en: "Passes when the selected expiration is a monthly one (it falls on the third Friday of the month).", zh: "所选到期日是月度合约（落在每月第三个周五）时通过。"}
     indicator: "I-108"
     operator: "is_true"
     legacy_id: ["B08"]
   - rule_id: CTR-05
-    name: {en: "Strike 10% to 15% below", zh: "行权价低 10%–15%"}
+    rule_name: "strike_10pct_to_15pct_below"
     description: {en: "Passes when the strike is 10% to 15% below the current price.", zh: "行权价比现价低 10% 到 15% 时通过。"}
     indicator: "I-109"
     operator: "between"
     value: [10, 15]
     legacy_id: ["E03", "E04"]
   - rule_id: CTR-06
-    name: {en: "Strike vs support", zh: "行权价对支撑位"}
+    rule_name: "strike_vs_support"
     description: {en: "Passes when the strike is below the nearest support, so a drop must break support before the put is in the money.", zh: "行权价低于最近的支撑位时通过，这样股价要先跌破支撑才会进入价内。"}
     indicator: "I-110"
     operator: "is_true"
     legacy_id: ["B05"]
   - rule_id: CTR-07
-    name: {en: "Round strike", zh: "整数行权价"}
+    rule_name: "round_strike"
     description: {en: "Passes when the strike is a multiple of 5, a round number.", zh: "行权价是 5 的整数倍时通过。"}
     indicator: "I-112"
     operator: "is_true"
     legacy_id: ["D07"]
   - rule_id: CTR-08
-    name: {en: "Call strike 8% to 12% above", zh: "Call 行权价高 8%–12%"}
+    rule_name: "call_strike_8pct_to_12pct_above"
     description: {en: "Passes when the covered call strike is 8% to 12% above the current price.", zh: "Covered Call 的行权价比现价高 8% 到 12% 时通过。"}
     indicator: "I-113"
     operator: "between"
     value: [8, 12]
     legacy_id: ["E11"]
   - rule_id: CTR-09
-    name: {en: "Call DTE 25 to 35", zh: "Call DTE 25–35"}
+    rule_name: "call_dte_25_to_35"
     description: {en: "Passes when the covered call has 25 to 35 days to expiration.", zh: "Covered Call 距到期 25 到 35 天时通过。"}
     indicator: "I-114"
     operator: "between"
     value: [25, 35]
     legacy_id: ["E12"]
   - rule_id: CTR-10
-    name: {en: "Strike vs expected move", zh: "行权价对预期波动"}
+    rule_name: "strike_vs_expected_move"
     description: {en: "Passes when the strike is outside the 1-sigma expected move implied by options, so the stock must fall further than the market expects before the put is assigned.", zh: "行权价在期权隐含的 1σ 预期波动幅度之外时通过，也就是股价要跌得比市场预期还多才会被行权。"}
     indicator: "I-111"
     operator: "is_true"
   # RET · Return and payoff
   - rule_id: RET-01
-    name: {en: "Annualized return at least 20%", zh: "年化收益不低于 20%"}
+    rule_name: "annualized_return_at_least_20pct"
     description: {en: "Passes when the annualized return is at least 20%.", zh: "年化收益不低于 20% 时通过。"}
     indicator: "I-116"
     operator: "greater_or_equal"
     value: 20
     legacy_id: ["E08"]
   - rule_id: RET-06
-    name: {en: "Annualized return at least 8%", zh: "年化收益不低于 8%"}
+    rule_name: "annualized_return_at_least_8pct"
     description: {en: "Passes when the annualized return is at least 8%.", zh: "年化收益不低于 8% 时通过。"}
     indicator: "I-116"
     operator: "greater_or_equal"
@@ -1105,14 +1105,14 @@ rule_list:
     band_of: "RET-01"
     legacy_id: ["A21", "B09"]
   - rule_id: RET-02
-    name: {en: "Monthly premium at least 4%", zh: "月化权利金不低于 4%"}
+    rule_name: "monthly_premium_at_least_4pct"
     description: {en: "Passes when the monthly premium is at least 4% of the strike.", zh: "月化权利金不低于行权价的 4% 时通过。"}
     indicator: "I-117"
     operator: "greater_or_equal"
     value: 4
     legacy_id: ["B11", "E07"]
   - rule_id: RET-07
-    name: {en: "Monthly premium at least 2%", zh: "月化权利金不低于 2%"}
+    rule_name: "monthly_premium_at_least_2pct"
     description: {en: "Passes when the monthly premium is at least 2% of the strike.", zh: "月化权利金不低于行权价的 2% 时通过。"}
     indicator: "I-117"
     operator: "greater_or_equal"
@@ -1120,27 +1120,27 @@ rule_list:
     band_of: "RET-02"
     legacy_id: ["B10", "E06"]
   - rule_id: RET-03
-    name: {en: "Implied leverage", zh: "隐含杠杆"}
+    rule_name: "implied_leverage"
     description: {en: "Passes when the implied leverage of the option you buy (Delta times stock price divided by the premium, meaning how much stock exposure each dollar buys) is at least 10 times.", zh: "你买入期权的隐含杠杆（Delta × 股价 ÷ 权利金，也就是每一块钱能买到多少股票敞口）不低于 10 倍时通过。"}
     indicator: "I-120"
     operator: "greater_or_equal"
     value: 10
     legacy_id: ["D05"]
   - rule_id: RET-04
-    name: {en: "Breakeven 10% below", zh: "盈亏平衡价低 10%"}
+    rule_name: "breakeven_10pct_below"
     description: {en: "Passes when the breakeven price (strike minus premium for a put) is at least 10% below the current price.", zh: "盈亏平衡价（Put 为行权价减权利金）比现价低至少 10% 时通过。"}
     indicator: "I-118"
     operator: "greater_or_equal"
     value: 10
   - rule_id: RET-05
-    name: {en: "Win probability at least 75%", zh: "盈利概率不低于 75%"}
+    rule_name: "win_probability_at_least_75pct"
     description: {en: "Passes when the probability of profit, approximated as 1 minus |Delta|, is at least 0.75.", zh: "盈利概率（用 1 减 |Delta| 近似）不低于 0.75 时通过。"}
     indicator: "I-119"
     operator: "greater_or_equal"
     value: 0.75
   # POS · Position, account and portfolio
   - rule_id: POS-01
-    name: {en: "Option level", zh: "期权权限"}
+    rule_name: "option_level"
     description: {en: "Your brokerage account must have enough option permission: level 2 allows cash-secured puts and covered calls, level 3 allows spreads (the exact levels depend on the broker). Without it the order is rejected. Source: your brokerage account; not public data.", zh: "你的券商账户必须有足够的期权权限：2 级可以做现金担保 Put 和 Covered Call，3 级可以做价差（具体级别因券商而异）。没有权限，下单会被拒绝。数据来源：你的券商账户，不是公开数据。"}
     method: "manual"
     quantifiable: "yes"
@@ -1148,7 +1148,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["B14", "B15"]
   - rule_id: POS-02
-    name: {en: "No leverage", zh: "零杠杆"}
+    rule_name: "no_leverage"
     description: {en: "No borrowed money, and every short put is backed by enough cash (cash-secured). Source: your brokerage account.", zh: "不借钱，并且每个卖出的 Put 都有足够现金担保（现金担保）。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1156,7 +1156,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["A20", "F11"]
   - rule_id: POS-03
-    name: {en: "Cash reserve", zh: "现金储备"}
+    rule_name: "cash_reserve"
     description: {en: "Keep at least 30% of net value in cash to handle assignment and swings. Source: your brokerage account.", zh: "账户里至少保留净值 30% 的现金，用来应对被行权和行情波动。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1164,7 +1164,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["A19"]
   - rule_id: POS-04
-    name: {en: "Cash to cover assignment", zh: "覆盖行权的现金"}
+    rule_name: "cash_to_cover_assignment"
     description: {en: "If assigned you must pay strike times 100 per contract to buy the shares, so cash must be at least that amount. Without it do not open the trade. Source: your brokerage account.", zh: "被行权时每张合约要拿出行权价 × 100 的现金买入股票，所以现金至少要有这个数。现金不够就不该开仓。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1172,7 +1172,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["E09", "F10"]
   - rule_id: POS-05
-    name: {en: "Total put exposure", zh: "Put 总敞口"}
+    rule_name: "total_put_exposure"
     description: {en: "Notional exposure (strike times 100 times contracts) of all your short puts, including the new one, must not exceed 70% of net value. It is the amount you would have to buy if everything were assigned. Source: your brokerage account.", zh: "你所有卖出的 Put（含新仓）的名义敞口（行权价 × 100 × 张数）不能超过净值的 70%。这是全部被行权时需要买入的总金额。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1180,7 +1180,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["A17"]
   - rule_id: POS-06
-    name: {en: "Single-stock exposure", zh: "单股敞口"}
+    rule_name: "single_stock_exposure"
     description: {en: "Notional exposure to any one stock must stay under 35% of net value, to avoid concentration. Source: your brokerage account.", zh: "对任何一只股票的名义敞口不能超过净值的 35%，避免过度集中。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1188,7 +1188,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["A18"]
   - rule_id: POS-07
-    name: {en: "Sector exposure", zh: "板块敞口"}
+    rule_name: "sector_exposure"
     description: {en: "One sector must not exceed 50% of total exposure, so one sector's trouble does not hurt everything. Source: your brokerage account.", zh: "同一板块的敞口不能超过总敞口的 50%，避免一个板块出事时全线受损。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1196,7 +1196,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["Z04"]
   - rule_id: POS-08
-    name: {en: "Max loss per trade", zh: "单笔最大亏损"}
+    rule_name: "max_loss_per_trade"
     description: {en: "The worst loss on one trade, measured to the stop, must not exceed 2% of net value. This is the most basic risk control. Source: your brokerage account.", zh: "单笔交易到止损为止的最大亏损不能超过净值的 2%，这是最基本的风控。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1204,7 +1204,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["Z03"]
   - rule_id: POS-09
-    name: {en: "Single option size", zh: "单只期权仓位"}
+    rule_name: "single_option_size"
     description: {en: "A single option position you buy must be at most 10% of net value, because it can go to zero. Source: your brokerage account.", zh: "你买入的单只期权仓位不能超过净值的 10%，因为它可能归零。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1212,7 +1212,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["D08"]
   - rule_id: POS-10
-    name: {en: "Long premium total", zh: "多头权利金总额"}
+    rule_name: "long_premium_total"
     description: {en: "Total premium paid for long options must stay under 20% of net value, so many small bets cannot add up to a large loss. Source: your brokerage account.", zh: "买入期权支付的权利金总额不能超过净值的 20%，防止多笔小额亏损累计成大额亏损。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1220,7 +1220,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["D10"]
   - rule_id: POS-11
-    name: {en: "Spread switch", zh: "改用价差"}
+    rule_name: "spread_switch"
     description: {en: "When one leg ties up more than 20% of net value, switch to a spread (buying a farther option to cap the risk). Source: your brokerage account.", zh: "单腿占用的资金超过净值的 20% 时，改用价差（再买一张更远的期权把风险封顶）。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1228,7 +1228,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["B13"]
   - rule_id: POS-12
-    name: {en: "Scale in", zh: "分批建仓"}
+    rule_name: "scale_in"
     description: {en: "Build the position in 2 or more steps instead of all at once, so you do not buy at the worst price. A trade plan item.", zh: "分 2 批或更多批建仓，不要一次买满，避免买在最差的价位。这是交易计划里的一项。"}
     method: "manual"
     quantifiable: "yes"
@@ -1236,7 +1236,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["D09"]
   - rule_id: POS-13
-    name: {en: "Covered Call size", zh: "Covered Call 张数"}
+    rule_name: "covered_call_size"
     description: {en: "Covered call contracts must equal shares owned divided by 100, never more; otherwise the extra calls are naked (uncovered). Source: your brokerage account.", zh: "Covered Call 的张数必须等于持股数除以 100，不能多；多出的部分就成了裸卖（没有股票覆盖）。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1244,21 +1244,21 @@ rule_list:
     status: "no_data"
     legacy_id: ["E13"]
   - rule_id: POS-14
-    name: {en: "Portfolio Greeks", zh: "组合希腊字母"}
+    rule_name: "portfolio_greeks"
     description: {en: "The Greeks of the whole option book: Delta (direction), Vega (sensitivity to volatility), Theta (daily time decay) and beta-weighted Delta (everything converted to S&P 500 equivalent). Thresholds differ by person. Source: your brokerage account, or computed from positions and option chains.", zh: "整个期权组合的希腊字母：Delta（方向敞口）、Vega（对波动率的敏感度）、Theta（每日时间损耗）和 beta 加权 Delta（统一折算成标普 500 的等价敞口）。阈值因人而异。数据来源：你的券商账户，或由持仓和期权链计算。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
     status: "no_data"
   - rule_id: POS-15
-    name: {en: "Margin usage", zh: "保证金占用"}
+    rule_name: "margin_usage"
     description: {en: "How much of your margin or buying power is already used. If it is too full, a market swing can force the broker to close positions. Many traders stay under half. Source: your brokerage account.", zh: "已经用掉多少保证金或购买力。用得太满，行情一波动，券商可能强制平仓。很多交易者控制在一半以内。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
     backtestable: "no"
     status: "no_data"
   - rule_id: POS-16
-    name: {en: "Correlation and stress", zh: "相关性与压力测试"}
+    rule_name: "correlation_and_stress"
     description: {en: "Whether your positions move together (correlation), and how much you would lose in a stress test such as a 20% drop with volatility up 50%. Thresholds differ by person. Source: your brokerage account, calculated.", zh: "你的持仓是否同涨同跌（相关性），以及压力测试下会亏多少，比如标的下跌 20% 且波动率上升 50%。阈值因人而异。数据来源：你的券商账户，自行计算。"}
     method: "manual"
     quantifiable: "yes"
@@ -1266,21 +1266,21 @@ rule_list:
     status: "no_data"
   # THS · Thesis and discipline
   - rule_id: THS-01
-    name: {en: "Circle of competence", zh: "能力圈"}
+    rule_name: "circle_of_competence"
     description: {en: "You can explain in plain words how the company makes money. If you cannot, stay away. Source: your own judgment.", zh: "你能用大白话说清这家公司怎么赚钱。说不清的公司不要碰。数据来源：你自己的判断。"}
     method: "manual"
     quantifiable: "no"
     backtestable: "no"
     status: "no_data"
   - rule_id: THS-02
-    name: {en: "Written thesis", zh: "书面逻辑"}
+    rule_name: "written_thesis"
     description: {en: "Write down the reason before you open: why you trade and what you expect. If you cannot write it, it is probably an impulse. Source: your own notes.", zh: "开仓前把理由写下来：为什么做、预期什么。写不出来多半是冲动。数据来源：你自己的记录。"}
     method: "manual"
     quantifiable: "no"
     backtestable: "no"
     status: "no_data"
   - rule_id: THS-03
-    name: {en: "Willing to hold", zh: "愿意持有"}
+    rule_name: "willing_to_hold"
     description: {en: "Selling a put may leave you owning the stock, so you must be willing to hold it for the long term. Source: your own answer.", zh: "卖 Put 可能让你被行权接下股票，所以你必须愿意长期持有它。数据来源：你自己的回答。"}
     method: "manual"
     quantifiable: "yes"
@@ -1288,7 +1288,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["A15", "E01"]
   - rule_id: THS-04
-    name: {en: "Trade purpose", zh: "交易目的"}
+    rule_name: "trade_purpose"
     description: {en: "Be clear whether the trade is to earn rent (the premium) or to buy the stock. The purpose changes how you manage it. Source: your own answer.", zh: "要清楚这笔交易是想收租金（权利金），还是想接盘买股。目的不同，处理方式也不同。数据来源：你自己的回答。"}
     method: "manual"
     quantifiable: "yes"
@@ -1296,14 +1296,14 @@ rule_list:
     status: "no_data"
     legacy_id: ["E16"]
   - rule_id: THS-05
-    name: {en: "Falsification", zh: "证伪条件"}
+    rule_name: "falsification"
     description: {en: "Write down what would prove you wrong, and exit when it happens instead of finding reasons afterwards. For it to be testable, state it as a price or indicator, such as a close below a moving average. Source: your own notes.", zh: "写下什么情况证明你的判断错了，发生时就认错离场，不要事后找理由。要能检验，就写成价格或指标，比如收盘跌破某条均线。数据来源：你自己的记录。"}
     method: "manual"
     quantifiable: "part"
     backtestable: "no"
     status: "no_data"
   - rule_id: THS-06
-    name: {en: "Sleep test", zh: "睡眠测试"}
+    rule_name: "sleep_test"
     description: {en: "Ask whether you could still sleep if the stock fell to its 52-week low. Convert the loss into dollars and a share of net value. Source: your own answer.", zh: "问自己：股价跌到 52 周低点时，你还睡得着觉吗？把亏损换算成金额和占净值的比例。数据来源：你自己的回答。"}
     method: "manual"
     quantifiable: "part"
@@ -1311,7 +1311,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["A24"]
   - rule_id: THS-07
-    name: {en: "Trade frequency", zh: "出手频率"}
+    rule_name: "trade_frequency"
     description: {en: "Passes when you made at most 2 trades in the last 30 days. Trading too often usually means chasing prices. Source: your trade records.", zh: "近 30 天出手不超过 2 次时通过。出手过于频繁通常说明在追涨杀跌。数据来源：你的成交记录。"}
     method: "manual"
     quantifiable: "yes"
@@ -1320,7 +1320,7 @@ rule_list:
     legacy_id: ["D04"]
   # EXT · Management and exit
   - rule_id: EXT-01
-    name: {en: "Seller take profit", zh: "卖方止盈"}
+    rule_name: "seller_take_profit"
     description: {en: "Sellers buy the option back once half (50%) or 70% of the premium is earned, to lock in the profit and free the capital. Source: a trade plan, with prices from the option chain. It could be backtested later in a trade simulator.", zh: "卖方赚到一半（50%）或七成权利金时买回平仓，把利润落袋，释放资金。数据来源：交易计划，价格来自期权链。将来可以在交易模拟器中回测。"}
     method: "manual"
     quantifiable: "yes"
@@ -1328,7 +1328,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["B16", "B17"]
   - rule_id: EXT-02
-    name: {en: "Buyer take profit", zh: "买方止盈"}
+    rule_name: "buyer_take_profit"
     description: {en: "Buyers take profit once the option is up 60% or 100%, so gains do not melt away. Source: a trade plan, with prices from the option chain.", zh: "买方在期权上涨 60% 或 100% 时止盈，避免利润回吐。数据来源：交易计划，价格来自期权链。"}
     method: "manual"
     quantifiable: "yes"
@@ -1336,7 +1336,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["D12", "D13"]
   - rule_id: EXT-03
-    name: {en: "Stop loss", zh: "止损"}
+    rule_name: "stop_loss"
     description: {en: "Close the trade when the loss reaches 2 times the premium collected. Source: a trade plan, with prices from the option chain. It could be backtested later in a trade simulator.", zh: "亏损达到收取权利金的 2 倍时平仓离场。数据来源：交易计划，价格来自期权链。将来可以在交易模拟器中回测。"}
     method: "manual"
     quantifiable: "yes"
@@ -1344,7 +1344,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["Z01"]
   - rule_id: EXT-04
-    name: {en: "Buyer stop", zh: "买方止损"}
+    rule_name: "buyer_stop"
     description: {en: "For buyers: if the stock has reached your target but the option still loses money, time decay or falling volatility is hurting you, so exit. Source: a trade plan.", zh: "买方：正股已经到了目标位，但期权仍然亏损，说明时间损耗或波动率下降在拖累你，应该离场。数据来源：交易计划。"}
     method: "manual"
     quantifiable: "yes"
@@ -1352,7 +1352,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["D14"]
   - rule_id: EXT-05
-    name: {en: "Time stop or roll", zh: "时间止损或展期"}
+    rule_name: "time_stop_or_roll"
     description: {en: "With 21 days left, either close early or roll (close and reopen further out in time), to avoid the sharp swings near expiration. Source: a trade plan, with dates from the option chain. It could be backtested later in a trade simulator.", zh: "剩 21 天左右时，要么提前平仓，要么展期（平掉后在更远的到期日重新开仓），避免临近到期的剧烈波动。数据来源：交易计划，日期来自期权链。将来可以在交易模拟器中回测。"}
     method: "manual"
     quantifiable: "yes"
@@ -1360,7 +1360,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["Z02"]
   - rule_id: EXT-06
-    name: {en: "Holding period", zh: "持有期"}
+    rule_name: "holding_period"
     description: {en: "Decide how long you will hold in advance: 3 to 10 days for buyers, at least six months for the SPMO rotation. Source: a trade plan.", zh: "事先定好持有多久：买方 3–10 天，SPMO 轮动至少半年。数据来源：交易计划。"}
     method: "manual"
     quantifiable: "yes"
@@ -1368,7 +1368,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["D11", "C04"]
   - rule_id: EXT-07
-    name: {en: "Rebalance execution", zh: "换仓执行"}
+    rule_name: "rebalance_execution"
     description: {en: "On the SPMO rebalance day, trade at the closing price so execution stays consistent. Source: a trade plan.", zh: "在 SPMO 换仓日用收盘价执行，保持执行方式一致。数据来源：交易计划。"}
     method: "manual"
     quantifiable: "yes"
@@ -1376,7 +1376,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["C02"]
   - rule_id: EXT-08
-    name: {en: "Covered Call plan", zh: "Covered Call 计划"}
+    rule_name: "covered_call_plan"
     description: {en: "Once you hold the shares, plan the covered calls in advance rather than just holding. Source: a trade plan.", zh: "持股后要提前计划卖 Covered Call，而不是被动持有。数据来源：交易计划。"}
     method: "manual"
     quantifiable: "yes"
@@ -1384,7 +1384,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["E10"]
   - rule_id: EXT-09
-    name: {en: "Covered Call strike floor", zh: "Covered Call 行权价下限"}
+    rule_name: "covered_call_strike_floor"
     description: {en: "The covered call strike must be at or above your cost basis (what you paid for the shares), so assignment does not lock in a loss. Source: your brokerage account.", zh: "Covered Call 的行权价必须不低于你的成本价（买入股票时的成本），这样被行权不会锁定亏损。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"
@@ -1392,7 +1392,7 @@ rule_list:
     status: "no_data"
     legacy_id: ["E14"]
   - rule_id: EXT-10
-    name: {en: "Cost basis check", zh: "成本价检查"}
+    rule_name: "cost_basis_check"
     description: {en: "Passes when cost basis is at most 1.15 times the current price; if it is much higher, pause covered calls so you are not assigned at a low price and lock in a loss. Source: your brokerage account.", zh: "成本价不超过现价的 1.15 倍时通过；成本比现价高很多时，先暂停卖 Covered Call，避免在低价被行权而锁定亏损。数据来源：你的券商账户。"}
     method: "manual"
     quantifiable: "yes"

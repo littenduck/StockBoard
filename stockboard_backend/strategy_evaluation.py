@@ -23,7 +23,7 @@ class IndicatorValue:
 @dataclass
 class RuleDefinition:
     rule_id: str
-    name: LocalizedText
+    rule_name: str
     description: LocalizedText
     indicator: Optional[str]
     operator: Optional[str]
@@ -61,7 +61,7 @@ class StrategyDefinition:
 @dataclass
 class RuleEvaluationResult:
     rule_id: str
-    name: LocalizedText
+    rule_name: str
     status: str
     measured_value: Any
     weight: int
@@ -116,7 +116,7 @@ def strategy_evaluation_evaluate_rule_against_indicator_values(
         status = STATUS_PASS if is_satisfied else STATUS_FAIL
     return RuleEvaluationResult(
         rule_id=rule_definition.rule_id,
-        name=rule_definition.name,
+        rule_name=rule_definition.rule_name,
         status=status,
         measured_value=measured_value,
         weight=rule_definition.weight,

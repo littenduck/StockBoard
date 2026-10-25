@@ -288,7 +288,7 @@ function renderRuleRows(ruleResultList) {
   return ruleResultList.map(rule => `<div class="row" data-status="${rule.status}">
     <small><a href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="${escapeText(languageText('open_rule', { id:rule.rule_id }))}">${escapeText(rule.rule_id)}</a>
       <a href="/rules#rule-${encodeURIComponent(rule.rule_id)}" data-rule="${escapeText(rule.rule_id)}" aria-label="${escapeText(languageText('rule_details', { id:rule.rule_id }))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-help"/></svg></a></small>
-    <span>${languageRenderText(rule.name)}</span><span>${formatMeasuredValue(rule.measured_value)}</span>${renderStatusBadge(rule.status)}</div>`).join('');
+    <span>${languageRenderName(rule.rule_name)}</span><span>${formatMeasuredValue(rule.measured_value)}</span>${renderStatusBadge(rule.status)}</div>`).join('');
 }
 
 function renderStrategyTree(symbol, evaluation, shouldAnimate) {

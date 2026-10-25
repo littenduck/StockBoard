@@ -29,7 +29,7 @@ def strategy_loader_build_rule_definition_from_catalog(raw_rule: dict, rule_cata
     if veto and entry.method == "manual":
         raise ValueError("rule {} is manual, it is always unknown and cannot be a veto".format(entry.rule_id))
     return RuleDefinition(
-        rule_id=entry.rule_id, name=entry.name, description=entry.description, indicator=entry.indicator,
+        rule_id=entry.rule_id, rule_name=entry.rule_name, description=entry.description, indicator=entry.indicator,
         operator=entry.operator, weight=weight, value=entry.value, veto=veto, method=entry.method, status=entry.status)
 
 

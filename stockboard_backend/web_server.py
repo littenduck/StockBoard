@@ -150,7 +150,7 @@ def web_server_get_rule_catalog() -> dict:
         "description": dataclasses.asdict(group.description),
         "aspect": dataclasses.asdict(group.aspect) if group.aspect else None,
         "rule_list": [{
-            "rule_id": entry.rule_id, "name": dataclasses.asdict(entry.name),
+            "rule_id": entry.rule_id, "rule_name": entry.rule_name,
             "description": dataclasses.asdict(entry.description), "method": entry.method,
             "quantifiable": entry.quantifiable, "backtestable": entry.backtestable,
             "history_source": entry.history_source, "history_start": entry.history_start, "status": entry.status,

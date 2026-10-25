@@ -98,6 +98,10 @@ function languageApplyDocument() {
   if (languageButton) { languageButton.setAttribute('aria-label', languageText('switch_language')); languageButton.title = languageText('switch_language'); }
 }
 /* In Chinese mode the English goes in <small lang="en">, always on its own line directly under the Chinese. */
+/* A rule_name or indicator_name, escaped, with a place to break after each underscore so a long name wraps instead of overflowing. */
+function languageRenderName(name) {
+  return languageEscape(name).replace(/_/g, '_<wbr>');
+}
 function languageRenderText(localizedText) {
   const primary = languageEscape(localizedText[activeLanguage]);
   if (activeLanguage !== 'zh') return primary;

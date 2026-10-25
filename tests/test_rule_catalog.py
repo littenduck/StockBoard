@@ -23,7 +23,7 @@ def test_project_catalog_and_strategies_are_valid():
 
 
 def build_entry(rule_id, **overrides):
-    fields = dict(name=LocalizedText("n", "名"), description=LocalizedText("d", "述"), method="computed",
+    fields = dict(rule_name="n", description=LocalizedText("d", "述"), method="computed",
                   quantifiable="yes", backtestable="yes", status="built", indicator="x", operator="less_than", value=1)
     fields.update(overrides)
     return RuleCatalogEntry(rule_id, **fields)
@@ -37,7 +37,7 @@ def build_catalog(*entry_list):
 def test_strategy_rule_takes_the_test_from_the_catalog_and_the_weight_from_the_strategy():
     catalog = build_catalog(build_entry("TST-01"))
     rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 2}, catalog)
-    assert (rule.name.en, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("n", "x", "less_than", 1, 2, False)
+    assert (rule.rule_name, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("n", "x", "less_than", 1, 2, False)
     assert strategy_loader_build_rule_definition_from_catalog(
         {"rule_id": "TST-01", "weight": 5, "veto": True}, catalog).veto is True
 
@@ -134,7 +134,6 @@ def test_every_catalog_text_is_bilingual_and_follows_the_glossary():
         assert_localized_text_is_complete(group.display_name, "group " + group.group_id)
         assert_localized_text_is_complete(group.description, "group description " + group.group_id)
     for entry in catalog.rule_entry_by_id.values():
-        assert_localized_text_is_complete(entry.name, "rule name " + entry.rule_id)
         assert_localized_text_is_complete(entry.description, "rule description " + entry.rule_id)
         if entry.note:
             assert_localized_text_is_complete(entry.note, "note " + entry.rule_id)
@@ -189,3 +188,17 @@ def test_every_indicator_explains_itself_in_both_languages():
         sentence_count = lambda text, mark: len([part for part in re.split(mark, text) if part.strip()])
         assert abs(sentence_count(indicator.description.en, r"(?<=[.!?])\s") - sentence_count(indicator.description.zh, r"(?<=。)")) <= 1, (
             indicator.indicator_name)
+
+
+def test_rule_names_are_short_unique_words_with_underscores():
+    import re
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    name_list = [entry.rule_name for entry in catalog.rule_entry_by_id.values()]
+    assert len(set(name_list)) == len(name_list) == 190
+    assert all(re.match(r"^[a-z][a-z0-9_]{2,34}$", name) for name in name_list), [n for n in name_list if len(n) > 35]
+
+
+def test_a_duplicate_or_malformed_rule_name_is_reported():
+    catalog = build_catalog(build_entry("TST-01", rule_name="same"), build_entry("TST-02", rule_name="same"), build_entry("TST-03", rule_name="Bad Name"))
+    errors = rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})
+    assert any("share the rule_name same" in error for error in errors) and any("TST-03 needs a rule_name" in error for error in errors)
