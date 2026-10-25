@@ -112,9 +112,11 @@ Text is done by tags. There are 7 element classes (6 styled in `base.css` plus `
 
 Layout-only containers (not elements, styled by the page only for layout): page grid (`.layout`), `aside`, `main`, `#strategy-help` (the popover, a `.box`), `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.usage`, `.rule-meta`, dividers.
 
-## Rule hover card
+## Rule hover card and the rule catalog page
 
-Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), name (`h3`) and description (`p`), each with its English companion in Chinese mode. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`). The full record of every field is on the rule catalog page, where each rule row shows its name and description, then a grid of every other field in `config/rules.yaml` order (a `small` field name above a `p` value, a gray dash when empty, `band_of` as a link, identifiers breaking at underscores) and a last line for `note` and `used_by` (strategy chips with weight and veto). The grid fills as many columns as fit, two on a phone. Built by `static/rule-card.js` from `/api/v1/rules`.
+Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), `rule_name` (`h3`, breaking after underscores), pass sentence (`p`) and, under them, the text of its indicator and every line of that measure (`small`: `I-003 lines: R-MAC-03 < 4.5 · R-MAC-13 < 5.0`), so nothing needs a click-through. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`).
+
+The rule catalog page lists the rules of a category under topic headings (`h3`); the other lines of a measure are indented under their main rule (`data-tier`). A row shows the id, `rule_name`, pass sentence, the indicator text and lines (the same `ruleTextRenderIndicator` as the card, with links), then a grid of every other field in `config/rules.yaml` order (a `small` field name above a `p` value, a gray dash when empty, `band_of` as a link, identifiers breaking at underscores) and a last line for `note` and `used_by` (strategy chips with weight and veto). The grid fills as many columns as fit, two on a phone. Built by `static/rule-card.js` and `static/rule-text.js` from `/api/v1/rules`.
 
 ## Language
 
