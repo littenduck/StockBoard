@@ -96,6 +96,29 @@ Computed for the representative put of each expiration window.
 | `vix_to_twenty_day_average_ratio` | Cboe VIX divided by its 20 day mean |
 | `put_call_ratio_total_five_day_average` | Cboe total put/call: old CSV 2006-11-01 to 2019-10-04, then the daily files kept in `data/cache/cboe_total_put_call.csv`; 5 day mean |
 
+### Sentiment sources
+
+| indicator_id | Built from |
+|---|---|
+| `fear_greed_index` | CNN `graphdata` JSON from 2021-01-04 (needs a cnn.com Referer and Origin header) |
+| `aaii_bullish_percent`, `aaii_bullish_minus_bearish_percent` | AAII `sentiment.xls`, which blocks scripts, so the newest Internet Archive copy is read |
+| `naaim_exposure_index` | NAAIM `USE_Data-since-Inception_*.xlsx`, the newest copy the Internet Archive holds |
+
+The archive copies can be weeks behind the live sites and the archive answers 429 when asked too fast (the fetcher waits and retries). `python -m stockboard_backend.sentiment_data` prints the row count and date range of each.
+
+### Company indicators (SEC EDGAR and FINRA)
+
+`history_series_build_company_indicator_table(ticker, price_series)` returns one row per day with one column per company indicator id. Set the environment variable `EDGAR_CONTACT` (for example an email address) first: SEC asks every client to identify itself.
+
+- **Point in time**: each filed figure is used from the day its filing reached EDGAR, and the earliest filing of a period wins over later restatements.
+- **Trailing twelve months** come from a 10-K (the fiscal year) or a 10-Q (last fiscal year plus this year to date minus the same stretch a year earlier).
+- **Columns without a price**: `trailing_twelve_month_eps`, revenue growth (1 year, 3 year CAGR), `eps_three_year_cagr_percent`, `return_on_equity_percent`, `return_on_invested_capital_percent` (approximate: operating income taxed at 21% over equity plus debt minus cash), `gross_margin_percent`, free cash flow and its yearly change, `net_debt_to_ebitda`, `interest_coverage_ratio`, `operating_cash_flow_to_net_income_ratio`, `shares_outstanding_year_over_year_percent`, `dividend_to_free_cash_flow_ratio`.
+- **Columns that need a daily close**: `market_capitalization_billion_usd`, `free_cash_flow_yield_percent`, `enterprise_value_to_ebitda`, `price_earnings_ttm_to_five_year_median_ratio`.
+- **FINRA**: `short_interest_percent_of_shares_outstanding` is the twice-monthly short position divided by the latest share count on file (history from 2017-12-29).
+- **Not built yet**: the insider rules (`edgar:form345`) and the filing-based rules (`edgar:submissions`: audit problems, earnings dates).
+
+`python -m stockboard_backend.fundamental_series AAPL` prints a sample of the table for one ticker.
+
 ## Planned indicators (not built yet)
 
 Every rule in `config/rules.yaml` names the indicator that will give its value. These indicators do not exist in the code yet; the rule that uses each one, and where its free history comes from, is listed here. The meaning of each is in the rule's description.

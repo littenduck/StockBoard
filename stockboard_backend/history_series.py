@@ -5,11 +5,11 @@ rule's operator tests. A backtest reads these series; the live dashboard will us
 Run `python -m stockboard_backend.history_series` to fetch every series and compare it with the catalog.
 """
 import os
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import pandas
 
-from stockboard_backend import cboe_data, macro_data
+from stockboard_backend import cboe_data, edgar_data, finra_data, fundamental_series, macro_data, sentiment_data
 from stockboard_backend.settings_loader import PROJECT_DIRECTORY
 
 PUT_CALL_CACHE_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "data", "cache", cboe_data.PUT_CALL_CACHE_FILE_NAME)
@@ -133,7 +133,27 @@ HISTORY_SERIES_BUILDER_BY_INDICATOR_ID: Dict[str, Callable[[], pandas.Series]] =
         lambda: history_series_calculate_ratio(cboe("VIX"), history_series_calculate_rolling_mean(cboe("VIX"), 20)),
     "put_call_ratio_total_five_day_average":
         lambda: history_series_calculate_rolling_mean(history_series_build_total_put_call_ratio(), 5),
+    # SEN from CNN, AAII and NAAIM
+    "fear_greed_index": lambda: sentiment_data.sentiment_data_fetch_cnn_fear_greed_series(),
+    "aaii_bullish_percent": lambda: sentiment_data.sentiment_data_fetch_aaii_survey_table()["bullish_percent"],
+    "aaii_bullish_minus_bearish_percent":
+        lambda: sentiment_data.sentiment_data_fetch_aaii_survey_table()["bullish_minus_bearish_percent"],
+    "naaim_exposure_index": lambda: sentiment_data.sentiment_data_fetch_naaim_exposure_series(),
 }
+
+
+def history_series_build_company_indicator_table(ticker: str, price_series: Optional[pandas.Series] = None) -> pandas.DataFrame:
+    """One column per company indicator id (QUA, MGT, VAL, LIQ and the short interest rule), one row per day since 2010.
+    The price series (daily close) is needed for the valuation and market capitalization columns."""
+    company_facts = edgar_data.edgar_data_fetch_company_facts(ticker)
+    days = pandas.date_range("2010-01-01", pandas.Timestamp.today().normalize(), freq="D")
+    table = fundamental_series.fundamental_series_build_table(company_facts, days, price_series)
+    shares_table = edgar_data.edgar_data_extract_fact_table(
+        company_facts, ["EntityCommonStockSharesOutstanding"], "shares", taxonomy="dei")
+    short_percent = finra_data.finra_data_calculate_short_interest_percent_of_shares(
+        finra_data.finra_data_fetch_short_interest_table(ticker), edgar_data.edgar_data_build_instant_series(shares_table))
+    table["short_interest_percent_of_shares_outstanding"] = short_percent.reindex(days.union(short_percent.index)).ffill().reindex(days)
+    return table
 
 
 def history_series_build_by_indicator_id(indicator_id: str) -> pandas.Series:
