@@ -29,8 +29,31 @@ def option_chain_read_number_or_none(value) -> Optional[float]:
     return None if value is None or pandas.isna(value) else float(value)
 
 
-def option_chain_fetch_expiration_date_list_by_symbol(symbol: str) -> List[datetime.date]:
-    return [datetime.date.fromisoformat(text) for text in yfinance.Ticker(symbol).options]
+class OptionChainSession:
+    """The option data of one symbol for one refresh. One yfinance Ticker keeps the expiration list, so it is asked once, and each
+    expiration's chain (puts and calls arrive together) is asked once however many windows and rules use it."""
+
+    def __init__(self, symbol: str, ticker=None):
+        self.symbol = symbol
+        self.ticker = ticker or yfinance.Ticker(symbol)
+        self._expiration_date_list: Optional[List[datetime.date]] = None
+        self._chain_by_expiration_date = {}
+
+    def expiration_date_list(self) -> List[datetime.date]:
+        if self._expiration_date_list is None:
+            self._expiration_date_list = [datetime.date.fromisoformat(text) for text in self.ticker.options]
+        return self._expiration_date_list
+
+    def _chain(self, expiration_date: datetime.date):
+        if expiration_date not in self._chain_by_expiration_date:
+            self._chain_by_expiration_date[expiration_date] = self.ticker.option_chain(expiration_date.isoformat())
+        return self._chain_by_expiration_date[expiration_date]
+
+    def put_table(self, expiration_date: datetime.date) -> pandas.DataFrame:
+        return self._chain(expiration_date).puts
+
+    def call_table(self, expiration_date: datetime.date) -> pandas.DataFrame:
+        return self._chain(expiration_date).calls
 
 
 def option_chain_determine_whether_date_is_monthly_expiration(expiration_date: datetime.date) -> bool:
@@ -47,16 +70,6 @@ def option_chain_determine_expiration_within_day_window(
     middle_days = (minimum_days + maximum_days) / 2
     pool = monthly_list or candidate_list
     return min(pool, key=lambda d: abs((d - today).days - middle_days)) if pool else None
-
-
-def option_chain_fetch_put_contract_table_by_symbol_and_expiration(
-    symbol: str, expiration_date: datetime.date,
-) -> pandas.DataFrame:
-    return yfinance.Ticker(symbol).option_chain(expiration_date.isoformat()).puts
-
-
-def option_chain_fetch_call_contract_table_by_symbol_and_expiration(symbol: str, expiration_date: datetime.date) -> pandas.DataFrame:
-    return yfinance.Ticker(symbol).option_chain(expiration_date.isoformat()).calls
 
 
 def option_chain_determine_covered_call_strike_premium_percent(

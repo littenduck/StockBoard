@@ -43,28 +43,25 @@ def refresh_scheduler_find_next_ex_dividend_date(snapshot: dict) -> Optional[dat
 
 
 def refresh_scheduler_build_option_indicator_value_by_window_label(
-    symbol: str, underlying_price: float, realized_volatility_percent: Optional[float],
+    option_session: option_chain.OptionChainSession, underlying_price: float, realized_volatility_percent: Optional[float],
     settings: ApplicationSettings, risk_free_rate_percent: float, today: datetime.date,
     support_price: Optional[float] = None, dividend_snapshot: Optional[dict] = None,
 ) -> Dict[str, Dict[str, IndicatorValue]]:
-    expiration_date_list = option_chain.option_chain_fetch_expiration_date_list_by_symbol(symbol)
-    put_table_by_expiration_date = {}
+    expiration_date_list = option_session.expiration_date_list()
     indicator_by_window_label = {}
     for window in settings.option_expiration_window_list:
         expiration_date = option_chain.option_chain_determine_expiration_within_day_window(
             expiration_date_list, window.minimum_days, window.maximum_days, today)
         selected_contract = None
         if expiration_date is not None:
-            if expiration_date not in put_table_by_expiration_date:
-                put_table_by_expiration_date[expiration_date] = (
-                    option_chain.option_chain_fetch_put_contract_table_by_symbol_and_expiration(symbol, expiration_date))
+            put_table = option_session.put_table(expiration_date)
             selected_contract = option_chain.option_chain_determine_representative_put_contract_from_table(
-                put_table_by_expiration_date[expiration_date], underlying_price, expiration_date, today,
+                put_table, underlying_price, expiration_date, today,
                 settings.target_absolute_delta, risk_free_rate_percent)
         value_by_id = indicator_calculation.indicator_calculation_build_option_indicator_value_by_id(
             selected_contract, realized_volatility_percent, underlying_price, support_price,
             None if selected_contract is None else option_chain.option_chain_calculate_put_skew_points(
-                put_table_by_expiration_date[expiration_date], underlying_price, selected_contract.days_to_expiration,
+                put_table, underlying_price, selected_contract.days_to_expiration,
                 risk_free_rate_percent))
         if expiration_date is not None:
             value_by_id.update(refresh_scheduler_build_option_life_indicator_value_by_id(
@@ -74,18 +71,18 @@ def refresh_scheduler_build_option_indicator_value_by_window_label(
 
 
 def refresh_scheduler_build_covered_call_indicator_value_by_id(
-    symbol: str, underlying_price: float, today: datetime.date,
+    option_session: option_chain.OptionChainSession, underlying_price: float, today: datetime.date,
 ) -> Dict[str, IndicatorValue]:
     """The covered call the rules describe: about 30 days out, struck about 10% above the price. Strikes need no live quote."""
     try:
         expiration_date = option_chain.option_chain_determine_expiration_within_day_window(
-            option_chain.option_chain_fetch_expiration_date_list_by_symbol(symbol), COVERED_CALL_MINIMUM_DAYS, COVERED_CALL_MAXIMUM_DAYS, today)
+            option_session.expiration_date_list(), COVERED_CALL_MINIMUM_DAYS, COVERED_CALL_MAXIMUM_DAYS, today)
         if expiration_date is None:
             return {}
         premium_percent = option_chain.option_chain_determine_covered_call_strike_premium_percent(
-            option_chain.option_chain_fetch_call_contract_table_by_symbol_and_expiration(symbol, expiration_date), underlying_price)
+            option_session.call_table(expiration_date), underlying_price)
     except Exception as error:
-        print("covered call failed:", symbol, error)
+        print("covered call failed:", option_session.symbol, error)
         return {}
     value_by_id = {"selected_call_days_to_expiration": (expiration_date - today).days}
     if premium_percent is not None:
@@ -128,8 +125,9 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     spmo_rank = live_indicators.live_indicators_fetch_spmo_rank_by_symbol().get(symbol)
     if spmo_rank is not None:
         company_indicator_value_by_id["spmo_holding_rank"] = IndicatorValue("spmo_holding_rank", spmo_rank, "yfinance SPMO")
+    option_session = option_chain.OptionChainSession(symbol)
     company_indicator_value_by_id.update(refresh_scheduler_build_covered_call_indicator_value_by_id(
-        symbol, float(price_history["Close"].iloc[-1]), today))
+        option_session, float(price_history["Close"].iloc[-1]), today))
     info = company_snapshot.get("info") if isinstance(company_snapshot.get("info"), dict) else {}
     sector_etf_symbol = company_indicators.company_indicators_find_sector_etf_symbol(info)
     spy_history, sector_history = market_history_by_symbol.get("SPY"), market_history_by_symbol.get(sector_etf_symbol)
@@ -148,7 +146,7 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     ten_year_yield = shared_indicator_value_by_id.get("treasury_ten_year_yield")
     try:
         option_indicator_by_window_label = refresh_scheduler_build_option_indicator_value_by_window_label(
-            symbol, float(price_history["Close"].iloc[-1]),
+            option_session, float(price_history["Close"].iloc[-1]),
             None if realized_volatility is None else realized_volatility.value, settings,
             ten_year_yield.value if ten_year_yield else option_chain.DEFAULT_RISK_FREE_RATE_PERCENT, today,
             float(price_history["Close"].iloc[-SUPPORT_LOW_TRADING_DAY_COUNT:].min()), company_snapshot)
