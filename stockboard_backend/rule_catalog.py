@@ -124,9 +124,9 @@ def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> dict:
     def money(value):  # money reads as $200 billion / 2,000 亿美元 and $100 million / 1 亿美元
         dollars = value * 10 ** 9 if unit == "USD billion" else value
         if dollars >= 10 ** 9:
-            return {"en": "${} billion".format(number(dollars // 10 ** 9)), "zh": "{} 亿美元".format(number(dollars // 10 ** 8))}
+            return {"en": "${} billion".format(number(dollars // 10 ** 9)), "zh": "{} 亿美元".format(dollars // 10 ** 8)}
         if dollars >= 10 ** 6:
-            return {"en": "${} million".format(number(dollars // 10 ** 6)), "zh": "{} 万美元".format(number(dollars // 10 ** 4)) if dollars % 10 ** 8 else "{} 亿美元".format(dollars // 10 ** 8)}
+            return {"en": "${} million".format(number(dollars // 10 ** 6)), "zh": "{} 万美元".format(dollars // 10 ** 4) if dollars % 10 ** 8 else "{} 亿美元".format(dollars // 10 ** 8)}
         return {"en": "${}".format(number(dollars)), "zh": "{} 美元".format(number(dollars))}
 
     def amount(value, with_unit=True):  # one number, with its unit unless a range carries the unit once at its end

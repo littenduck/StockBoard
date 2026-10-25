@@ -1321,7 +1321,7 @@ rule_list:
   - rule_id: R-RET-07
     rule_name: "implied_leverage"
     topic: "risk_payoff"
-    description: {en: "Passes when the implied leverage of the option you buy (Delta times stock price divided by the premium, meaning how much stock exposure each dollar buys) is at least 10 times.", zh: "你买入期权的隐含杠杆（Delta × 股价 ÷ 权利金，也就是每一块钱能买到多少股票敞口）不低于 10 倍时通过。"}
+    description: {en: "Passes when the implied leverage of the option you buy (Delta times stock price divided by the premium, meaning how much stock exposure each dollar buys) is at least 10 times.", zh: "你买入期权的隐含杠杆（Delta × 股价 ÷ 权利金，也就是每一美元能买到多少股票敞口）不低于 10 倍时通过。"}
     indicator: "I-120"
     operator: "greater_or_equal"
     value: 10

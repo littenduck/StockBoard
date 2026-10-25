@@ -377,6 +377,6 @@ def test_the_lines_of_a_rule_are_scaled_and_carry_their_unit_once():
     line_by_id = {rule_id: rule_catalog_describe_line(catalog.rule_entry_by_id[rule_id]) for rule_id in ("R-CTR-04", "R-LIQ-04", "R-LIQ-05", "R-LIQ-01", "R-RET-07", "R-CTR-01")}
     assert line_by_id["R-CTR-04"] == {"en": "30 to 45 days", "zh": "30 到 45 天"}
     assert line_by_id["R-LIQ-04"] == {"en": ">= $100 million".replace(">=", "≥"), "zh": "≥ 1 亿美元"}
-    assert line_by_id["R-LIQ-05"]["zh"] == "≥ 5,000 万美元" and line_by_id["R-LIQ-01"]["zh"] == "> 2,000 亿美元"
+    assert line_by_id["R-LIQ-05"]["zh"] == "≥ 5000 万美元" and line_by_id["R-LIQ-01"]["zh"] == "> 2000 亿美元"
     assert line_by_id["R-RET-07"] == {"en": "≥ 10x", "zh": "≥ 10倍"}
     assert line_by_id["R-CTR-01"]["en"] == "0.15 to 0.2"
