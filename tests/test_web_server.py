@@ -69,9 +69,12 @@ def test_evaluation_for_symbol(snapshot_file_path):
 def test_rule_catalog_lists_usage():
     response = web_server.web_server_get_rule_catalog()
     rule_by_id = {rule["rule_id"]: rule for group in response["group_list"] for rule in group["rule_list"]}
-    assert any(usage["strategy_id"] == STRATEGY_ID for usage in rule_by_id["A22"]["used_by"])
-    assert rule_by_id["A15"]["used_by"] == [] and rule_by_id["A15"]["availability"] == "user_answer"
-    assert rule_by_id["B09"]["alias_of"] == "A21"
+    assert any(usage["strategy_id"] == STRATEGY_ID and usage["veto"] and usage["weight"] == 5
+               for usage in rule_by_id["EVT-01"]["used_by"])
+    assert rule_by_id["THS-03"]["used_by"] == [] and rule_by_id["THS-03"]["status"] == "no_data"
+    assert rule_by_id["THS-03"]["method"] == "manual"
+    assert rule_by_id["SEN-12"]["band_of"] == "SEN-01" and rule_by_id["SEN-12"]["operator"] == "less_than"
+    assert set(rule_by_id["SEN-01"]["name"]) == {"en", "zh"} and "weight" not in rule_by_id["SEN-01"]
 
 
 def test_strategy_list_is_bilingual_with_english_default():

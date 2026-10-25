@@ -3,7 +3,7 @@ import os
 import pytest
 
 from stockboard_backend import indicator_calculation
-from stockboard_backend.localized_text import CHINESE_CHARACTER_PATTERN
+from stockboard_backend.localized_text import CHINESE_CHARACTER_PATTERN, LocalizedText
 from stockboard_backend.rule_catalog import RuleCatalog, RuleCatalogEntry, RuleGroup, \
     rule_catalog_load_rule_catalog_from_yaml_file, rule_catalog_validate_rule_catalog_against_known_indicators
 from stockboard_backend.settings_loader import PROJECT_DIRECTORY, settings_loader_load_settings_from_yaml_file
@@ -22,30 +22,56 @@ def test_project_catalog_and_strategies_are_valid():
     assert "sell_put_four_in_one" in strategy_by_id
 
 
+def build_entry(rule_id, **overrides):
+    fields = dict(name=LocalizedText("n", "名"), description=LocalizedText("d", "述"), method="computed",
+                  quantifiable="yes", status="built", indicator="x", operator="less_than", value=1)
+    fields.update(overrides)
+    return RuleCatalogEntry(rule_id, **fields)
+
+
 def build_catalog(*entry_list):
-    return RuleCatalog([RuleGroup("A", "A", "")], {entry.rule_id: entry for entry in entry_list})
+    group = RuleGroup("TST", LocalizedText("T", "T"), LocalizedText("", ""))
+    return RuleCatalog([group], {entry.rule_id: entry for entry in entry_list})
 
 
-def test_strategy_rule_takes_definition_from_catalog_and_weight_override():
-    catalog = build_catalog(RuleCatalogEntry("A01", "x < 1", 4, "automatic", "x", "less_than", 1))
-    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "A01", "weight": 2}, catalog)
-    assert (rule.description, rule.indicator, rule.weight) == ("x < 1", "x", 2)
-    assert strategy_loader_build_rule_definition_from_catalog({"rule_id": "A01"}, catalog).weight == 4
+def test_strategy_rule_takes_the_test_from_the_catalog_and_the_weight_from_the_strategy():
+    catalog = build_catalog(build_entry("TST-01"))
+    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 2}, catalog)
+    assert (rule.name.en, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("n", "x", "less_than", 1, 2, False)
+    assert strategy_loader_build_rule_definition_from_catalog(
+        {"rule_id": "TST-01", "weight": 5, "veto": True}, catalog).veto is True
+
+
+def test_manual_rule_can_be_listed_but_never_vetoes():
+    catalog = build_catalog(build_entry("TST-01", method="manual", status="no_data", indicator=None, operator=None, value=None))
+    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 3}, catalog)
+    assert rule.indicator is None and rule.method == "manual"
+    with pytest.raises(ValueError):
+        strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 5, "veto": True}, catalog)
 
 
 def test_strategy_rule_errors():
-    catalog = build_catalog(RuleCatalogEntry("A01", "manual", 3, "user_answer"),
-                            RuleCatalogEntry("A02", "copy", alias_of="A01"))
-    for rule_id in ("A01", "A02", "A99"):
+    catalog = build_catalog(build_entry("TST-01"))
+    for raw_rule in ({"rule_id": "TST-99", "weight": 3}, {"rule_id": "TST-01"}, {"rule_id": "TST-01", "weight": 6},
+                     {"rule_id": "TST-01", "weight": 0}, {"rule_id": "TST-01", "weight": 2.5},
+                     {"rule_id": "TST-01", "weight": 3, "veto": "yes"}, {"rule_id": "TST-01", "weight": 3, "variant_group": "g"}):
         with pytest.raises(ValueError):
-            strategy_loader_build_rule_definition_from_catalog({"rule_id": rule_id}, catalog)
+            strategy_loader_build_rule_definition_from_catalog(raw_rule, catalog)
 
 
 def test_catalog_validation_finds_problems():
-    catalog = build_catalog(RuleCatalogEntry("A01", "no indicator", 3, "automatic"),
-                            RuleCatalogEntry("A02", "copy", alias_of="A77"),
-                            RuleCatalogEntry("B01", "no group", 3, "user_answer"))
-    assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, set())) == 3
+    catalog = build_catalog(build_entry("TST-01", indicator=None),
+                            build_entry("TST-02", status="soon"),
+                            build_entry("TST-03", band_of="TST-77"),
+                            build_entry("TST-04", operator="near"),
+                            build_entry("TST-05", value=None),
+                            build_entry("ZZZ-01", indicator="x"))
+    assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})) == 6
+
+
+def test_todo_rule_may_name_an_indicator_that_does_not_exist_yet():
+    catalog = build_catalog(build_entry("TST-01", status="todo", indicator="not_written_yet"))
+    assert rule_catalog_validate_rule_catalog_against_known_indicators(catalog, set()) == []
 
 
 FORBIDDEN_ENGLISH_WORD_LIST = ["loose grade", "strict grade", "loose level", "strict level", "Not applicable", "not applicable"]
@@ -64,9 +90,19 @@ def test_every_catalog_text_is_bilingual_and_follows_the_glossary():
         assert_localized_text_is_complete(group.display_name, "group " + group.group_id)
         assert_localized_text_is_complete(group.description, "group description " + group.group_id)
     for entry in catalog.rule_entry_by_id.values():
-        assert_localized_text_is_complete(entry.description, "rule " + entry.rule_id)
+        assert_localized_text_is_complete(entry.name, "rule name " + entry.rule_id)
+        assert_localized_text_is_complete(entry.description, "rule description " + entry.rule_id)
         if entry.note:
             assert_localized_text_is_complete(entry.note, "note " + entry.rule_id)
+
+
+def test_every_tier_line_points_to_a_main_rule_of_the_same_category():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    for entry in catalog.rule_entry_by_id.values():
+        if entry.band_of:
+            main_rule = catalog.rule_entry_by_id[entry.band_of]
+            assert main_rule.band_of is None, entry.rule_id + " points to a rule that is itself a tier line"
+            assert main_rule.group_id == entry.group_id, entry.rule_id
 
 
 def test_every_strategy_and_indicator_text_is_bilingual():

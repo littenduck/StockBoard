@@ -121,21 +121,24 @@ def web_server_get_base_stylesheet() -> FileResponse:
 
 @app.get("/api/v1/rules")
 def web_server_get_rule_catalog() -> dict:
-    """Every rule grouped by letter, with the strategies (and weights) that use it."""
+    """Every rule grouped by category, with the strategies (and their weights and veto flags) that use it."""
     usage_list_by_rule_id = {}
     for strategy in strategy_definition_by_id.values():
         for gate in strategy.gate_list:
             for rule in gate.rule_list:
                 usage_list_by_rule_id.setdefault(rule.rule_id, []).append(
                     {"strategy_id": strategy.strategy_id, "display_name": dataclasses.asdict(strategy.display_name),
-                     "weight": rule.weight})
+                     "weight": rule.weight, "veto": rule.veto})
     entry_list = list(application_rule_catalog.rule_entry_by_id.values())
     return {"default_language": application_settings.default_language, "group_list": [{
         "group_id": group.group_id, "display_name": dataclasses.asdict(group.display_name),
         "description": dataclasses.asdict(group.description),
+        "aspect": dataclasses.asdict(group.aspect) if group.aspect else None,
         "rule_list": [{
-            "rule_id": entry.rule_id, "description": dataclasses.asdict(entry.description),
-            "default_weight": entry.default_weight, "availability": entry.availability, "alias_of": entry.alias_of,
+            "rule_id": entry.rule_id, "name": dataclasses.asdict(entry.name),
+            "description": dataclasses.asdict(entry.description), "method": entry.method,
+            "quantifiable": entry.quantifiable, "status": entry.status, "indicator": entry.indicator,
+            "operator": entry.operator, "value": entry.value, "band_of": entry.band_of, "legacy_id": entry.legacy_id,
             "note": dataclasses.asdict(entry.note) if entry.note else None,
             "used_by": usage_list_by_rule_id.get(entry.rule_id, []),
         } for entry in entry_list if entry.group_id == group.group_id],
