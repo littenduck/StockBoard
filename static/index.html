@@ -41,7 +41,8 @@
   .strategy-gate > header > svg { position:absolute; left:calc(-1 * (var(--space-4) + var(--space-2))); top:2px; background:var(--background); border-radius:50%; }
   .strategy-gate > header > small { margin-top:2px; white-space:nowrap; }
   .strategy-gate > header h3 { min-width:0; }
-  .strategy-gate .row { display:grid; grid-template-columns:40px 88px 1fr auto; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); }
+  .strategy-gate .row { display:grid; grid-template-columns:56px 80px 1fr auto; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); }
+  .strategy-gate .row > :first-child { white-space:nowrap; }
   .strategy-gate .row[data-status="not_applicable"] { color:var(--text-secondary); }
   .strategy-gate .row > :last-child { text-align:right; color:var(--text-secondary); }
   .strategy-gate > small { margin:var(--space-2) 0 var(--space-1); }
