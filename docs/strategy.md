@@ -27,7 +27,7 @@ gates:                                    # evaluated in order, top to bottom
       - {rule_id: EVT-01, weight: 5, veto: true}  # no earnings before expiration
 ```
 
-A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, method, quantifiable, backtestable, status, indicator, operator and value, band_of, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, a required `weight` (integer 1 to 5: how much this strategy cares about the rule) and an optional `veto: true`. The catalog has no weight, so the same rule can weigh 4 in one strategy and 1 in another. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score. The loader refuses a `veto` on a manual rule, a missing or out-of-range `weight`, and the retired `variant_group`.
+A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, method, quantifiable, backtestable, history_source, history_start, status, indicator, operator and value, band_of, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, a required `weight` (integer 1 to 5: how much this strategy cares about the rule) and an optional `veto: true`. The catalog has no weight, so the same rule can weigh 4 in one strategy and 1 in another. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score. The loader refuses a `veto` on a manual rule, a missing or out-of-range `weight`, and the retired `variant_group`.
 
 ## Languages
 
@@ -46,9 +46,11 @@ Id = category code + two digits, for example `TRD-03`. The same id means the sam
 | Options | `LIQ` liquidity, `VOL` volatility, `CTR` contract selection, `RET` return and payoff |
 | Risk | `POS` position, account and portfolio, `THS` thesis and discipline, `EXT` management and exit |
 
-Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and every tiered measure was split into one rule per line (see Tiers). Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. The full list is on the 规则目录 page (`/rules`).
+Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and every tiered measure was split into one rule per line (see Tiers). Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. Rules removed after they were first added (VAL-02, LIQ-02, EVT-09) stay in `retired_rule_list` with the reason, and a retired id is never reused. The full list is on the 规则目录 page (`/rules`).
 
 `method` says how a rule's value is obtained: `api_fetch` (stable API or CSV such as FRED and yfinance), `scrape` (web page, unofficial endpoint, spreadsheet), `computed` (calculated from fetched prices, series or option chains), `ai_search` (an AI reads web pages and records the result with its source), or `manual` (no data in the app: your own input, your trade plan or your brokerage account; a manual rule can still sit in a strategy, where it always shows unknown).
+
+`backtestable` is `yes` only when free historical data can rebuild what the rule would have said on a past date, using only what was known then. A `yes` rule names its `history_source` (for example `fred:DGS10` or `dolthub:options`) and its `history_start` (a year, a month or a day; for per-symbol price rules it is the oldest symbol on the watchlist). Rules that need your own answer or your account are always `no`, and so are the two option volume rules LIQ-05 and LIQ-09 until the app has recorded its own history. How far back each source goes is in the rule descriptions; the indicators that are not built yet are listed in `docs/indicator.md`.
 
 ## Tiers: one rule per line
 
