@@ -925,24 +925,24 @@ rule_list:
     legacy_id: []
   - rule_id: SEN-02
     name: {en: "VIX term structure", zh: "VIX 期限结构"}
-    description: {en: "Shape of the VIX futures curve. Contango means later months cost more, which is normal; backwardation means near months cost more, which signals strong short-term panic. Passes in contango. Source: Yahoo Finance ^VIX versus ^VIX3M (3-month VIX) via yfinance. Typical values: contango is the normal state most of the time. Updated daily. Backtest history: Yahoo Finance via yfinance, ^VIX3M, from 2006-07-17.", zh: "VIX 期货曲线的形状。Contango（远月更贵）是常态；Backwardation（近月更贵）说明短期恐慌很重。处于 contango 时通过。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX 与 ^VIX3M（3 个月 VIX）。常见情形：多数时间处于 contango。每日更新。回测历史：通过 yfinance 取 Yahoo Finance，^VIX3M，自 2006-07-17 起。"}
+    description: {en: "Shape of the VIX futures curve. Contango means later months cost more, which is normal; backwardation means near months cost more, which signals strong short-term panic. Passes in contango. Source: Yahoo Finance ^VIX versus ^VIX3M (3-month VIX) via yfinance. Typical values: contango is the normal state most of the time. Updated daily. Backtest history: Cboe free data files, VIX3M_History, from 2009-09-18.", zh: "VIX 期货曲线的形状。Contango（远月更贵）是常态；Backwardation（近月更贵）说明短期恐慌很重。处于 contango 时通过。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX 与 ^VIX3M（3 个月 VIX）。常见情形：多数时间处于 contango。每日更新。回测历史：Cboe 免费数据文件，VIX3M_History，自 2009-09-18 起。"}
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "yfinance:^VIX3M"
-    history_start: "2006-07-17"
+    history_source: "cboe:VIX3M_History"
+    history_start: "2009-09-18"
     status: "built"
     indicator: "vix_term_structure_is_contango"
     operator: "is_true"
     legacy_id: ["Z19"]
   - rule_id: SEN-03
     name: {en: "VXN/VIX below 1.3", zh: "VXN/VIX 低于 1.3"}
-    description: {en: "Passes when the VXN to VIX ratio is below 1.3. VXN (Cboe Nasdaq-100 Volatility Index) is the VIX equivalent for the Nasdaq-100, and its ratio to VIX shows whether tech is under extra stress. VXN usually sits above VIX. Source: Yahoo Finance symbol ^VXN via yfinance. Typical values: the VXN to VIX ratio is often around 1.1 to 1.3 (rule of thumb, not verified). Updated daily. Backtest history: Yahoo Finance via yfinance, ^VXN, from 2001-01-23.", zh: "VXN 与 VIX 的比值低于 1.3 时通过。VXN（Cboe 纳斯达克 100 波动率指数）是纳指 100 版本的 VIX，它与 VIX 的比值反映科技股是否格外紧张。VXN 通常高于 VIX。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VXN。常见情形：VXN 与 VIX 的比值常在 1.1–1.3 左右（经验，未核实）。每日更新。回测历史：通过 yfinance 取 Yahoo Finance，^VXN，自 2001-01-23 起。"}
+    description: {en: "Passes when the VXN to VIX ratio is below 1.3. VXN (Cboe Nasdaq-100 Volatility Index) is the VIX equivalent for the Nasdaq-100, and its ratio to VIX shows whether tech is under extra stress. VXN usually sits above VIX. Source: Yahoo Finance symbol ^VXN via yfinance. Typical values: the VXN to VIX ratio is often around 1.1 to 1.3 (rule of thumb, not verified). Updated daily. Backtest history: Cboe free data files, VXN_History, from 2009-09-14.", zh: "VXN 与 VIX 的比值低于 1.3 时通过。VXN（Cboe 纳斯达克 100 波动率指数）是纳指 100 版本的 VIX，它与 VIX 的比值反映科技股是否格外紧张。VXN 通常高于 VIX。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VXN。常见情形：VXN 与 VIX 的比值常在 1.1–1.3 左右（经验，未核实）。每日更新。回测历史：Cboe 免费数据文件，VXN_History，自 2009-09-14 起。"}
     method: "api_fetch"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "yfinance:^VXN"
-    history_start: "2001-01-23"
+    history_source: "cboe:VXN_History"
+    history_start: "2009-09-14"
     status: "todo"
     indicator: "vxn_to_vix_ratio"
     operator: "less_than"
