@@ -20,9 +20,9 @@ def test_a_series_is_used_only_while_its_newest_value_is_recent():
 def test_every_live_series_indicator_has_a_builder_and_is_known():
     for indicator_id in live_indicators.MAX_AGE_DAYS_BY_SERIES_INDICATOR_ID:
         assert indicator_id in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID
-        assert indicator_id in I.KNOWN_INDICATOR_ID_SET
+        assert indicator_id in I.PRODUCED_INDICATOR_ID_SET
     for indicator_id in live_indicators.EDGAR_INDICATOR_ID_LIST:
-        assert indicator_id in I.KNOWN_INDICATOR_ID_SET
+        assert indicator_id in I.PRODUCED_INDICATOR_ID_SET
 
 
 def test_short_interest_percent_uses_the_latest_filing_and_ignores_an_old_one():

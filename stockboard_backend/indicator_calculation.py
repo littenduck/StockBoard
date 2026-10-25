@@ -140,7 +140,8 @@ def indicator_calculation_calculate_average_trading_value(price_history: pandas.
     return round(float((price_history["Close"] * price_history["Volume"]).iloc[-window_length:].mean()), 0)
 
 
-KNOWN_INDICATOR_ID_SET = {
+# Every indicator id the code produces. A test checks it equals the built indicators of config/indicators.yaml, so a typo on either side is caught.
+PRODUCED_INDICATOR_ID_SET = {
     "shiller_cape", "damodaran_implied_equity_risk_premium_percent", "geopolitical_risk_index_thirty_day_average_percentile_five_year",
     "price_earnings_ttm_to_five_year_median_ratio", "no_audit_or_late_filing_problem_in_last_365_days", "implied_volatility_percentile",
     "implied_volatility_to_one_month_ago_ratio", "spmo_holding_rank", "equity_risk_premium_simple_percent",

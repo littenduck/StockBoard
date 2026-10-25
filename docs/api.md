@@ -21,12 +21,12 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...), wi
   "description": {"en": "...", "zh": "..."}, "aspect": {"en": "Events", "zh": "事件面"},
   "rule_list": [{"rule_id": "EVT-01", "name": {"en": "No earnings", "zh": "无财报"},
                  "description": {"en": "Passes when there is no earnings report before the option expires. ...", "zh": "..."},
-                 "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "history_source": "edgar:submissions", "history_start": "2004", "status": "built", "indicator": "no_earnings_before_expiration",
+                 "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "history_source": "edgar:submissions", "history_start": "2004", "status": "built", "indicator": "no_earnings_before_expiration", "fetch_group": "yahoo_company", "fetch_every": "1h", "max_age": "3d",
                  "operator": "is_true", "value": null, "band_of": null, "legacy_id": ["A22", "F05"], "note": null,
                  "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5, "veto": true}]}]}]}
 ```
 
-`status`: `built`, `todo`, `no_data`. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `backtestable`: `yes` or `no`, whether free historical data can rebuild what the rule would have said on a past date; a `yes` rule also has `history_source` (for example `fred:DGS10`) and `history_start` (a year, month or day). Rules retired from the catalog are listed in `retired_rule_list` of `config/rules.yaml`, never in this response. `band_of` names the main rule when this rule is another line of the same measure (for example `SEN-12`, VIX below 25, points to `SEN-01`).
+`status`: `built`, `todo`, `no_data`. A rule with an `indicator` gets `method`, `quantifiable`, `backtestable`, `history_source`, `history_start`, `status`, `fetch_group`, `fetch_every` (how often the source is asked) and `max_age` (how old the newest value may be before the rule reads unknown) from that indicator in `config/indicators.yaml`; a manual rule has them from `config/rules.yaml` and no fetch fields. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `backtestable`: `yes` or `no`, whether free historical data can rebuild what the rule would have said on a past date; a `yes` rule also has `history_source` (for example `fred:DGS10`) and `history_start` (a year, month or day). Rules retired from the catalog are listed in `retired_rule_list` of `config/rules.yaml`, never in this response. `band_of` names the main rule when this rule is another line of the same measure (for example `SEN-12`, VIX below 25, points to `SEN-01`).
 
 ## GET /api/v1/strategies
 

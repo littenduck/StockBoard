@@ -9,13 +9,8 @@ allowed_origin_list: []
 max_requests_per_second: 30
 default_strategy_id: sell_put_four_in_one
 
-# First row of the page. is_higher_value_risky inverts the up/down colors.
-market_indicator_list:
-  - {indicator_id: vix_level, display_name: {en: VIX, zh: VIX}, is_higher_value_risky: true}
-  - {indicator_id: vxn_level, display_name: {en: VXN, zh: VXN}, is_higher_value_risky: true}
-  - {indicator_id: vvix_level, display_name: {en: VVIX, zh: VVIX}, is_higher_value_risky: true}
-  - {indicator_id: treasury_ten_year_yield, display_name: {en: "10Y", zh: "10Y"}, is_higher_value_risky: true}
-  - {indicator_id: high_yield_credit_spread_basis_points, display_name: {en: "HY spread", zh: "HY 利差"}, is_higher_value_risky: true}
+# First row of the page: the indicators to show, in order. Their names and whether a higher value is risky are in config/indicators.yaml.
+market_indicator_list: [vix_level, vxn_level, vvix_level, treasury_ten_year_yield, high_yield_credit_spread_basis_points]
 
 # Second row of the page: indices and stocks mixed.
 watchlist_symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]
