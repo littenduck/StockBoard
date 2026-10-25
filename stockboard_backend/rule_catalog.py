@@ -108,11 +108,12 @@ def rule_catalog_merge_indicator_fields(raw_rule: dict, registry: Optional[Indic
 LINE_SYMBOL_BY_OPERATOR = {"less_than": "<", "less_or_equal": "≤", "greater_than": ">", "greater_or_equal": "≥"}
 
 
-ZH_UNIT_BY_UNIT = {"claims": "次申请", "purchases": "笔买入", "contracts": "张", "days": "天", "USD": "美元", "points": "点"}
+ZH_UNIT_BY_UNIT = {"claims": "次申请", "days": "天", "points": "点", "x": "倍", "USD a barrel": "美元/桶"}
+NO_SPACE_UNIT_SET = {"%", "x"}
 
 
 def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> dict:
-    """The test of a rule in a few characters, in both languages: '< 4.5%' / '< 4.5%', '15 to 20' / '15 到 20', 'yes' / '是'."""
+    """The test of a rule in a few characters, in both languages: '< 4.5%', '30 to 45 days' / '30 到 45 天', 'yes' / '是'."""
     if entry.operator == "is_true":
         return {"en": "yes", "zh": "是"}
     unit = entry.unit or ""
@@ -120,17 +121,25 @@ def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> dict:
     def number(value):
         return format(value, ",") if isinstance(value, int) else str(value)
 
-    def amount(value):  # one number with its unit; money reads as $200 billion and 2000 亿美元
-        if unit == "USD billion":
-            return {"en": "${:,} billion".format(value), "zh": "{:,} 亿美元".format(value * 10)}
-        if unit == "USD":
-            return {"en": "${}".format(number(value)), "zh": "{} 美元".format(number(value))}
-        if unit == "%":
-            return {"en": number(value) + "%", "zh": number(value) + "%"}
-        return {"en": " ".join(filter(None, [number(value), unit])), "zh": " ".join(filter(None, [number(value), ZH_UNIT_BY_UNIT.get(unit, unit)]))}
+    def money(value):  # money reads as $200 billion / 2,000 亿美元 and $100 million / 1 亿美元
+        dollars = value * 10 ** 9 if unit == "USD billion" else value
+        if dollars >= 10 ** 9:
+            return {"en": "${} billion".format(number(dollars // 10 ** 9)), "zh": "{} 亿美元".format(number(dollars // 10 ** 8))}
+        if dollars >= 10 ** 6:
+            return {"en": "${} million".format(number(dollars // 10 ** 6)), "zh": "{} 万美元".format(number(dollars // 10 ** 4)) if dollars % 10 ** 8 else "{} 亿美元".format(dollars // 10 ** 8)}
+        return {"en": "${}".format(number(dollars)), "zh": "{} 美元".format(number(dollars))}
+
+    def amount(value, with_unit=True):  # one number, with its unit unless a range carries the unit once at its end
+        if unit in ("USD", "USD billion"):
+            return money(value)
+        suffix_en = unit if with_unit and unit else ""
+        suffix_zh = ZH_UNIT_BY_UNIT.get(unit, unit) if with_unit and unit else ""
+        glue_en = "" if unit in NO_SPACE_UNIT_SET else " "
+        glue_zh = "" if unit in NO_SPACE_UNIT_SET else " "
+        return {"en": number(value) + (glue_en + suffix_en if suffix_en else ""), "zh": number(value) + (glue_zh + suffix_zh if suffix_zh else "")}
 
     if entry.operator == "between":
-        low, high = amount(entry.value[0]), amount(entry.value[1])
+        low, high = amount(entry.value[0], False), amount(entry.value[1])
         return {"en": "{} to {}".format(low["en"], high["en"]), "zh": "{} 到 {}".format(low["zh"], high["zh"])}
     value = amount(entry.value)
     symbol = LINE_SYMBOL_BY_OPERATOR.get(entry.operator, "?")

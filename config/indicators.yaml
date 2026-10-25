@@ -256,7 +256,7 @@ indicator_list:
   - indicator_id: I-016
     indicator_name: "wti_crude_oil_price"
     description: {en: "The price of WTI (West Texas Intermediate) crude oil, the US oil benchmark, in dollars a barrel. Very high or fast-rising oil lifts inflation, squeezes consumers and shakes markets. Source: Yahoo Finance CL=F futures via yfinance (history from FRED series DCOILWTICO). Typical values: over the last ten years WTI mostly traded between $40 and $120; $100 is a rule-of-thumb line.", zh: "WTI（西德克萨斯中质原油，美国原油基准）的价格，单位美元/桶。油价过高或涨得太快会推高通胀、挤压消费者、扰动市场。数据来源：通过 yfinance 取 Yahoo Finance 的 CL=F 期货（历史来自 FRED 的 DCOILWTICO 序列）。常见情形：过去十年 WTI 多在 40 到 120 美元之间；100 美元是经验线。"}
-    unit: "USD"
+    unit: "USD a barrel"
     scope: market
     method: "computed"
     quantifiable: "yes"

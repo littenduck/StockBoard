@@ -33,6 +33,7 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 | 首次申请失业救济人数 | initial jobless claims |
 | 平值 | at the money (ATM) |
 | 最近 12 个月 | the last 12 months (TTM) |
+| pp（stays English; percentage points） | pp |
 | X% 以内 | within X% |
 | 增加不超过 X% | at most X% more |
 | Put、Call、Covered Call | put, call, covered call (stay in English) |

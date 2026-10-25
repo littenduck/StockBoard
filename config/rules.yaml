@@ -1158,7 +1158,7 @@ rule_list:
   - rule_id: R-CTR-01
     rule_name: "delta_0_15_to_0_20"
     topic: "put_delta_expiration"
-    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.20.", zh: "期权 Delta 的绝对值介于 0.15 和 0.20 之间时通过。"}
+    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.2.", zh: "期权 Delta 的绝对值介于 0.15 和 0.2 之间时通过。"}
     indicator: "I-106"
     operator: "between"
     value: [0.15, 0.2]
@@ -1166,7 +1166,7 @@ rule_list:
   - rule_id: R-CTR-02
     rule_name: "delta_0_15_to_0_30"
     topic: "put_delta_expiration"
-    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.30.", zh: "期权 Delta 的绝对值介于 0.15 和 0.30 之间时通过。"}
+    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.3.", zh: "期权 Delta 的绝对值介于 0.15 和 0.3 之间时通过。"}
     indicator: "I-106"
     operator: "between"
     value: [0.15, 0.3]
@@ -1175,7 +1175,7 @@ rule_list:
   - rule_id: R-CTR-03
     rule_name: "delta_at_most_0_30"
     topic: "put_delta_expiration"
-    description: {en: "Passes when the option's absolute Delta is at most 0.30.", zh: "期权 Delta 的绝对值不高于 0.30 时通过。"}
+    description: {en: "Passes when the option's absolute Delta is at most 0.3.", zh: "期权 Delta 的绝对值不高于 0.3 时通过。"}
     indicator: "I-106"
     operator: "less_or_equal"
     value: 0.3
