@@ -45,9 +45,8 @@
   .strategy-gate > small { margin:var(--space-2) 0 var(--space-1); }
   .strategy-line { flex-basis:100%; display:flex; align-items:center; gap:var(--space-1); } .strategy-line strong { margin-left:var(--space-1); }
   #strategy-help { width:min(520px, calc(100vw - var(--space-6))); max-height:calc(100vh - 2 * var(--space-6)); overflow-y:auto; padding:var(--space-5); color:var(--text); }
-  #rule-card { position:fixed; inset:auto; margin:0; width:min(560px, calc(100vw - var(--space-4))); max-height:calc(100vh - var(--space-5)); overflow-y:auto;
-    display:grid; grid-template-columns:auto 1fr; gap:var(--space-1) var(--space-4); padding:var(--space-3) var(--space-4); color:var(--text); }
-  #rule-card:popover-open { display:grid; } #rule-card > * { margin:0; } #rule-card > small { padding-top:2px; } #rule-card p small { margin-right:var(--space-1); }
+  #rule-card { position:fixed; inset:auto; margin:0; width:min(420px, calc(100vw - var(--space-4))); max-height:calc(100vh - var(--space-5)); overflow-y:auto; padding:var(--space-3) var(--space-4);
+    color:var(--text); pointer-events:none; box-shadow:0 4px 16px rgb(20 20 19 / 0.12); }
   #strategy-help::backdrop { background:rgb(20 20 19 / 0.24); }   #strategy-help > header { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3); }
   .panel-enter { animation:panel-enter 160ms ease-out; }  @keyframes panel-enter { from { opacity:0; transform:translateY(4px); } }  @keyframes pulse { 50% { opacity:0.3; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }

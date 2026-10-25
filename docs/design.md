@@ -50,7 +50,7 @@ Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows, except the one soft shadow under the rule hover card, which floats over the page.
 
 ## Status
 
@@ -114,7 +114,7 @@ Layout-only containers (not elements, styled by the page only for layout): page 
 
 ## Rule hover card
 
-Each rule row on the dashboard has a small help icon (a link) after its id. Hovering or focusing it opens `#rule-card`, a `.box` popover that lists every field of the rule's catalog record in the order of `config/rules.yaml`: `small` field name on the left, `p` value on the right, `name` and `description` once per language, empty fields as a gray dash. It stays open while the pointer is on it, closes with Escape, and is built by `static/rule-card.js` from `/api/v1/rules`.
+Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), name (`h3`) and description (`p`), each with its English companion in Chinese mode. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`). The full record of every field is on the rule catalog page. Built by `static/rule-card.js` from `/api/v1/rules`.
 
 ## Language
 
