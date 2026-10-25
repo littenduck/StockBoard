@@ -47,9 +47,8 @@ from stockboard_backend.settings_loader import PROJECT_DIRECTORY  # noqa: E402
 def load_everything():
     settings = settings_loader.settings_loader_load_settings_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
     catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
-    strategy_directory = next(path for path in (os.path.join(PROJECT_DIRECTORY, "config", "strategies"), os.path.join(PROJECT_DIRECTORY, "strategies"))
-                              if os.path.isdir(path))
-    return settings, strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(strategy_directory, catalog)
+    return settings, strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
+        os.path.join(PROJECT_DIRECTORY, "config", "strategies"), catalog)
 
 
 def report(label: str) -> None:

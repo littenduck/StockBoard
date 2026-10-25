@@ -18,7 +18,7 @@ application_settings = settings_loader.settings_loader_load_settings_from_yaml_f
 application_rule_catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(
     os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
 strategy_definition_by_id = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
-    os.path.join(PROJECT_DIRECTORY, "strategies"), application_rule_catalog)
+    os.path.join(PROJECT_DIRECTORY, "config", "strategies"), application_rule_catalog)
 
 validation_error_list = rule_catalog.rule_catalog_validate_rule_catalog_against_known_indicators(
     application_rule_catalog, indicator_calculation.KNOWN_INDICATOR_ID_SET) + [

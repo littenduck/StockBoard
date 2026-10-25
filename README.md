@@ -25,7 +25,7 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 |---|---|
 | `config/rules.yaml` | every rule, defined once, in 15 categories from macro to detail (190 rules: 156 with a data source, 34 manual; 154 can be backtested); strategies reference rules by id |
 | `config/settings.yaml` | refresh interval, indicator cards, watchlist, option expiration windows |
-| `strategies/*.yaml` | strategies: gates, rules, per-strategy weights and veto flags (see `docs/strategy.md`) |
+| `config/strategies/*.yaml` | strategies: gates, rules, per-strategy weights and veto flags (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, shape and states, five element families, status badges, layout) |
 | `docs/indicator.md` | every indicator, its meaning and source |
 | `docs/language.md` | English and Chinese glossary and writing rules |

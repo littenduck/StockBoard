@@ -1,4 +1,4 @@
-# Rule catalog, regrouped by theme. Strategies in strategies/*.yaml pick rules from here and give each rule its own weight.
+# Rule catalog, regrouped by theme. Strategies in config/strategies/*.yaml pick rules from here and give each rule its own weight.
 # Rule id = category code + two digits, for example TRD-03. Categories run from macro down to detail. Ids are never reused.
 # A rule only answers one question: does the value pass this line? (pass, fail or unknown). It has no weight and no score.
 # A measure with several lines (VIX, Delta, DTE ...) is split into one rule per line. The main rule carries the full description;
