@@ -2,7 +2,7 @@
 
 A strategy is one YAML file in `strategies/`. The app loads every file in that folder at startup and refuses to start if a rule refers to an unknown indicator.
 
-> **Status (branch `refactor/rule-catalog-by-theme`):** `config/rules.yaml` has been redesigned (new ids, `name`, `description`, `kind`, `acquisition`, `quantifiable`, `bands`). The files in `strategies/`, the loader and the evaluator still use the old ids and rules, so they do not load against the new catalog until they are migrated. Sections below describe the new catalog; the "Variant groups" section describes what the evaluator does today.
+> **Status (branch `refactor/rule-catalog-by-theme`):** `config/rules.yaml` has been redesigned (new ids, `name`, `description`, `method`, `quantifiable`, `levels`). The files in `strategies/`, the loader and the evaluator still use the old ids and rules, so they do not load against the new catalog until they are migrated. Sections below describe the new catalog; the "Variant groups" section describes what the evaluator does today.
 
 ## File format
 
@@ -26,7 +26,7 @@ gates:                                    # evaluated in order, top to bottom
       - {rule_id: SEN-01, weight: 5}
 ```
 
-A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, importance, kind, acquisition, quantifiable, availability, indicator with operator and threshold or with bands, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `weight`) and an optional `variant_group`. Any rule can be listed. A rule the app has no data for, including every `kind: manual` rule, evaluates to unknown ❓ and is left out of the score (target behaviour; the current loader still refuses rules without an indicator).
+A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, importance, method, quantifiable, status, indicator with operator and threshold or with levels, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `weight`) and an optional `variant_group`. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score (target behaviour; the current loader still refuses rules without an indicator).
 
 ## Languages
 
@@ -45,11 +45,11 @@ Id = category code + two digits, for example `TRD-03`. The same id means the sam
 | Options | `LIQ` liquidity, `VOL` volatility, `CTR` contract selection, `RET` return and payoff |
 | Risk | `POS` position, account and portfolio, `THS` thesis and discipline, `EXT` management and exit |
 
-Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and loose and strict tiers of one test became one rule with `bands`. Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. The full list is on the 规则目录 page (`/rules`).
+Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and loose and strict tiers of one test became one rule with `levels`. Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. The full list is on the 规则目录 page (`/rules`).
 
-Every rule has a `kind`. `script` means the app gets the value with code; `manual` means it would come from you, your trade plan or your brokerage account. `acquisition` says how a script rule is obtained: `api_fetch` (stable API or CSV such as FRED and yfinance), `scrape` (web page, unofficial endpoint, spreadsheet), `computed` (calculated from fetched prices, series or option chains), `ai_search` (an AI reads web pages and records the result with its source), or `manual`.
+`method` says how a rule's value is obtained: `api_fetch` (stable API or CSV such as FRED and yfinance), `scrape` (web page, unofficial endpoint, spreadsheet), `computed` (calculated from fetched prices, series or option chains), `ai_search` (an AI reads web pages and records the result with its source), or `manual` (no data in the app: your own input, your trade plan or your brokerage account; a manual rule can still sit in a strategy, where it always shows unknown).
 
-`weight` is the importance score from 1 to 5. A rule with `bands` gives partial credit: the first matching band wins and no match means credit 0. Credits are a first draft. A weight 5 manual rule in a strategy keeps the pass result unknown, because the veto can never be checked.
+`weight` is the importance score from 1 to 5. A rule with `levels` gives partial credit: the first matching level wins and no match means `score` 0. A level's `score` is the share of the weight the rule earns (1.0 is all of it). Scores are a first draft. A weight 5 manual rule in a strategy keeps the pass result unknown, because the veto can never be checked.
 
 Operators: `less_than`, `less_or_equal`, `greater_than`, `greater_or_equal`, `between` (value is `[low, high]`, inclusive), `is_true`.
 
@@ -67,7 +67,7 @@ A high score can still fail the veto, and a low score can still pass.
 
 ## Variant groups
 
-Rules sharing a `variant_group` are loose and strict versions of one test (for example VIX at least 13 and at least 15). Only the strictest passing rule counts as pass; the looser ones become `not_applicable`. If none pass, only the loosest counts as fail. Order rules from loose to strict inside the file. The new catalog replaces most variant groups with `bands` on a single rule; the evaluator does not read `bands` yet.
+Rules sharing a `variant_group` are loose and strict versions of one test (for example VIX at least 13 and at least 15). Only the strictest passing rule counts as pass; the looser ones become `not_applicable`. If none pass, only the loosest counts as fail. Order rules from loose to strict inside the file. The new catalog replaces most variant groups with `levels` on a single rule; the evaluator does not read `levels` yet.
 
 ## Expiration windows
 
