@@ -102,6 +102,11 @@ def web_server_get_language_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "language.js"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/rule-card.js")
+def web_server_get_rule_card_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rule-card.js"), headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/icons.svg")
 def web_server_get_icon_sprite() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "icons.svg"), media_type="image/svg+xml",

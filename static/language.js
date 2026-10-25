@@ -31,6 +31,7 @@ const UI_TEXT = {
   see_all_rules: { en:'See all rules and how IDs work →', zh:'查看全部规则和编号说明 →' },
   best_window: { en:'Expiration {label} days (best) · Gate score {score}', zh:'到期窗口 {label} 天（最佳） · 本层分数 {score}' },
   alternative_window: { en:'Alternative expiration {label} days · Gate score {score}', zh:'备选到期窗口 {label} 天 · 本层分数 {score}' },
+  rule_details: { en:'Show all fields of {id}', zh:'查看 {id} 的全部字段' },
   open_rule: { en:'Open {id} in the rule catalog', zh:'在规则目录中查看 {id}' },
   dashboard_title: { en:'StockBoard', zh:'StockBoard' },
   rules_title: { en:'Rule catalog · StockBoard', zh:'规则目录 · StockBoard' },

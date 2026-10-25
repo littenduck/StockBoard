@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 from fastapi import HTTPException
@@ -104,3 +105,8 @@ def test_replaced_snapshot_file_is_loaded_again(snapshot_file_path):
     # The refresher replaces the file through a temporary file, which gives it a new identity.
     snapshot_storage.snapshot_storage_save_snapshot_to_json_file(replacement, str(snapshot_file_path))
     assert web_server.web_server_load_snapshot_or_empty_snapshot()["failed_symbol_list"] == ["DDD"]
+
+
+def test_rule_card_script_is_served():
+    response = web_server.web_server_get_rule_card_script()
+    assert os.path.exists(response.path) and "ruleCardBind" in open(response.path, encoding="utf8").read()

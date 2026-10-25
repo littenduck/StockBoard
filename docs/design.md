@@ -112,6 +112,10 @@ Text is done by tags. There are 7 element classes (6 styled in `base.css` plus `
 
 Layout-only containers (not elements, styled by the page only for layout): page grid (`.layout`), `aside`, `main`, `#strategy-help` (the popover, a `.box`), `.detail-header`, `.result-row`, `.strategy-gate`, `.status-bar`, `.strategy-line`, `.symbol-header`, `.top-row`, `.page-header`, `.filter-row`, `.rule-group`, `.usage`, `.rule-meta`, dividers.
 
+## Rule hover card
+
+Each rule row on the dashboard has a small help icon (a link) after its id. Hovering or focusing it opens `#rule-card`, a `.box` popover that lists every field of the rule's catalog record in the order of `config/rules.yaml`: `small` field name on the left, `p` value on the right, `name` and `description` once per language, empty fields as a gray dash. It stays open while the pointer is on it, closes with Escape, and is built by `static/rule-card.js` from `/api/v1/rules`.
+
 ## Language
 
 English is the default; Chinese mode shows Chinese with the English underneath. Glossary and writing rules: `docs/language.md`.
