@@ -11,24 +11,18 @@
   .top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2); }
   .page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
     padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
-  #explanation { margin-bottom:var(--space-5); }
-  #explanation ul { display:flex; flex-wrap:wrap; gap:var(--space-1) var(--space-4); }
+  #explanation { margin-bottom:var(--space-5); } #explanation ul { display:flex; flex-wrap:wrap; gap:var(--space-1) var(--space-4); }
   .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
   .rule-group { margin-bottom:var(--space-6); }
   .rule-group > header { margin-bottom:var(--space-2); }
-  .rule-group .row { display:grid; grid-template-columns:72px 1fr minmax(0, 320px); gap:var(--space-3); align-items:baseline; margin:0;
+  .rule-group .row { display:grid; grid-template-columns:72px 1fr; gap:var(--space-3); align-items:baseline; margin:0;
     border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
-  .rule-group .row > :first-child { white-space:nowrap; }
-  .rule-group > header > small, .rule-group .row > div > small { display:block; }
-  .rule-group .row > div > small { margin-top:var(--space-1); }
-  .rule-group > header + .row { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
-  .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
+  .rule-group .row > :first-child { white-space:nowrap; } .rule-group > header > small, .rule-group .row > div > small { display:block; } .rule-group .row > div > small { margin-top:var(--space-1); }
+  .rule-meta { display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:var(--space-2) var(--space-4); margin-top:var(--space-3); }
+  .rule-meta small { display:block; } .rule-meta p { overflow-wrap:break-word; }
   .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); } .usage .box { white-space:normal; }
   @media (max-width:899px) {
     main { padding:var(--space-5) var(--space-4); }
-    .rule-group .row { grid-template-columns:72px 1fr; row-gap:var(--space-1); }
-    .rule-meta { grid-column:2 / 3; grid-template-columns:1fr; }
-    .rule-group > header + .row { display:none; }
   }
 </style>
 </head>
@@ -61,13 +55,22 @@ function markTargetRow() {
   return row;
 }
 window.addEventListener('hashchange', markTargetRow);
+const RECORD_FIELD_LIST = ['indicator', 'operator', 'value', 'band_of', 'method', 'quantifiable', 'status', 'backtestable', 'history_source', 'history_start', 'legacy_id'];
+const DASH = '<p class="muted">—</p>';
+function renderFieldValue(rule, name) {
+  const value = rule[name];
+  if (value == null || value === '') return DASH;
+  if (name === 'band_of') return `<p><a href="#rule-${value}">${escapeText(value)}</a></p>`;
+  return `<p${name === 'status' ? ` class="${STATUS_COLOR[value]}"` : ''}>${escapeText(Array.isArray(value) ? value.join(', ') : String(value)).replace(/([_:+])/g, '$1<wbr>')}</p>`;
+}
 function renderRuleRow(rule) {
-  const bandLink = rule.band_of ? `<small><a href="#rule-${rule.band_of}">${escapeText(languageText('band_of', { id:rule.band_of }))}</a></small>` : '';
+  const field = name => `<div><small>${name}</small>${renderFieldValue(rule, name)}</div>`;
+  const usage = rule.used_by.map(use => `<small class="box">${escapeText(primaryText(use.display_name))} · W${use.weight}${use.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('');
   return `<div class="row" id="rule-${rule.rule_id}"><small>${rule.rule_id}</small>
-    <div>${languageRenderText(rule.name)}<small>${languageRenderText(rule.description)}</small>${rule.note ? `<small>${languageRenderText(rule.note)}</small>` : ''}${bandLink}</div>
-    <div class="rule-meta"><small class="${STATUS_COLOR[rule.status]}">${escapeText(languageText(rule.status))} · ${escapeText(languageText(rule.method))}</small>
-      <div class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<small class="box">${escapeText(primaryText(usage.display_name))} · W${usage.weight}${usage.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('') : `<small>${escapeText(languageText('not_used'))}</small>`}</div>
-      <small class="${rule.backtestable === 'yes' ? '' : 'muted'}">${escapeText(rule.backtestable === 'yes' ? languageText('backtest_yes', { start:rule.history_start }) : languageText('backtest_no'))}</small></div></div>`;
+    <div>${languageRenderText(rule.name)}<small>${languageRenderText(rule.description)}</small>
+      <div class="rule-meta">${RECORD_FIELD_LIST.map(field).join('')}</div>
+      <div class="rule-meta"><div><small>note</small>${rule.note ? `<p>${languageRenderText(rule.note)}</p>` : DASH}</div>
+        <div><small>used_by</small>${usage ? `<div class="usage">${usage}</div>` : DASH}</div></div></div></div>`;
 }
 
 function renderStaticText() {
@@ -110,8 +113,6 @@ function renderRuleCatalog(shouldScrollToTarget = true) {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
     return `<section class="rule-group"><header><h2>${languageRenderText(group.display_name)}</h2><small>${languageRenderText(group.description)}</small></header>
-      <div class="row"><small>${escapeText(languageText('column_id'))}</small><small>${escapeText(languageText('column_rule'))}</small>
-        <div class="rule-meta"><small>${escapeText(languageText('status_label'))}</small><small>${escapeText(languageText('column_used_by'))}</small></div></div>
       ${ruleList.map(renderRuleRow).join('')}</section>`;
   }).join('');
   const target = markTargetRow();

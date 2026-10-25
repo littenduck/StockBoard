@@ -114,7 +114,7 @@ Layout-only containers (not elements, styled by the page only for layout): page 
 
 ## Rule hover card
 
-Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), name (`h3`) and description (`p`), each with its English companion in Chinese mode. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`). The full record of every field is on the rule catalog page. Built by `static/rule-card.js` from `/api/v1/rules`.
+Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), name (`h3`) and description (`p`), each with its English companion in Chinese mode. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`). The full record of every field is on the rule catalog page, where each rule row shows its name and description, then a grid of every other field in `config/rules.yaml` order (a `small` field name above a `p` value, a gray dash when empty, `band_of` as a link, identifiers breaking at underscores) and a last line for `note` and `used_by` (strategy chips with weight and veto). The grid fills as many columns as fit, two on a phone. Built by `static/rule-card.js` from `/api/v1/rules`.
 
 ## Language
 
