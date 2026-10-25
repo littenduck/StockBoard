@@ -24,7 +24,7 @@
 # review: working notes in Chinese from the data check on 2026-10-25. latest_value is a snapshot of data pulled on 2026-10-23 (stock rules use AAPL as the sample), not live data. free_python says whether free Python can fetch it simply.
 #
 # Rules that need your own input, your trade plan or your brokerage account (acquisition: manual) are not scored.
-# They live in config/checklist.yaml as a personal checklist.
+# They live in config/rules_manual.yaml as a personal checklist.
 #
 # Fields of every rule:
 #   rule_id          unique id, category code plus two digits (ids are never reused; gaps are fine)

@@ -24,11 +24,11 @@ gates:                                    # evaluated in order, top to bottom
       - {rule_id: A02, weight: 4, variant_group: ten_year_level}
 ```
 
-A strategy only references rules. Every rule is defined once in `config/rules.yaml` (description, indicator, operator, threshold, default weight, availability). A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `default_weight`) and an optional `variant_group`. Only rules with `availability: automatic` can be used; the loader refuses copies (`alias_of`) and rules without an indicator.
+A strategy only references rules. Every rule is defined once in `config/rules_auto.yaml` (description, indicator, operator, threshold, default weight, availability). A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `default_weight`) and an optional `variant_group`. Only rules with `availability: automatic` can be used; the loader refuses copies (`alias_of`) and rules without an indicator.
 
 ## Languages
 
-Every text a person reads (`display_name`, `source`, `summary`, `help`, gate `display_name`, and rule text in `config/rules.yaml`) is `{en, zh}`. Both are required, English must not contain Chinese characters, and help paragraphs must pair up. The app refuses to start otherwise; `pytest` checks it too. Glossary: `docs/language.md`.
+Every text a person reads (`display_name`, `source`, `summary`, `help`, gate `display_name`, and rule text in `config/rules_auto.yaml`) is `{en, zh}`. Both are required, English must not contain Chinese characters, and help paragraphs must pair up. The app refuses to start otherwise; `pytest` checks it too. Glossary: `docs/language.md`.
 
 ## Rule ids
 

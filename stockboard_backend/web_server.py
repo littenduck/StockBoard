@@ -16,7 +16,7 @@ PROJECT_DIRECTORY = settings_loader.PROJECT_DIRECTORY
 application_settings = settings_loader.settings_loader_load_settings_from_yaml_file(
     os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
 application_rule_catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(
-    os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
+    os.path.join(PROJECT_DIRECTORY, "config", "rules_auto.yaml"))
 strategy_definition_by_id = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
     os.path.join(PROJECT_DIRECTORY, "strategies"), application_rule_catalog)
 

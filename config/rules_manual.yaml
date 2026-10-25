@@ -1,6 +1,6 @@
 # Personal checklist: rules that need your own input, your trade plan or your brokerage account.
-# They are never scored, because the app has nowhere to collect the answers. Same fields as config/rules.yaml,
-# same ids (so the numbering has gaps in rules.yaml where a rule moved here).
+# They are never scored, because the app has nowhere to collect the answers. Same fields as config/rules_auto.yaml,
+# same ids (so the numbering has gaps in rules_auto.yaml where a rule moved here).
 
 rule_group_list:
   - {group_id: VAL, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "VAL · Valuation", zh: "VAL · 估值"}, description: {en: "Market and stock valuation, and your own margin of safety.", zh: "大盘与个股估值，以及你自己的安全边际。"}}

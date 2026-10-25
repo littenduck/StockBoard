@@ -16,7 +16,7 @@ def strategy_loader_build_rule_definition_from_catalog(raw_rule: dict, rule_cata
     """A strategy entry is {rule_id, weight?, variant_group?}; everything else comes from the catalog."""
     entry = rule_catalog.rule_entry_by_id.get(raw_rule["rule_id"])
     if entry is None:
-        raise ValueError("rule {} is not in config/rules.yaml".format(raw_rule["rule_id"]))
+        raise ValueError("rule {} is not in config/rules_auto.yaml".format(raw_rule["rule_id"]))
     if entry.alias_of:
         raise ValueError("rule {} is a copy of {}; use {}".format(entry.rule_id, entry.alias_of, entry.alias_of))
     if not entry.indicator:

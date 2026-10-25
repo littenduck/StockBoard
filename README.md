@@ -23,7 +23,7 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 
 | Path | What |
 |---|---|
-| `config/rules.yaml` | every rule, defined once; strategies reference rules by id |
+| `config/rules_auto.yaml` | every rule, defined once; strategies reference rules by id |
 | `config/settings.yaml` | refresh interval, indicator cards, watchlist, option expiration windows |
 | `strategies/*.yaml` | strategies: gates, rules, weights (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, shape and states, five element families, status badges, layout) |

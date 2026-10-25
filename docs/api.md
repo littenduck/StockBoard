@@ -13,7 +13,7 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 
 ## GET /api/v1/rules
 
-Every rule from `config/rules.yaml`, grouped by letter, with the strategies that use it.
+Every rule from `config/rules_auto.yaml`, grouped by letter, with the strategies that use it.
 
 ```json
 {"default_language": "en",
