@@ -3,6 +3,7 @@
 SEC asks every client to identify itself: set the environment variable EDGAR_CONTACT (for example an email address).
 Each value is stamped with the date the filing reached EDGAR, so a backtest never sees a number before it was public.
 """
+import datetime
 import json
 import os
 import urllib.request
@@ -107,6 +108,23 @@ def edgar_data_build_trailing_twelve_month_series(fact_table: pandas.DataFrame) 
         total_by_filing_date[row["filed"]] = float(last_year["val"].iloc[0] + row["val"] - same_stretch["val"].iloc[0])
     series = pandas.Series(total_by_filing_date, dtype=float).sort_index()
     return series[~series.index.duplicated(keep="last")]
+
+
+AUDIT_PROBLEM_ITEM_SET = {"4.01", "4.02"}
+LATE_FILING_FORM_SET = {"NT 10-K", "NT 10-Q"}
+PROBLEM_LOOK_BACK_DAYS = 365
+
+
+def edgar_data_find_audit_or_late_filing_problem(submissions: dict, today: datetime.date) -> bool:
+    """True when, in the last 365 days, the company changed its auditor (8-K item 4.01), said past financial statements can no longer
+    be relied on (8-K item 4.02) or filed a late-filing notice (NT 10-K, NT 10-Q)."""
+    recent = submissions.get("filings", {}).get("recent", {})
+    for form, items, filing_date in zip(recent.get("form", []), recent.get("items", []), recent.get("filingDate", [])):
+        if (today - datetime.date.fromisoformat(filing_date)).days > PROBLEM_LOOK_BACK_DAYS:
+            continue
+        if form in LATE_FILING_FORM_SET or (form.startswith("8-K") and AUDIT_PROBLEM_ITEM_SET & set(str(items).split(","))):
+            return True
+    return False
 
 
 def edgar_data_pick_latest_known(series: pandas.Series, day: pandas.Timestamp, days_back: int = 0) -> Optional[float]:

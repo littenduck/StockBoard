@@ -141,6 +141,10 @@ def indicator_calculation_calculate_average_trading_value(price_history: pandas.
 
 
 KNOWN_INDICATOR_ID_SET = {
+    "shiller_cape", "damodaran_implied_equity_risk_premium_percent", "geopolitical_risk_index_thirty_day_average_percentile_five_year",
+    "price_earnings_ttm_to_five_year_median_ratio", "no_audit_or_late_filing_problem_in_last_365_days", "implied_volatility_percentile",
+    "implied_volatility_to_one_month_ago_ratio", "spmo_holding_rank", "equity_risk_premium_simple_percent",
+    "selected_call_days_to_expiration", "selected_call_strike_premium_percent",
     "short_interest_percent_of_shares_outstanding",
     "vix_level", "vxn_level", "vvix_level", "vix_term_structure_is_contango",
     "treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points",

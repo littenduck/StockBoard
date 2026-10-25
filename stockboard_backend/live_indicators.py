@@ -13,19 +13,23 @@ from typing import Callable, Dict, Optional, Tuple
 import pandas
 import yfinance
 
-from stockboard_backend import (cboe_data, company_indicators, edgar_data, finra_data, fundamental_series, history_series, macro_data,
-                                sentiment_data)
+from stockboard_backend import (cboe_data, company_indicators, dolthub_data, edgar_data, finra_data, fundamental_series, history_series,
+                                macro_data, sentiment_data)
 from stockboard_backend.strategy_evaluation import IndicatorValue
 
 SERIES_CACHE_SECONDS = 30 * 60
 COMPANY_CACHE_SECONDS = 60 * 60
 SERIES_WORKER_COUNT = 6
 SHORT_INTEREST_MAX_AGE_DAYS = 45
-EDGAR_START_DAY = datetime.date(2020, 1, 1)
+EDGAR_START_DAY = datetime.date(2018, 1, 1)  # six years of days: the PE median needs five years of earnings and prices
 EDGAR_INDICATOR_ID_LIST = [
     "revenue_three_year_cagr_percent", "eps_three_year_cagr_percent", "return_on_invested_capital_percent",
     "free_cash_flow_year_over_year_change", "interest_coverage_ratio", "shares_outstanding_year_over_year_percent",
+    "price_earnings_ttm_to_five_year_median_ratio",
 ]
+SLOW_COMPANY_CACHE_SECONDS = 6 * 60 * 60
+SPMO_SYMBOL = "SPMO"
+FAILED_RETRY_SECONDS = 15 * 60
 DAILY_DAYS, WEEKLY_DAYS, MONTHLY_DAYS, QUARTERLY_DAYS = 10, 16, 100, 270
 # A series is used only while its newest observation is no older than this, so a source that stops updating reads unknown.
 # Monthly and quarterly observations are dated the first day of their period and published one to three months later, hence the long limits.
@@ -46,6 +50,9 @@ MAX_AGE_DAYS_BY_SERIES_INDICATOR_ID = {
     "consumer_price_index_year_over_year_percent": MONTHLY_DAYS,
     "core_pce_price_index_year_over_year_percent": MONTHLY_DAYS,
     "sahm_rule_recession_indicator": MONTHLY_DAYS,
+    "shiller_cape": 45,
+    "damodaran_implied_equity_risk_premium_percent": 75,
+    "geopolitical_risk_index_thirty_day_average_percentile_five_year": 14,
     "chicago_fed_national_activity_index_three_month_average": MONTHLY_DAYS,
     "m2_money_supply_year_over_year_percent": MONTHLY_DAYS,
     "trade_policy_uncertainty_ten_year_percentile": MONTHLY_DAYS,
@@ -150,22 +157,87 @@ def live_indicators_build_short_interest_indicator_value_by_id(
     return {"short_interest_percent_of_shares_outstanding": round(float(short_interest["short_shares"].iloc[-1]) / shares_outstanding * 100, 4)}
 
 
+def live_indicators_fetch_price_series_or_none(symbol: str) -> Optional[pandas.Series]:
+    try:
+        close = yfinance.Ticker(symbol).history(period="7y", auto_adjust=False)["Close"]
+        close.index = close.index.tz_localize(None).normalize()
+        return close
+    except Exception as error:
+        print("price history failed:", symbol, error)
+        return None
+
+
 def live_indicators_fetch_edgar_indicator_value_by_id(symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
-    """Multi year growth and interest coverage from SEC filings. Needs EDGAR_CONTACT; a fund or an unknown ticker gives nothing."""
+    """Multi year growth, interest coverage, the PE against its five year median and the audit check, from SEC filings.
+    Needs EDGAR_CONTACT; a fund or an unknown ticker gives nothing. Kept for the day."""
     if not os.environ.get("EDGAR_CONTACT"):
         return {}
     key = (symbol, today)
     with cache_lock:
         cached = edgar_cache.get(key)
     if cached is None:
+        cached = {}
         try:
             company_facts = edgar_data.edgar_data_fetch_company_facts(symbol)
             days = pandas.date_range(EDGAR_START_DAY, today, freq="D")
-            last_row = fundamental_series.fundamental_series_build_table(company_facts, days).iloc[-1]
-            cached = {name: round(float(last_row[name]), 4) for name in EDGAR_INDICATOR_ID_LIST if pandas.notna(last_row[name])}
+            table = fundamental_series.fundamental_series_build_table(company_facts, days, live_indicators_fetch_price_series_or_none(symbol))
+            last_row = table.iloc[-1]
+            cached = {name: round(float(last_row[name]), 4) for name in EDGAR_INDICATOR_ID_LIST
+                      if name in table.columns and pandas.notna(last_row[name])}
+            has_problem = edgar_data.edgar_data_find_audit_or_late_filing_problem(edgar_data.edgar_data_fetch_submissions(symbol), today)
+            cached["no_audit_or_late_filing_problem_in_last_365_days"] = not has_problem
         except Exception as error:  # funds have no company facts; a failed download tries again tomorrow
             print("edgar failed:", symbol, error)
-            cached = {}
         with cache_lock:
             edgar_cache[key] = cached
     return {name: IndicatorValue(name, value, "SEC EDGAR") for name, value in cached.items()}
+
+
+def live_indicators_fetch_implied_volatility_indicator_value_by_id(symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
+    """IV percentile over a year and IV against a month ago, from the DoltHub history. Kept for six hours."""
+    key = f"iv:{symbol}"
+    with cache_lock:
+        cached = company_cache.get(key)
+    if cached and time.time() - cached[0] < SLOW_COMPANY_CACHE_SECONDS:
+        value_by_id = cached[1]
+    else:
+        try:
+            value_by_id = dolthub_data.dolthub_data_build_indicator_value_by_id(
+                dolthub_data.dolthub_data_fetch_implied_volatility_series(symbol, today), today)
+            loaded_at = time.time()
+        except Exception as error:
+            print("implied volatility history failed:", symbol, error)
+            value_by_id, loaded_at = {}, time.time() - SLOW_COMPANY_CACHE_SECONDS + FAILED_RETRY_SECONDS  # try again in 15 minutes
+        with cache_lock:
+            company_cache[key] = (loaded_at, value_by_id)
+    return {name: IndicatorValue(name, value, "DoltHub") for name, value in value_by_id.items()}
+
+
+def live_indicators_fetch_spmo_rank_by_symbol() -> Dict[str, int]:
+    """Rank in SPMO's ten largest holdings (1 is the largest). A stock outside the ten has no rank here: its rules read unknown."""
+    with cache_lock:
+        cached = company_cache.get("spmo")
+    if cached and time.time() - cached[0] < SLOW_COMPANY_CACHE_SECONDS:
+        return cached[1]
+    try:
+        holding_table = yfinance.Ticker(SPMO_SYMBOL).funds_data.top_holdings
+        rank_by_symbol = {str(symbol).upper(): rank for rank, symbol in enumerate(holding_table.index, start=1)}
+    except Exception as error:
+        print("SPMO holdings failed:", error)
+        rank_by_symbol = {}
+    with cache_lock:
+        company_cache["spmo"] = (time.time(), rank_by_symbol)
+    return rank_by_symbol
+
+
+def live_indicators_build_equity_risk_premium_indicator_value_by_id(ten_year_yield_percent: Optional[float]) -> Dict[str, IndicatorValue]:
+    """Earnings yield of the S&P 500 (from SPY's trailing PE) minus the 10-year Treasury yield, in percent points."""
+    try:
+        trailing_pe = company_indicators.company_indicators_get_number(live_indicators_fetch_company_snapshot("SPY")["info"] or {}, "trailingPE")
+    except Exception as error:
+        print("S&P 500 PE failed:", error)
+        return {}
+    if not trailing_pe or trailing_pe <= 0 or ten_year_yield_percent is None:
+        return {}
+    value = round(100 / trailing_pe - ten_year_yield_percent, 3)
+    return {"equity_risk_premium_simple_percent": IndicatorValue("equity_risk_premium_simple_percent", value, "yfinance SPY, FRED DGS10")}

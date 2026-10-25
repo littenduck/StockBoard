@@ -135,7 +135,13 @@ Each refresh (every 10 minutes while the market is open) adds these to the indic
 | 3-year growth, ROIC, interest coverage, FCF change, share count change | SEC EDGAR (needs `EDGAR_CONTACT`, else unknown) | 1 day | the latest filing |
 | FOMC, CPI, PCE and jobs report dates | the release calendar in `config/settings.yaml` (`macro_event_calendar`), kept by hand; unknown past `macro_event_covered_until` | file | the window of the option |
 | Election day, quadruple witching, SPMO rebalance (the months March and September) | the calendar | none | today |
-| Option quotes (spread, open interest, volume, strike, premium, expected move, skew) | yfinance option chain | each refresh | only while the market is open; skew and spreads need a live bid |
+| Option quotes (spread, open interest, volume, strike, premium, expected move, skew) | yfinance option chain; the implied volatility is solved from the mid of a live bid and ask (Black-Scholes), not read from Yahoo's own column | each refresh | only for contracts with a live bid and ask |
+| Covered call (about 30 days out, strike about 10% above the price) | yfinance call chain; strikes need no live quote | each refresh | now |
+| IV percentile over a year and IV against a month ago | DoltHub `volatility_history` (whole-chain 30 day IV, one or two days behind) | 6 hours | 7 days |
+| Shiller CAPE, Damodaran implied equity risk premium, Geopolitical Risk percentile | multpl.com table, Damodaran's `ERPbymonth.xlsx`, the GPR daily file | 30 minutes | 45, 75 and 14 days |
+| Equity risk premium (earnings yield of SPY minus the 10-year yield) | yfinance SPY trailing PE and FRED DGS10 | each refresh | now |
+| SPMO holding rank | yfinance top 10 holdings of SPMO; a stock outside the ten has no rank and reads unknown | 6 hours | now |
+| Audit changes and late filings (8-K items 4.01 and 4.02, NT 10-K, NT 10-Q) and PE against its own 5-year median | SEC EDGAR submissions and company facts plus six years of yfinance prices (needs `EDGAR_CONTACT`) | 1 day | the last 365 days |
 
 Funds (SPY, QQQ) have no company figures, so their company rules read Unknown.
 
@@ -167,4 +173,4 @@ Every rule in `config/rules.yaml` names the indicator that will give its value. 
 
 ## Not built yet
 
-Account values (net value, cash, positions) and the strategy gates that need them (capital structure, position limits). The release calendar in `config/settings.yaml` ends in 2027 (PCE in 2026); add the next year's dates before then. Rules still unknown: sector EPS revisions (IND-02), S&P 500 forward PE (VAL-01), equity risk premium (VAL-03), PE against its own median (VAL-05), CAPE and Damodaran premium (VAL-11/12), audit problems (MGT-04), NAAIM (SEN-06/21, the archive copy is months old), mega IPO list (SEN-08), market breadth (TRD-02/21), SPMO rank (TRD-16/25), geopolitical risk (EVT-08), industry and customer earnings dates (EVT-10/11), implied volatility history (VOL-01/06/07/08), covered call and leverage (CTR-08/09, RET-03).
+Account values (net value, cash, positions) and the strategy gates that need them (capital structure, position limits). The release calendar in `config/settings.yaml` ends in 2027 (PCE in 2026); add the next year's dates before then. Rules still unknown: IND-02, VAL-01, TRD-02 and TRD-21 are marked difficulty 5 in their notes and are not planned (they need hundreds of requests per refresh or a PDF read by hand); NAAIM (SEN-06/21, the archive copy is months old); the mega IPO list (SEN-08) and the industry, customer and supplier earnings dates (EVT-10/11), which need a list kept by hand; implied leverage of the option you buy (RET-03), whose definition is not settled.

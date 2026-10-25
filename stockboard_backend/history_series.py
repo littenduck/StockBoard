@@ -9,7 +9,7 @@ from typing import Callable, Dict, Optional
 
 import pandas
 
-from stockboard_backend import cboe_data, edgar_data, finra_data, fundamental_series, macro_data, sentiment_data
+from stockboard_backend import cboe_data, edgar_data, finra_data, fundamental_series, macro_data, reference_data, sentiment_data
 from stockboard_backend.settings_loader import PROJECT_DIRECTORY
 
 PUT_CALL_CACHE_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "data", "cache", cboe_data.PUT_CALL_CACHE_FILE_NAME)
@@ -139,6 +139,11 @@ HISTORY_SERIES_BUILDER_BY_INDICATOR_ID: Dict[str, Callable[[], pandas.Series]] =
     "aaii_bullish_minus_bearish_percent":
         lambda: sentiment_data.sentiment_data_fetch_aaii_survey_table()["bullish_minus_bearish_percent"],
     "naaim_exposure_index": lambda: sentiment_data.sentiment_data_fetch_naaim_exposure_series(),
+    # VAL and EVT from reference files
+    "shiller_cape": lambda: reference_data.reference_data_fetch_shiller_cape_series(),
+    "damodaran_implied_equity_risk_premium_percent": lambda: reference_data.reference_data_fetch_damodaran_implied_premium_series(),
+    "geopolitical_risk_index_thirty_day_average_percentile_five_year":
+        lambda: reference_data.reference_data_fetch_geopolitical_risk_percentile_series(),
 }
 
 

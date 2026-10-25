@@ -17,6 +17,7 @@ SNAPSHOT_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "data", "latest_snapshot.js
 SECTOR_ETF_SYMBOL_LIST = sorted(set(company_indicators.SECTOR_ETF_BY_SECTOR_NAME.values()))
 MARKET_GAUGE_SYMBOL_LIST = ["^VIX", "^VXN", "^VVIX", "^VIX3M", "^GSPC", "CL=F", "DX-Y.NYB", "SPY", "RSP"] + SECTOR_ETF_SYMBOL_LIST
 SUPPORT_LOW_TRADING_DAY_COUNT = 60
+COVERED_CALL_MINIMUM_DAYS, COVERED_CALL_MAXIMUM_DAYS = 25, 35
 HISTORY_PERIOD = "1y"
 SYMBOL_WORKER_COUNT = 4
 POLL_SECONDS = 60
@@ -63,12 +64,33 @@ def refresh_scheduler_build_option_indicator_value_by_window_label(
         value_by_id = indicator_calculation.indicator_calculation_build_option_indicator_value_by_id(
             selected_contract, realized_volatility_percent, underlying_price, support_price,
             None if selected_contract is None else option_chain.option_chain_calculate_put_skew_points(
-                put_table_by_expiration_date[expiration_date], underlying_price))
+                put_table_by_expiration_date[expiration_date], underlying_price, selected_contract.days_to_expiration,
+                risk_free_rate_percent))
         if expiration_date is not None:
             value_by_id.update(refresh_scheduler_build_option_life_indicator_value_by_id(
                 settings, today, expiration_date, dividend_snapshot or {}))
         indicator_by_window_label[window.label] = value_by_id
     return indicator_by_window_label
+
+
+def refresh_scheduler_build_covered_call_indicator_value_by_id(
+    symbol: str, underlying_price: float, today: datetime.date,
+) -> Dict[str, IndicatorValue]:
+    """The covered call the rules describe: about 30 days out, struck about 10% above the price. Strikes need no live quote."""
+    try:
+        expiration_date = option_chain.option_chain_determine_expiration_within_day_window(
+            option_chain.option_chain_fetch_expiration_date_list_by_symbol(symbol), COVERED_CALL_MINIMUM_DAYS, COVERED_CALL_MAXIMUM_DAYS, today)
+        if expiration_date is None:
+            return {}
+        premium_percent = option_chain.option_chain_determine_covered_call_strike_premium_percent(
+            option_chain.option_chain_fetch_call_contract_table_by_symbol_and_expiration(symbol, expiration_date), underlying_price)
+    except Exception as error:
+        print("covered call failed:", symbol, error)
+        return {}
+    value_by_id = {"selected_call_days_to_expiration": (expiration_date - today).days}
+    if premium_percent is not None:
+        value_by_id["selected_call_strike_premium_percent"] = premium_percent
+    return {key: IndicatorValue(key, value, "yfinance option chain") for key, value in value_by_id.items()}
 
 
 def refresh_scheduler_build_option_life_indicator_value_by_id(
@@ -102,6 +124,12 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
         print("company data failed:", symbol, error)
         company_snapshot, company_indicator_value_by_id = {}, {}
     company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_edgar_indicator_value_by_id(symbol, today))
+    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_implied_volatility_indicator_value_by_id(symbol, today))
+    spmo_rank = live_indicators.live_indicators_fetch_spmo_rank_by_symbol().get(symbol)
+    if spmo_rank is not None:
+        company_indicator_value_by_id["spmo_holding_rank"] = IndicatorValue("spmo_holding_rank", spmo_rank, "yfinance SPMO")
+    company_indicator_value_by_id.update(refresh_scheduler_build_covered_call_indicator_value_by_id(
+        symbol, float(price_history["Close"].iloc[-1]), today))
     info = company_snapshot.get("info") if isinstance(company_snapshot.get("info"), dict) else {}
     sector_etf_symbol = company_indicators.company_indicators_find_sector_etf_symbol(info)
     spy_history, sector_history = market_history_by_symbol.get("SPY"), market_history_by_symbol.get(sector_etf_symbol)
@@ -175,6 +203,9 @@ def refresh_scheduler_build_dashboard_snapshot(
     shared_indicator_value_by_id.update(refresh_scheduler_fetch_series_or_none(
         live_indicators.live_indicators_fetch_series_indicator_value_by_id) or {})
     shared_indicator_value_by_id.update(refresh_scheduler_build_calendar_indicator_value_by_id(settings, datetime.date.today()))
+    ten_year_yield = shared_indicator_value_by_id.get("treasury_ten_year_yield")
+    shared_indicator_value_by_id.update(live_indicators.live_indicators_build_equity_risk_premium_indicator_value_by_id(
+        None if ten_year_yield is None else ten_year_yield.value))
 
     symbol_history_by_symbol = market_data.market_data_fetch_daily_price_history_for_symbol_list(
         settings.watchlist_symbol_list, HISTORY_PERIOD)

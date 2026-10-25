@@ -384,6 +384,7 @@ rule_list:
     indicator: "sector_next_year_eps_estimate_four_week_change_median_percent"
     operator: "greater_than"
     value: 0
+    note: {en: "Difficulty 5, not planned yet: it needs the next-year EPS estimates of every stock in the sector, hundreds of requests per refresh.", zh: "难度 5，暂不实现：需要抓取行业内每只股票的下一年 EPS 预期，每次刷新要几百次请求。"}
   # QUA · Company quality
   - rule_id: QUA-01
     name: {en: "Profitable", zh: "盈利为正"}
@@ -661,7 +662,7 @@ rule_list:
     backtestable: "yes"
     history_source: "edgar:submissions"
     history_start: "2004"
-    status: "todo"
+    status: "built"
     indicator: "no_audit_or_late_filing_problem_in_last_365_days"
     operator: "is_true"
   # VAL · Valuation
@@ -677,6 +678,7 @@ rule_list:
     indicator: "sp500_forward_pe"
     operator: "less_than"
     value: 22
+    note: {en: "Difficulty 5, not planned yet: the only free source is the weekly FactSet Earnings Insight PDF, whose layout changes and has to be read by hand or by an AI.", zh: "难度 5，暂不实现：唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，版式会变，只能人工或用 AI 读取。"}
   - rule_id: VAL-03
     name: {en: "Equity premium positive", zh: "股权风险溢价为正"}
     description: {en: "Passes when the S&P 500 earnings yield (1 divided by the PE) minus the 10-year Treasury yield is above 0. ERP (equity risk premium) in its simple form: earnings yield (1 divided by PE) minus the 10-year Treasury yield. If it is negative, stocks pay less than Treasuries. Source: Yahoo Finance via yfinance for PE and FRED series DGS10 for the yield. Typical values: a negative result means stocks look expensive against Treasuries (simplified Fed model). Updated daily. Backtest history: Robert Shiller's online data, ie_data, from 1962.", zh: "标普 500 的盈利收益率（市盈率的倒数）减 10 年期国债收益率大于 0 时通过。股权风险溢价（ERP）的简化版：盈利收益率（1 除以市盈率）减去 10 年期国债收益率。为负说明买股票的回报还不如国债。数据来源：市盈率通过 yfinance 取 Yahoo Finance，收益率取 FRED 的 DGS10 序列。常见情形：结果为负，说明相对国债股票偏贵（简化的 Fed 模型）。每日更新。回测历史：Shiller 在线数据，ie_data，自 1962 起。"}
@@ -685,7 +687,7 @@ rule_list:
     backtestable: "yes"
     history_source: "shiller:ie_data"
     history_start: "1962"
-    status: "todo"
+    status: "built"
     indicator: "equity_risk_premium_simple_percent"
     operator: "greater_than"
     value: 0
@@ -697,7 +699,7 @@ rule_list:
     backtestable: "yes"
     history_source: "shiller:ie_data"
     history_start: "1881"
-    status: "todo"
+    status: "built"
     indicator: "shiller_cape"
     operator: "less_than"
     value: 30
@@ -710,7 +712,7 @@ rule_list:
     backtestable: "yes"
     history_source: "damodaran:implied-erp"
     history_start: "2008-09"
-    status: "todo"
+    status: "built"
     indicator: "damodaran_implied_equity_risk_premium_percent"
     operator: "greater_or_equal"
     value: 4
@@ -749,7 +751,7 @@ rule_list:
     backtestable: "yes"
     history_source: "edgar:companyfacts"
     history_start: "2009"
-    status: "todo"
+    status: "built"
     indicator: "price_earnings_ttm_to_five_year_median_ratio"
     operator: "less_than"
     value: 1.0
@@ -1145,6 +1147,7 @@ rule_list:
     indicator: "sp500_share_above_two_hundred_day_average_percent"
     operator: "greater_or_equal"
     value: 60
+    note: {en: "Difficulty 5, not planned yet: it needs the daily closes of all 500 index members and the list of members.", zh: "难度 5，暂不实现：需要 500 只成分股的每日收盘价和成分股名单。"}
   - rule_id: TRD-21
     name: {en: "Breadth at least 40%", zh: "广度不低于 40%"}
     description: {en: "Passes when at least 40% of the S&P 500 members at that time are above their 200-day average. The looser line of TRD-02, which explains what breadth is. Backtest history: the open-source S&P 500 historical members list with Yahoo prices, sp500-components, from 1996-01-02.", zh: "当时的标普 500 成分股中，至少 40% 站在自己的 200 日线上方时通过。这是 TRD-02 较宽松的一条线，广度的含义见 TRD-02。回测历史：开源的标普 500 历史成分股名单加 Yahoo 价格，sp500-components，自 1996-01-02 起。"}
@@ -1159,6 +1162,7 @@ rule_list:
     value: 40
     band_of: "TRD-02"
     legacy_id: []
+    note: {en: "Difficulty 5, not planned yet: same data as TRD-02 (all 500 index members).", zh: "难度 5，暂不实现：数据同 TRD-02（500 只成分股）。"}
   - rule_id: TRD-22
     name: {en: "Equal weight leads", zh: "等权跑赢市值加权"}
     description: {en: "Passes when the ratio of RSP (the equal-weight S&P 500 fund) to SPY (the market-weight fund) is above its own 200-day average. When the average stock keeps up with the biggest stocks, the rally is broad. A cheap stand-in for breadth (TRD-02). Source: Yahoo Finance via yfinance (RSP since 2003). Updated daily. Backtest history: Yahoo Finance via yfinance, RSP, from 2003.", zh: "RSP（等权标普 500 基金）与 SPY（市值加权基金）的比值站在自己的 200 日均线上方时通过。当普通股票能跟上最大的几只，行情就比较宽。这是市场广度（TRD-02）的低成本替代。数据来源：通过 yfinance 取 Yahoo Finance（RSP 自 2003 年起）。每日更新。回测历史：通过 yfinance 取 Yahoo Finance，RSP，自 2003 起。"}
@@ -1425,7 +1429,7 @@ rule_list:
     backtestable: "yes"
     history_source: "sec:n-port"
     history_start: "2019-11-30"
-    status: "todo"
+    status: "built"
     indicator: "spmo_holding_rank"
     operator: "less_or_equal"
     value: 20
@@ -1439,7 +1443,7 @@ rule_list:
     backtestable: "yes"
     history_source: "sec:n-port"
     history_start: "2019-11-30"
-    status: "todo"
+    status: "built"
     indicator: "spmo_holding_rank"
     operator: "less_or_equal"
     value: 1
@@ -1539,7 +1543,7 @@ rule_list:
     backtestable: "yes"
     history_source: "gpr:daily"
     history_start: "1985"
-    status: "todo"
+    status: "built"
     indicator: "geopolitical_risk_index_thirty_day_average_percentile_five_year"
     operator: "less_than"
     value: 90
@@ -1717,7 +1721,7 @@ rule_list:
     backtestable: "yes"
     history_source: "dolthub:volatility_history"
     history_start: "2020-02"
-    status: "todo"
+    status: "built"
     indicator: "implied_volatility_percentile"
     operator: "greater_or_equal"
     value: 70
@@ -1730,7 +1734,7 @@ rule_list:
     backtestable: "yes"
     history_source: "dolthub:volatility_history"
     history_start: "2020-02"
-    status: "todo"
+    status: "built"
     indicator: "implied_volatility_percentile"
     operator: "greater_or_equal"
     value: 50
@@ -1744,7 +1748,7 @@ rule_list:
     backtestable: "yes"
     history_source: "dolthub:volatility_history"
     history_start: "2020-02"
-    status: "todo"
+    status: "built"
     indicator: "implied_volatility_percentile"
     operator: "greater_or_equal"
     value: 40
@@ -1771,7 +1775,7 @@ rule_list:
     backtestable: "yes"
     history_source: "dolthub:options"
     history_start: "2019-02-09"
-    status: "todo"
+    status: "built"
     indicator: "implied_volatility_to_one_month_ago_ratio"
     operator: "greater_than"
     value: 1.0
@@ -1965,7 +1969,7 @@ rule_list:
     backtestable: "yes"
     history_source: "dolthub:options"
     history_start: "2019-02-09"
-    status: "todo"
+    status: "built"
     indicator: "selected_call_strike_premium_percent"
     operator: "between"
     value: [8, 12]
@@ -1978,7 +1982,7 @@ rule_list:
     backtestable: "yes"
     history_source: "dolthub:options"
     history_start: "2019-02-09"
-    status: "todo"
+    status: "built"
     indicator: "selected_call_days_to_expiration"
     operator: "between"
     value: [25, 35]

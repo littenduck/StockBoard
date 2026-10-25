@@ -92,7 +92,36 @@ def test_option_indicators_from_one_selected_put():
     assert I.indicator_calculation_build_option_indicator_value_by_id(None, 25.0) == {}
 
 
+def test_implied_volatility_is_recovered_from_a_put_price():
+    price = option_chain.option_chain_calculate_black_scholes_put_price(100.0, 95.0, 36, 0.27, 4.0)
+    assert option_chain.option_chain_calculate_implied_volatility_from_put_price(price, 100.0, 95.0, 36, 4.0) == pytest.approx(0.27, abs=1e-4)
+    assert option_chain.option_chain_calculate_implied_volatility_from_put_price(0.01, 100.0, 150.0, 36, 4.0) is None  # below the put's floor
+    assert option_chain.option_chain_calculate_implied_volatility_from_put_price(0.0, 100.0, 95.0, 36, 4.0) is None
+
+
 def test_put_skew_compares_the_ten_percent_otm_put_with_the_money_put():
-    table = pandas.DataFrame({"strike": [85.0, 90.0, 95.0, 100.0], "bid": [0.5, 1.0, 2.0, 4.0], "impliedVolatility": [0.40, 0.34, 0.30, 0.28]})
-    assert option_chain.option_chain_calculate_put_skew_points(table, 100.0) == pytest.approx(6.0)
-    assert option_chain.option_chain_calculate_put_skew_points(table.assign(bid=0.0), 100.0) is None
+    price = lambda strike, volatility: option_chain.option_chain_calculate_black_scholes_put_price(100.0, strike, 30, volatility, 4.0)
+    table = pandas.DataFrame({"strike": [90.0, 100.0], "bid": [price(90.0, 0.34) - 0.01, price(100.0, 0.28) - 0.01],
+                              "ask": [price(90.0, 0.34) + 0.01, price(100.0, 0.28) + 0.01]})
+    assert option_chain.option_chain_calculate_put_skew_points(table, 100.0, 30, 4.0) == pytest.approx(6.0, abs=0.3)
+    assert option_chain.option_chain_calculate_put_skew_points(table.assign(bid=0.0), 100.0, 30, 4.0) is None
+
+
+def test_dolthub_history_gives_a_percentile_and_a_one_month_ratio():
+    from stockboard_backend import dolthub_data
+    days = pandas.date_range(end="2026-10-23", periods=260, freq="B")
+    series = pandas.Series([0.20 + 0.001 * index for index in range(260)], index=days)  # rising: today is the highest of the year
+    value = dolthub_data.dolthub_data_build_indicator_value_by_id(series, datetime.date(2026, 10, 25))
+    assert value["implied_volatility_percentile"] == 100.0
+    assert value["implied_volatility_to_one_month_ago_ratio"] > 1.0
+    assert dolthub_data.dolthub_data_build_indicator_value_by_id(series, datetime.date(2026, 12, 25)) == {}
+    assert "implied_volatility_percentile" not in dolthub_data.dolthub_data_build_indicator_value_by_id(series.iloc[-50:], datetime.date(2026, 10, 25))
+
+
+def test_dolthub_rows_and_symbol_check():
+    from stockboard_backend import dolthub_data
+    rows = [{"date": "2026-10-22", "iv_current": "0.27"}, {"date": "2026-10-21", "iv_current": None}, {"date": "2026-10-20", "iv_current": "0.25"}]
+    assert dolthub_data.dolthub_data_parse_history_rows(rows).tolist() == [0.25, 0.27]
+    assert "act_symbol='AAPL'" in dolthub_data.dolthub_data_build_history_query("AAPL", datetime.date(2026, 10, 25))
+    with pytest.raises(ValueError):
+        dolthub_data.dolthub_data_build_history_query("AAPL' OR '1'='1", datetime.date(2026, 10, 25))

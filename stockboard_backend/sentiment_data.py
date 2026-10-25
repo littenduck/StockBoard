@@ -7,6 +7,7 @@ Both archive copies can be a few weeks behind the live sites, which is fine for 
 import datetime
 import io
 import json
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -29,6 +30,7 @@ RETRY_STATUS_CODE_SET = {429, 502, 503, 504}
 RETRY_PAUSE_SECONDS = (10, 30, 60)
 WAYBACK_PAUSE_SECONDS = 3
 aaii_table_cache: Dict[str, pandas.DataFrame] = {}
+aaii_download_lock = threading.Lock()
 
 
 def sentiment_data_open_url(url: str, header_by_name: Optional[dict] = None) -> bytes:
@@ -108,9 +110,10 @@ def sentiment_data_parse_aaii_sheet(sheet: pandas.DataFrame) -> pandas.DataFrame
 
 def sentiment_data_fetch_aaii_survey_table() -> pandas.DataFrame:
     """Downloaded once per process: two indicators read it."""
-    if "table" not in aaii_table_cache:
-        aaii_table_cache["table"] = sentiment_data_download_aaii_survey_table()
-    return aaii_table_cache["table"].copy()
+    with aaii_download_lock:  # two indicators ask at once; the second waits and reuses the first download
+        if "table" not in aaii_table_cache:
+            aaii_table_cache["table"] = sentiment_data_download_aaii_survey_table()
+        return aaii_table_cache["table"].copy()
 
 
 def sentiment_data_download_aaii_survey_table() -> pandas.DataFrame:
