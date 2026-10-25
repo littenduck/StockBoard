@@ -135,3 +135,19 @@ Cboe option quotes, persisting the fetch cache across restarts, the remaining to
 - `v7/finance/quote` and `quoteSummary` multi-module are undocumented Yahoo endpoints (the same ones yfinance calls); a change on their side breaks them, as it would break yfinance. The fallback keeps the old per-symbol path.
 - Rules that share an indicator may disagree today on method, source or status; fixing that by hand may change a displayed value on the rule catalog page.
 - Splitting "market hours only" from "any time" changes when a snapshot is rebuilt; after-hours snapshots show the last intraday values with the daily ones refreshed.
+
+## Result (measured with `scripts/count_requests.py`, market hours simulated, ten minutes between refreshes)
+
+| | Before (main) | After |
+|---|---|---|
+| Cold start (first refresh after a restart) | 371 requests | 177 |
+| A refresh ten minutes later | 218 | 71 |
+| Option chains and expirations | 168 per refresh | 70 |
+| Prices (`/v8/finance/chart`) | 34 per refresh | 33 once a day, plus 1 batched quote per refresh |
+| Company data (`quoteSummary`, `quote`, `fundamentals-timeseries`) | 91 cold, 14 per refresh | 14 cold, 0 per refresh (1 request per symbol per hour) |
+| FRED, DoltHub, FINRA, Cboe, CNN, archive, reference files | all asked again on a 30 minute cache | each asked when its own group is due (one request per source per day for most) |
+| Per trading day (39 refreshes) | about 8,500 | about 2,800, 67% fewer |
+
+What is not claimed: that this lowers the chance of being blocked by a measured amount. It lowers the request rate to about a third and the simultaneous requests to two, and it logs counts of rate-limit and error answers every hour (`yahoo_gate.py`); compare a week of those lines before and after deploying. The option chains (70 of the 71) are now almost all of the traffic; Cboe's delayed quotes (one file per symbol) are the next step if that is still too much.
+
+Done as planned, with these differences from the text above: the commit order starts with the option session; a fetch group with no indicator (`yahoo_history`) takes its own `fetch_every`; the code keeps `PRODUCED_INDICATOR_ID_SET` as a test guard instead of deleting it; `yfinance` is pinned as a range (`>=1.2,<2`) because the server has 1.7.0 and this machine 1.2.0, and the new Yahoo code was smoke-tested on both; the expiration list is not cached for a day (yfinance needs it on its own `Ticker` before it will fetch a chain).

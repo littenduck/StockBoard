@@ -1,9 +1,14 @@
-yfinance
-pandas
-numpy
+# Web app
 fastapi
 uvicorn[standard]
 pyyaml
+
+# Data
+pandas
+numpy
+yfinance>=1.2,<2  # the code calls YfData.get and get_raw_json directly; tested with 1.2.0 and 1.7.0
+xlrd              # .xls files (AAII survey, Geopolitical Risk index)
+openpyxl          # .xlsx files (Damodaran, NAAIM)
+
+# Tests
 pytest
-xlrd
-openpyxl
