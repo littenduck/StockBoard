@@ -13,18 +13,20 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 
 ## GET /api/v1/rules
 
-Every rule from `config/rules.yaml`, grouped by group, with the strategies that use it. The catalog now groups rules by category (`MAC`, `TRD`, ...) and carries more fields (`name`, `method`, `quantifiable`, `status` replacing `availability`, `operator`, `value`, `band_of`, `legacy_id`; the long text lives in `description`). Rules no longer have `default_weight`: weights and `veto` flags live in the strategy files, so `used_by` will carry them. The response below still shows the old shape and the API does not return the new fields yet.
+Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...), with the strategies that use it. A rule has no weight: the weight and the `veto` flag are per strategy and appear in `used_by`.
 
 ```json
 {"default_language": "en",
- "group_list": [{"group_id": "A", "display_name": {"en": "A · #1 Sell Put five-layer framework", "zh": "A · #1 Sell Put 五层决策框架"},
-  "description": {"en": "...", "zh": "..."},
-  "rule_list": [{"rule_id": "A22", "description": {"en": "No earnings before expiration", "zh": "到期前无财报"}, "default_weight": 5, "availability": "automatic",
-                 "alias_of": null, "note": null,
-                 "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5}]}]}]}
+ "group_list": [{"group_id": "EVT", "display_name": {"en": "EVT · Events", "zh": "EVT · 事件"},
+  "description": {"en": "...", "zh": "..."}, "aspect": {"en": "Events", "zh": "事件面"},
+  "rule_list": [{"rule_id": "EVT-01", "name": {"en": "No earnings", "zh": "无财报"},
+                 "description": {"en": "Passes when there is no earnings report before the option expires. ...", "zh": "..."},
+                 "method": "api_fetch", "quantifiable": "yes", "status": "built", "indicator": "no_earnings_before_expiration",
+                 "operator": "is_true", "value": null, "band_of": null, "legacy_id": ["A22", "F05"], "note": null,
+                 "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5, "veto": true}]}]}]}
 ```
 
-`availability`: `automatic`, `missing_data_source`, `account_data`, `user_answer`, `trade_plan`, `not_implemented`. A rule with `alias_of` is a duplicate listing of another rule.
+`status`: `built`, `todo`, `no_data`. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `band_of` names the main rule when this rule is another line of the same measure (for example `SEN-12`, VIX below 25, points to `SEN-01`).
 
 ## GET /api/v1/strategies
 
@@ -42,7 +44,7 @@ Every rule from `config/rules.yaml`, grouped by group, with the strategies that 
 
 ```json
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "status": {
     "server_time": "2026-10-24T10:01:00-04:00",
     "generated_at": "2026-10-23T15:52:19-04:00",
@@ -74,7 +76,7 @@ Every rule from `config/rules.yaml`, grouped by group, with the strategies that 
 | `status.market_is_open` | US regular hours, Monday to Friday 9:30 to 16:00 ET; closed on `market_holiday_list` days, 13:00 close on `market_early_close_list` days (`config/settings.yaml`) |
 | `status.stale_after_minutes` | while the market is open, older data should be shown as stale |
 | `change_unit` | `percent` (relative change) or `basis_points` (absolute change of a rate) |
-| `is_pass` | `true` passed, `false` vetoed by a weight 5 rule, `null` unknown |
+| `is_pass` | `true` passed, `false` vetoed by a rule marked `veto`, `null` unknown |
 | `score_percent` | 0 to 100, `null` when no rule could be judged |
 | `unknown_weight_ratio` | share of rule weight with missing data; above `max_unknown_weight_ratio` means data insufficient |
 | `sparkline_close_price_list` | last 60 daily closes, oldest first |
@@ -92,8 +94,8 @@ The strategy tree for one symbol.
     {"gate_id": "gate_0_macro", "display_name": {"en": "GATE 0 Macro and sentiment", "zh": "GATE 0 宏观/情绪开关"}, "is_pass": true,
      "expiration_window_label": null, "alternative_window_result_list": [],
      "rule_result_list": [
-       {"rule_id": "A02", "description": {"en": "10Y < 4.5%", "zh": "10Y < 4.5%"}, "status": "fail",
-        "measured_value": 4.96, "weight": 4, "variant_group": "ten_year_level"}
+       {"rule_id": "MAC-03", "name": {"en": "10Y below 4.5%", "zh": "10Y 低于 4.5%"}, "status": "fail",
+        "measured_value": 4.96, "weight": 2, "veto": false, "method": "api_fetch"}
      ]}
   ]
 }

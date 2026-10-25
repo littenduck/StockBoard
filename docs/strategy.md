@@ -2,7 +2,7 @@
 
 A strategy is one YAML file in `strategies/`. The app loads every file in that folder at startup and refuses to start if a rule refers to an unknown indicator.
 
-> **Status (branch `refactor/rule-catalog-by-theme`):** `config/rules.yaml` and the four files in `strategies/` use the new design: theme-based ids, one rule per tier line, weights and veto flags in the strategy files. The loader, the evaluator, the API and the pages still read the old catalog, so the app does not load these files until the code is migrated. The "Variant groups" section describes what the evaluator does today; the new design retires it.
+> **Status (branch `refactor/rule-catalog-by-theme`):** the catalog, the four strategy files, the loader, the evaluator, the API (`schema_version` 4) and the two pages all use the new design: theme-based ids, one rule per tier line, weights and veto flags in the strategy files.
 
 ## File format
 
@@ -27,7 +27,7 @@ gates:                                    # evaluated in order, top to bottom
       - {rule_id: EVT-01, weight: 5, veto: true}  # no earnings before expiration
 ```
 
-A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, method, quantifiable, status, indicator, operator and value, band_of, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, a required `weight` (integer 1 to 5: how much this strategy cares about the rule) and an optional `veto: true`. The catalog has no weight, so the same rule can weigh 4 in one strategy and 1 in another. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score (target behaviour; the current loader still refuses rules without an indicator).
+A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, method, quantifiable, status, indicator, operator and value, band_of, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, a required `weight` (integer 1 to 5: how much this strategy cares about the rule) and an optional `veto: true`. The catalog has no weight, so the same rule can weigh 4 in one strategy and 1 in another. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score. The loader refuses a `veto` on a manual rule, a missing or out-of-range `weight`, and the retired `variant_group`.
 
 ## Languages
 
@@ -73,11 +73,11 @@ Operators: `less_than`, `less_or_equal`, `greater_than`, `greater_or_equal`, `be
 - **Score** (`score_percent`): `sum(weight x pass) / sum(weight x (pass + fail)) x 100`. Unknown and not applicable rules are left out. All rules count, including veto rules.
 
 A high score can still fail the veto, and a low score can still pass.
-`unknown_weight_ratio` is the weight share of unknown rules (manual rules are not counted, otherwise one manual rule would grey every score; the evaluator still counts them today); above `max_unknown_weight_ratio` the page greys the score as "data insufficient".
+`unknown_weight_ratio` is the weight share of unknown rules (manual rules are not counted, otherwise one manual rule would grey every score); above `max_unknown_weight_ratio` the page greys the score as "data insufficient".
 
 ## Variant groups
 
-Retired. The old evaluator let rules sharing a `variant_group` act as loose and strict versions of one test (only the strictest passing rule counted). In the new catalog every tier is its own rule and nested lines give partial credit, so strategy entries have no `variant_group`. The evaluator still reads it until the code is migrated.
+Retired. The old evaluator let rules sharing a `variant_group` act as loose and strict versions of one test (only the strictest passing rule counted). In the new catalog every tier is its own rule and nested lines give partial credit, so strategy entries have no `variant_group` and the loader refuses it.
 
 ## Expiration windows
 
