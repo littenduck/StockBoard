@@ -22,6 +22,23 @@
 # Every text a person reads is {en, zh}; see docs/language.md.
 
 # review: working notes in Chinese from the data check on 2026-10-25. latest_value is a snapshot of data pulled on 2026-10-23 (stock rules use AAPL as the sample), not live data. free_python says whether free Python can fetch it simply.
+#
+# Rules that need your own input, your trade plan or your brokerage account (acquisition: manual) are not scored.
+# They live in config/checklist.yaml as a personal checklist.
+#
+# Fields of every rule:
+#   rule_id          unique id, category code plus two digits (ids are never reused; gaps are fine)
+#   description      {en, zh} the rule as a person reads it
+#   explanation      zh only: what the rule looks at and why it matters, in plain words
+#   default_weight   importance 1 to 5 (5 = core or veto); a strategy may override it
+#   acquisition      api_fetch, scrape, computed, ai_search or manual
+#   availability     automatic, not_implemented, missing_data_source, account_data, user_answer or trade_plan
+#   indicator        optional: id of the indicator that gives the value
+#   operator, value  optional: single threshold (less_than, less_or_equal, greater_than, greater_or_equal, between, is_true)
+#   bands            optional: graded credit, first matching band wins, no match means credit 0
+#   legacy_id        old ids this rule replaces
+#   note             optional {en, zh} remark
+#   review           zh working notes: quantifiable, typical_range, latest_value, source, free_python, freshness
 
 rule_group_list:
   - {group_id: MAC, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "MAC · Macro", zh: "MAC · 宏观"}, description: {en: "Policy, rates, credit, inflation, growth, dollar, oil and liquidity.", zh: "政策、利率、信用、通胀、增长、美元、油价和流动性。"}}
@@ -36,14 +53,12 @@ rule_group_list:
   - {group_id: VOL, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "VOL · Volatility", zh: "VOL · 波动率"}, description: {en: "IV percentile, IV against realized, event volatility, skew.", zh: "IV 百分位、IV 对实际波动、事件波动、偏斜。"}}
   - {group_id: CTR, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "CTR · Contract selection", zh: "CTR · 合约选择"}, description: {en: "Delta, expiration, strike and Covered Call terms.", zh: "Delta、到期日、行权价和 Covered Call 条款。"}}
   - {group_id: RET, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "RET · Return and payoff", zh: "RET · 收益与盈亏比"}, description: {en: "Annualized return, premium, leverage, breakeven and win probability.", zh: "年化收益、权利金、杠杆、盈亏平衡和盈利概率。"}}
-  - {group_id: POS, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "POS · Position, account and portfolio", zh: "POS · 仓位、账户与组合"}, description: {en: "Option level, cash, exposure caps, loss limits and portfolio Greeks.", zh: "期权权限、现金、敞口上限、亏损上限和组合希腊字母。"}}
-  - {group_id: THS, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}}
-  - {group_id: EXT, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}}
 
 rule_list:
   # MAC · Macro
   - rule_id: MAC-01
     description: {en: "No Fed hike and no new hiking guidance in the last 6 months", zh: "近 6 个月 Fed 未加息且无新加息指引"}
+    explanation: "美联储最近半年有没有加息或暗示要加息。加息周期里估值承压，卖 Put 的风险更大。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -57,6 +72,7 @@ rule_list:
       freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-02
     description: {en: "Odds of a hike at the next FOMC < 50%", zh: "下次 FOMC 加息概率 < 50%"}
+    explanation: "市场押注下次议息会议加息的概率。概率高说明利率还会往上，股市容易受压。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -70,6 +86,7 @@ rule_list:
       freshness: "日更，盘中约 15 分钟延迟"
   - rule_id: MAC-03
     description: {en: "10Y yield level (< 4.5% full credit, < 5.0% half)", zh: "10Y 收益率水平（< 4.5% 满分，< 5.0% 半分）"}
+    explanation: "10 年期美债收益率，是整个市场的折现率。越高，股票估值越难撑住。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "automatic"
@@ -85,6 +102,7 @@ rule_list:
       freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-04
     description: {en: "10Y up < 25bp over 20 days", zh: "10Y 20 日升幅 < 25bp"}
+    explanation: "10Y 收益率最近 20 天涨了多少。涨得太快，比绝对水平更容易引发股市下跌。"
     default_weight: 3
     acquisition: "computed"
     availability: "automatic"
@@ -101,6 +119,7 @@ rule_list:
       freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-05
     description: {en: "HY credit spread < 400bp", zh: "HY 信用利差 < 400bp"}
+    explanation: "高收益债（垃圾债）比国债多付的利息。利差变大代表信用风险上升，通常领先于股市压力。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "automatic"
@@ -117,6 +136,7 @@ rule_list:
       freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-06
     description: {en: "HY credit spread up < 50bp over 20 days", zh: "HY 信用利差 20 日升幅 < 50bp"}
+    explanation: "HY 利差最近 20 天的升幅。短期快速走阔是信用压力的早期信号。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -131,6 +151,7 @@ rule_list:
       freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-07
     description: {en: "Yield curve not inverted (10Y minus 2Y or 3M above 0)", zh: "收益率曲线未倒挂（10Y 减 2Y 或 3M 大于 0）"}
+    explanation: "短期利率是否高过长期利率（倒挂）。倒挂常被当作衰退预警。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -143,6 +164,7 @@ rule_list:
       freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-08
     description: {en: "Inflation (CPI, core PCE) level and trend", zh: "通胀（CPI、核心 PCE）的水平与趋势"}
+    explanation: "物价涨得多快。通胀高会逼央行维持高利率，压制估值。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -155,6 +177,7 @@ rule_list:
       freshness: "月更；CPI 约次月中旬，PCE 约月底，滞后 2–6 周"
   - rule_id: MAC-09
     description: {en: "Growth and jobs (PMI, unemployment, jobless claims)", zh: "增长与就业（PMI、失业率、初请）"}
+    explanation: "经济增长和就业状况。就业恶化意味着企业盈利风险上升。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -167,6 +190,7 @@ rule_list:
       freshness: "初请周更，失业率月更"
   - rule_id: MAC-10
     description: {en: "US dollar index trend", zh: "美元指数趋势"}
+    explanation: "美元走强通常收紧全球金融环境，对跨国公司盈利和风险资产不利。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -179,6 +203,7 @@ rule_list:
       freshness: "FRED 约滞后一周；Yahoo 日更"
   - rule_id: MAC-11
     description: {en: "WTI < $100 and up < 15% this month", zh: "WTI < $100 且月涨幅 < 15%"}
+    explanation: "油价过高或涨得太快，会推高通胀、压缩消费，也容易引发市场波动。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -192,6 +217,7 @@ rule_list:
       freshness: "日更，FRED 滞后 3–5 天"
   - rule_id: MAC-12
     description: {en: "Global liquidity trend (Fed balance sheet, M2)", zh: "全球流动性趋势（Fed 资产负债表、M2）"}
+    explanation: "央行资产负债表和货币供应的变化。资金宽松对风险资产有利，收紧则相反。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -205,6 +231,7 @@ rule_list:
   # IND · Industry
   - rule_id: IND-01
     description: {en: "Industry relative strength (sector ETF against SPY)", zh: "行业相对强弱（行业 ETF 对 SPY）"}
+    explanation: "这只股票所在的行业最近比大盘强还是弱。行业走强时，个股更容易跟着走强。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -217,6 +244,7 @@ rule_list:
       freshness: "日更"
   - rule_id: IND-02
     description: {en: "Industry cycle and earnings revisions", zh: "行业景气周期与盈利修正"}
+    explanation: "行业盈利预期是在上调还是下调，反映行业景气处在周期的哪个位置。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -230,6 +258,7 @@ rule_list:
   # QUA · Company quality
   - rule_id: QUA-01
     description: {en: "Earnings are positive (EPS TTM > 0)", zh: "盈利为正（EPS TTM > 0）"}
+    explanation: "公司最近 12 个月是否赚钱。亏损公司股价波动更大，卖 Put 接盘的风险更高。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -243,6 +272,7 @@ rule_list:
       freshness: "季更，财报后 1–2 天"
   - rule_id: QUA-02
     description: {en: "Revenue growth year over year > 0", zh: "营收同比增长 > 0"}
+    explanation: "营收是否比去年同期增长。没有增长的公司很难长期上涨。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -256,6 +286,7 @@ rule_list:
       freshness: "季更"
   - rule_id: QUA-03
     description: {en: "Earnings and revenue 3-year growth", zh: "盈利与营收 3 年增速"}
+    explanation: "盈利和营收过去三年的增长速度，看增长是否持续，而不是一次性。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -268,6 +299,7 @@ rule_list:
       freshness: "季更/年更"
   - rule_id: QUA-04
     description: {en: "ROIC / ROE level and stability (moat evidence)", zh: "ROIC / ROE 水平与稳定性（护城河证据）"}
+    explanation: "公司用投入的资本赚钱的效率。高且长期稳定，通常说明有护城河。"
     default_weight: 4
     acquisition: "computed"
     availability: "not_implemented"
@@ -280,6 +312,7 @@ rule_list:
       freshness: "季更"
   - rule_id: QUA-05
     description: {en: "Gross margin level and stability", zh: "毛利率水平与稳定性"}
+    explanation: "每卖一块钱的产品剩下多少毛利。毛利率高且稳定，说明有定价权。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -292,6 +325,7 @@ rule_list:
       freshness: "季更"
   - rule_id: QUA-06
     description: {en: "Free cash flow positive and growing", zh: "自由现金流为正且增长"}
+    explanation: "扣除资本开支后实际剩下的现金。比账面利润更难造假，是价值判断的核心。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -304,6 +338,7 @@ rule_list:
       freshness: "季更"
   - rule_id: QUA-07
     description: {en: "Balance sheet strength (net debt to EBITDA, interest coverage)", zh: "财务稳健（净债务/EBITDA、利息覆盖）"}
+    explanation: "负债相对盈利是否可控。负债过高的公司在衰退或加息时容易出问题。"
     default_weight: 4
     acquisition: "computed"
     availability: "not_implemented"
@@ -316,6 +351,7 @@ rule_list:
       freshness: "季更"
   - rule_id: QUA-08
     description: {en: "Earnings quality (operating cash flow to net income, accruals)", zh: "盈利质量（经营现金流/净利润、应计）"}
+    explanation: "利润有多少真的变成了现金。差距大说明利润可能含水分。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -328,6 +364,7 @@ rule_list:
       freshness: "季更"
   - rule_id: QUA-09
     description: {en: "More analyst EPS upgrades than downgrades", zh: "分析师 EPS 上修多于下修"}
+    explanation: "分析师最近是上调还是下调盈利预期。上调多于下调，通常对应股价有支撑。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -341,6 +378,7 @@ rule_list:
       freshness: "日更"
   - rule_id: QUA-10
     description: {en: "Buy ratings above 60% of analysts", zh: "买入评级占比 > 60%"}
+    explanation: "分析师中建议买入的占比，反映市场共识；过于一致时也要警惕。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -355,6 +393,7 @@ rule_list:
   # MGT · Management and governance
   - rule_id: MGT-01
     description: {en: "Insider net buying or selling", zh: "内部人净买入或净卖出"}
+    explanation: "公司高管和董事自己是在买还是卖股票。他们自掏腰包买入是较强的正面信号。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -367,6 +406,7 @@ rule_list:
       freshness: "Form 4 须在 2 个工作日内披露"
   - rule_id: MGT-02
     description: {en: "Net buybacks and share dilution", zh: "净回购与股本稀释"}
+    explanation: "公司是在回购股票（股数减少），还是不断增发（股东被稀释）。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -379,6 +419,7 @@ rule_list:
       freshness: "季更/年更"
   - rule_id: MGT-03
     description: {en: "Capital allocation record (acquisitions, sustainable dividend)", zh: "资本配置记录（并购、分红可持续）"}
+    explanation: "管理层把钱花在哪：并购是否创造价值，分红靠不靠得住。"
     default_weight: 2
     acquisition: "scrape"
     availability: "missing_data_source"
@@ -391,6 +432,7 @@ rule_list:
       freshness: "季更"
   - rule_id: MGT-04
     description: {en: "Governance and accounting risk (audit opinion, restatements)", zh: "治理与会计风险（审计意见、重述）"}
+    explanation: "有没有审计意见异常、财报重述等治理或会计问题。这类问题一旦暴露，往往重挫股价。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -404,6 +446,7 @@ rule_list:
   # VAL · Valuation
   - rule_id: VAL-01
     description: {en: "S&P 500 forward PE and its historical percentile", zh: "标普 500 Forward PE 及历史分位"}
+    explanation: "标普 500 按未来 12 个月盈利算的市盈率，以及它在历史中的位置，衡量整个市场贵不贵。"
     default_weight: 3
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -416,6 +459,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VAL-02
     description: {en: "Nasdaq-100 / QQQ PE (TTM and forward) and premium over SPY", zh: "纳指 100 / QQQ 的 PE（TTM 与 Forward）及相对 SPY 的溢价"}
+    explanation: "纳指 100（QQQ）的市盈率，以及比标普贵多少。科技股占比高，估值波动更大。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -428,6 +472,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VAL-03
     description: {en: "Earnings yield minus 10Y yield (equity risk premium)", zh: "盈利收益率减 10Y 收益率（股权风险溢价）"}
+    explanation: "股票的盈利收益率（市盈率的倒数）减去 10 年期国债收益率。为负说明买股票的回报还不如国债。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -440,6 +485,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VAL-04
     description: {en: "Market cap to GDP (Buffett indicator)", zh: "市值/GDP（巴菲特指标）"}
+    explanation: "整个股市总市值相对 GDP 的比例，巴菲特常用它判断市场整体是否过热。这里用的口径不标准。"
     default_weight: 1
     acquisition: "computed"
     availability: "missing_data_source"
@@ -452,6 +498,7 @@ rule_list:
       freshness: "季更，滞后 2–3 个月"
   - rule_id: VAL-05
     description: {en: "Stock PE TTM and premium over its own history", zh: "个股 PE TTM 及相对自身历史的溢价"}
+    explanation: "按过去 12 个月实际盈利算的市盈率，以及比自身历史贵还是便宜。"
     default_weight: 4
     acquisition: "computed"
     availability: "not_implemented"
@@ -464,6 +511,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VAL-06
     description: {en: "Stock forward PE and its gap to TTM", zh: "个股 Forward PE 及与 TTM 的差"}
+    explanation: "按分析师预期的未来盈利算的市盈率。和 TTM 差距大，说明市场预期盈利快速增长。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -476,6 +524,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VAL-07
     description: {en: "EV/EBITDA and PEG", zh: "EV/EBITDA 与 PEG"}
+    explanation: "另外两把估值尺子：企业价值/EBITDA，以及考虑增速的 PEG。"
     default_weight: 2
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -488,6 +537,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VAL-08
     description: {en: "Free cash flow yield", zh: "自由现金流收益率"}
+    explanation: "自由现金流占市值的比例，相当于买下整家公司每年能拿回多少现金。"
     default_weight: 4
     acquisition: "computed"
     availability: "not_implemented"
@@ -498,22 +548,10 @@ rule_list:
       source: "yfinance info 自算（FCF ÷ 市值）"
       free_python: "是"
       freshness: "日更"
-  - rule_id: VAL-09
-    description: {en: "Safety margin: strike <= the price you are willing to buy at", zh: "安全边际：Strike <= 你愿意接盘的价格"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "user_answer"
-    legacy_id: ["A16"]
-    review:
-      quantifiable: "是"
-      typical_range: "由你决定的价格"
-      latest_value: "取决于你填写的价格；AAPL 现价 347.73 可作对照"
-      source: "你的输入；现价来自 yfinance"
-      free_python: "否"
-      freshness: "即时"
   # SEN · Sentiment and positioning
   - rule_id: SEN-01
     description: {en: "VIX level (15-25 full credit, 12-15 and 25-30 half)", zh: "VIX 水平（15-25 满分，12-15 与 25-30 半分）"}
+    explanation: "VIX 衡量市场预期的短期波动，也叫恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。"
     default_weight: 5
     acquisition: "api_fetch"
     availability: "automatic"
@@ -530,6 +568,7 @@ rule_list:
       freshness: "日更，盘中约 15 分钟延迟"
   - rule_id: SEN-02
     description: {en: "VIX term structure in contango", zh: "VIX 期限结构为 contango"}
+    explanation: "VIX 期货曲线是正常向上（contango）还是倒挂（backwardation）。倒挂说明短期恐慌很重。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -545,6 +584,7 @@ rule_list:
       freshness: "日更"
   - rule_id: SEN-03
     description: {en: "VXN level (Nasdaq-100 volatility), and VXN to VIX ratio", zh: "VXN 水平（纳指 100 波动率），及 VXN/VIX 比值"}
+    explanation: "纳指 100 的波动率指数。比 VIX 高得多时，说明科技股特别紧张。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "automatic"
@@ -559,6 +599,7 @@ rule_list:
       freshness: "日更"
   - rule_id: SEN-04
     description: {en: "CNN Fear and Greed (< 25 full credit, < 45 three quarters, < 55 half)", zh: "CNN 恐惧贪婪（< 25 满分，< 45 七成半，< 55 半分）"}
+    explanation: "CNN 的 0–100 情绪指数，由多个指标合成。越低越恐惧，卖方有时把极度恐惧当作机会。"
     default_weight: 3
     acquisition: "scrape"
     availability: "not_implemented"
@@ -575,6 +616,7 @@ rule_list:
       freshness: "日更，近实时；接口随时可能变，不稳定"
   - rule_id: SEN-05
     description: {en: "AAII retail bull/bear survey", zh: "AAII 散户多空问卷"}
+    explanation: "美国个人投资者协会每周问卷：散户看多、看空的比例。常被当作反向指标。"
     default_weight: 2
     acquisition: "scrape"
     availability: "not_implemented"
@@ -587,6 +629,7 @@ rule_list:
       freshness: "周更（周四）"
   - rule_id: SEN-06
     description: {en: "NAAIM active manager exposure index", zh: "NAAIM 主动经理人仓位指数"}
+    explanation: "主动型基金经理每周自报的股票仓位。仓位极高说明大家都很乐观，容易拥挤。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -599,6 +642,7 @@ rule_list:
       freshness: "周更（周四）"
   - rule_id: SEN-07
     description: {en: "Put/call ratio", zh: "Put/Call 比率"}
+    explanation: "看跌期权与看涨期权的成交比例。太高说明恐慌，太低说明过度自满。"
     default_weight: 2
     acquisition: "computed"
     availability: "missing_data_source"
@@ -611,6 +655,7 @@ rule_list:
       freshness: "自算则取决于链的新鲜度"
   - rule_id: SEN-08
     description: {en: "No IPO of $10B or more in the window", zh: "窗口内无 ≥ $10B 的大型 IPO"}
+    explanation: "市场上有没有超大型 IPO。大额新股会抽走资金，常出现在市场热度的高点。"
     default_weight: 1
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -624,6 +669,7 @@ rule_list:
       freshness: "事件驱动"
   - rule_id: SEN-09
     description: {en: "Stock short interest", zh: "个股空头比例"}
+    explanation: "被卖空的股数占流通股的比例。过高说明有人大量看空，也可能引发逼空。"
     default_weight: 2
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -637,6 +683,7 @@ rule_list:
   # TRD · Trend and momentum
   - rule_id: TRD-01
     description: {en: "SPX > 200-day average", zh: "标普 500 > 200 日线"}
+    explanation: "标普 500 是否站在 200 日均线上方，用来判断大盘是处于上升还是下降趋势。"
     default_weight: 5
     acquisition: "computed"
     availability: "automatic"
@@ -652,6 +699,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-02
     description: {en: "Market breadth (share of stocks above their 200-day average, new highs minus new lows)", zh: "市场广度（站上 200 日线的股票占比、新高减新低）"}
+    explanation: "大盘里有多少股票站在 200 日线上方。指数涨但上涨的股票变少，说明行情变窄。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -664,6 +712,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-03
     description: {en: "Stock > 200-day average", zh: "个股 > 200 日线"}
+    explanation: "这只股票是否站在自己的 200 日线上方。卖 Put 不去接下跌趋势里的股票。"
     default_weight: 5
     acquisition: "computed"
     availability: "automatic"
@@ -680,6 +729,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-04
     description: {en: "50-day average > 200-day average (golden cross state)", zh: "50 日线 > 200 日线（黄金交叉状态）"}
+    explanation: "50 日均线是否在 200 日均线之上（黄金交叉状态），是最常见的趋势确认。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -695,6 +745,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-05
     description: {en: "Close > 50-day average", zh: "收盘价 > 50 日线"}
+    explanation: "收盘价是否在 50 日均线之上，反映中期走势是否健康。"
     default_weight: 3
     acquisition: "computed"
     availability: "automatic"
@@ -710,6 +761,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-06
     description: {en: "Distance from the 52-week high (<= 5% full credit, <= 15% half)", zh: "距 52 周高点（<= 5% 满分，<= 15% 半分）"}
+    explanation: "离 52 周最高价有多远。越近说明越强，突破新高时上方没有套牢盘。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -725,6 +777,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-07
     description: {en: "52-week range position (<= 25 full credit, <= 50 half)", zh: "52 周区间分位（<= 25 满分，<= 50 半分）"}
+    explanation: "当前价格在过去一年高低区间中的位置。位置低对 Wheel 策略更友好，位置高对动量策略更友好。"
     default_weight: 3
     acquisition: "computed"
     availability: "automatic"
@@ -741,6 +794,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-08
     description: {en: "6-month gain > 10%", zh: "6 个月涨幅 > 10%"}
+    explanation: "最近 6 个月涨了多少。涨得好的股票往往短期内继续跑赢（动量效应）。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -757,6 +811,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-09
     description: {en: "Stock relative strength against SPY or its sector", zh: "个股相对 SPY 或行业的强弱"}
+    explanation: "这只股票最近跑赢还是跑输大盘或同行业。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -769,6 +824,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-10
     description: {en: "Volume >= 1.5 × 20-day average (higher volume)", zh: "成交量 >= 20 日均量 × 1.5（放量）"}
+    explanation: "最近一天成交量相对 20 日均量的倍数。放量突破比缩量突破更可信。"
     default_weight: 3
     acquisition: "computed"
     availability: "automatic"
@@ -785,6 +841,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-11
     description: {en: "RSI(14) (40-70 full credit healthy trend, 70-80 half)", zh: "RSI(14)（40-70 满分趋势健康，70-80 半分）"}
+    explanation: "RSI(14) 衡量近期涨跌力度。太高是超买，太低是弱势，中间区间代表趋势健康。"
     default_weight: 3
     acquisition: "computed"
     availability: "automatic"
@@ -800,6 +857,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-12
     description: {en: "RSI(2) oversold (< 5 full credit, < 10 three quarters)", zh: "RSI(2) 超卖（< 5 满分，< 10 七成半）"}
+    explanation: "2 日 RSI 非常敏感，低于 10 说明短期跌过头，是均值回归策略的买点。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -815,6 +873,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-13
     description: {en: "Close < 5-day average (in a short-term pullback)", zh: "收盘价 < 5 日线（短期回调中）"}
+    explanation: "收盘价是否跌到 5 日线下方，用来确认正处于短期回调中。"
     default_weight: 3
     acquisition: "computed"
     availability: "automatic"
@@ -830,6 +889,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-14
     description: {en: "Price within 3% of the nearest support", zh: "现价距最近支撑 <= 3%"}
+    explanation: "股价离最近的支撑位有多近。靠近支撑位时，下跌空间更有限。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -843,6 +903,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-15
     description: {en: "ATR and typical daily price range", zh: "ATR 与日常价格波动幅度"}
+    explanation: "股票平均每天波动多大，用来判断止损距离和风险大小。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -855,6 +916,7 @@ rule_list:
       freshness: "日更"
   - rule_id: TRD-16
     description: {en: "The symbol is in SPMO's holdings (largest, or top 20)", zh: "标的在 SPMO 持仓中（最大一只，或前 20）"}
+    explanation: "这只股票是否在 SPMO 的持仓里。SPMO 是按动量选股的 ETF，持仓可视为一份动量榜单。"
     default_weight: 3
     acquisition: "scrape"
     availability: "missing_data_source"
@@ -870,6 +932,7 @@ rule_list:
   # EVT · Events
   - rule_id: EVT-01
     description: {en: "No earnings before expiration", zh: "到期前无财报"}
+    explanation: "期权到期前是否有财报。财报会让股价跳空，是卖方最常见的否决项。"
     default_weight: 5
     acquisition: "api_fetch"
     availability: "automatic"
@@ -885,6 +948,7 @@ rule_list:
       freshness: "日更；估计日期可能变"
   - rule_id: EVT-02
     description: {en: "No FOMC decision inside the DTE window", zh: "DTE 窗口内无 FOMC 决议日"}
+    explanation: "期权存续期内是否有美联储议息会议。会议前后波动会放大。"
     default_weight: 3
     acquisition: "scrape"
     availability: "not_implemented"
@@ -898,6 +962,7 @@ rule_list:
       freshness: "年更"
   - rule_id: EVT-03
     description: {en: "No CPI or PCE inside the DTE window, and no new position on release days", zh: "DTE 窗口内无 CPI、PCE，且不在公布日开仓"}
+    explanation: "期权存续期内是否有 CPI、PCE 通胀数据公布。数据日波动较大。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "not_implemented"
@@ -909,21 +974,9 @@ rule_list:
       source: "BLS 日程页对脚本返回 403；可手工维护，或用 FRED release calendar（需 key）"
       free_python: "部分"
       freshness: "年更"
-  - rule_id: EVT-04
-    description: {en: "No election day inside the DTE window", zh: "DTE 窗口内无选举日"}
-    default_weight: 1
-    acquisition: "manual"
-    availability: "not_implemented"
-    legacy_id: ["F07"]
-    review:
-      quantifiable: "是"
-      typical_range: "固定日期"
-      latest_value: "无"
-      source: "手工录入"
-      free_python: "是"
-      freshness: "一次性"
   - rule_id: EVT-05
     description: {en: "No new position within 1 day of the jobs report", zh: "不在非农数据前后 1 天开仓"}
+    explanation: "非农就业数据公布前后一天先不开仓，避免数据带来的跳空。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -937,6 +990,7 @@ rule_list:
       freshness: "年更"
   - rule_id: EVT-06
     description: {en: "No ex-dividend date in the window", zh: "窗口内无除息日"}
+    explanation: "存续期内是否有除息日。卖 Covered Call 时，除息前有被提前行权的风险。"
     default_weight: 3
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -950,6 +1004,7 @@ rule_list:
       freshness: "日更"
   - rule_id: EVT-07
     description: {en: "No tariff or policy deadline in the window", zh: "窗口内无关税或政策截止日"}
+    explanation: "是否临近关税或政策截止日。这类日期前后容易出现政策消息的冲击。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -963,6 +1018,7 @@ rule_list:
       freshness: "事件驱动"
   - rule_id: EVT-08
     description: {en: "No escalating geopolitical conflict", zh: "没有正在升级的地缘冲突"}
+    explanation: "是否有正在升级的地缘冲突，会引发市场整体风险偏好下降。"
     default_weight: 2
     acquisition: "scrape"
     availability: "missing_data_source"
@@ -976,6 +1032,7 @@ rule_list:
       freshness: "月更/日更"
   - rule_id: EVT-09
     description: {en: "No pending industry regulation or export control event", zh: "没有待决的行业监管或出口管制事件"}
+    explanation: "行业是否有待决的监管或出口管制事件，可能一次性冲击整个行业。"
     default_weight: 3
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -989,6 +1046,7 @@ rule_list:
       freshness: "事件驱动"
   - rule_id: EVT-10
     description: {en: "No earnings from industry leaders in the window", zh: "同业龙头财报不在窗口内"}
+    explanation: "同行业龙头的财报日。龙头财报会带动整个板块，需要一起避开。"
     default_weight: 2
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -1002,6 +1060,7 @@ rule_list:
       freshness: "日更"
   - rule_id: EVT-11
     description: {en: "No earnings from major customers or suppliers in the window", zh: "大客户或上下游财报不在窗口内"}
+    explanation: "主要客户或供应商的财报日，会连带影响这家公司。"
     default_weight: 2
     acquisition: "ai_search"
     availability: "missing_data_source"
@@ -1015,6 +1074,7 @@ rule_list:
       freshness: "日更"
   - rule_id: EVT-12
     description: {en: "Now is the March or September SPMO rebalance window", zh: "现在处于 3 月或 9 月 SPMO 换仓窗口"}
+    explanation: "是否处于 SPMO 每年 3 月、9 月的换仓窗口，只用于动量轮动策略。"
     default_weight: 1
     acquisition: "computed"
     availability: "not_implemented"
@@ -1028,6 +1088,7 @@ rule_list:
       freshness: "一次性"
   - rule_id: EVT-13
     description: {en: "Expiration calendar effects (monthly expiration, quadruple witching)", zh: "到期日历效应（月度到期、四巫日）"}
+    explanation: "月度到期日、四巫日前后，期权成交和价格波动较特殊，需要留意。"
     default_weight: 1
     acquisition: "computed"
     availability: "not_implemented"
@@ -1041,9 +1102,10 @@ rule_list:
   # LIQ · Liquidity
   - rule_id: LIQ-01
     description: {en: "Market value > $200B", zh: "市值 > $200B"}
+    explanation: "公司市值是否够大。大公司流动性好，被极端行情冲击的风险较小。"
     default_weight: 3
     acquisition: "api_fetch"
-    availability: "missing_data_source"
+    availability: "not_implemented"
     legacy_id: ["E02"]
     review:
       quantifiable: "是"
@@ -1054,9 +1116,10 @@ rule_list:
       freshness: "日更"
   - rule_id: LIQ-02
     description: {en: "Top 100 by market value or trading value", zh: "市值或成交额前 100"}
+    explanation: "是否在市值或成交额最大的前 100 只股票里。"
     default_weight: 3
     acquisition: "computed"
-    availability: "missing_data_source"
+    availability: "not_implemented"
     legacy_id: ["D01"]
     review:
       quantifiable: "是"
@@ -1067,6 +1130,7 @@ rule_list:
       freshness: "日更"
   - rule_id: LIQ-03
     description: {en: "Stock average daily trading value", zh: "股票日均成交额"}
+    explanation: "每天平均成交多少钱。成交越活跃，进出越容易。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1079,6 +1143,7 @@ rule_list:
       freshness: "日更"
   - rule_id: LIQ-04
     description: {en: "Bid-ask spread <= 5% of the mid price", zh: "买卖价差 <= 中间价 5%"}
+    explanation: "期权买卖报价的差距占中间价的比例。差距越大，实际成交成本越高。"
     default_weight: 4
     acquisition: "computed"
     availability: "not_implemented"
@@ -1092,6 +1157,7 @@ rule_list:
       freshness: "约 15 分钟延迟，休市失真"
   - rule_id: LIQ-05
     description: {en: "Open interest >= 500 and daily volume >= 100", zh: "OI >= 500 且当日成交量 >= 100"}
+    explanation: "期权的未平仓量和成交量。太少的合约难以成交，也难以平仓。"
     default_weight: 4
     acquisition: "api_fetch"
     availability: "not_implemented"
@@ -1106,6 +1172,7 @@ rule_list:
   # VOL · Volatility
   - rule_id: VOL-01
     description: {en: "IV percentile (>= 70 full credit, >= 50 three quarters, >= 40 half)", zh: "IV 百分位（>= 70 满分，>= 50 七成半，>= 40 半分）"}
+    explanation: "当前隐含波动率在过去一年中的位置。位置高说明期权偏贵，对卖方更划算。"
     default_weight: 5
     acquisition: "computed"
     availability: "missing_data_source"
@@ -1121,6 +1188,7 @@ rule_list:
       freshness: "自建则日更，需时间积累"
   - rule_id: VOL-02
     description: {en: "IV elevated: VIX above its 20-day average, or IV > RV30", zh: "IV 抬升期：VIX 高于 20 日均值，或 IV > RV30"}
+    explanation: "隐含波动率是否比最近的平均水平高，说明处于波动抬升期。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1134,6 +1202,7 @@ rule_list:
       freshness: "日更"
   - rule_id: VOL-03
     description: {en: "ATM IV (30-45 days) > RV30", zh: "ATM IV（30-45 天）> RV30"}
+    explanation: "期权隐含波动率是否高于股票的实际波动。高出的部分就是卖方的波动率风险溢价。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -1149,6 +1218,7 @@ rule_list:
       freshness: "约 15 分钟延迟，休市失真"
   - rule_id: VOL-04
     description: {en: "Pre-earnings IV and the expected move", zh: "财报前 IV 与预期波动幅度"}
+    explanation: "财报前期权价格里包含的预期波动幅度，以及财报后波动率回落的幅度。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1161,6 +1231,7 @@ rule_list:
       freshness: "同上"
   - rule_id: VOL-05
     description: {en: "Put skew", zh: "Put 偏斜（skew）"}
+    explanation: "下跌保护（看跌期权）比平值期权贵多少。偏斜越大，说明市场越担心下跌。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -1174,6 +1245,7 @@ rule_list:
   # CTR · Contract selection
   - rule_id: CTR-01
     description: {en: "|Δ| (0.15-0.20 full credit, 0.15-0.30 three quarters, <= 0.30 half)", zh: "|Δ|（0.15-0.20 满分，0.15-0.30 七成半，<= 0.30 半分）"}
+    explanation: "卖出期权的 Delta，近似为被行权的概率。Delta 越小越安全，但收的权利金也越少。"
     default_weight: 5
     acquisition: "computed"
     availability: "automatic"
@@ -1189,6 +1261,7 @@ rule_list:
       freshness: "约 15 分钟延迟"
   - rule_id: CTR-02
     description: {en: "DTE (30-45 full credit, 14-45 and above 30 half)", zh: "DTE（30-45 满分，14-45 与 > 30 半分）"}
+    explanation: "期权离到期还有多少天。30–45 天是时间价值衰减较快、又不至于太短的区间。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -1204,6 +1277,7 @@ rule_list:
       freshness: "即时"
   - rule_id: CTR-03
     description: {en: "Buyer expiration 60-90 days", zh: "买方到期 60-90 天"}
+    explanation: "买方期权的到期时间。买方通常选更长的到期日，避免时间损耗太快。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1217,6 +1291,7 @@ rule_list:
       freshness: "即时"
   - rule_id: CTR-04
     description: {en: "Monthly expiration (third Friday)", zh: "到期日是月度期权（第三个周五）"}
+    explanation: "是不是月度期权（每月第三个周五到期），流动性通常更好。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -1230,6 +1305,7 @@ rule_list:
       freshness: "即时"
   - rule_id: CTR-05
     description: {en: "Strike = price −10% to −15% (or −20%)", zh: "Strike = 现价 −10% 到 −15%（或 −20%）"}
+    explanation: "行权价比现价低多少。Wheel 策略常选低于现价 10%–15% 的位置接盘。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -1243,6 +1319,7 @@ rule_list:
       freshness: "即时"
   - rule_id: CTR-06
     description: {en: "Strike below the nearest support", zh: "Strike 低于最近支撑位"}
+    explanation: "行权价是否低于最近的支撑位。在支撑位下面卖 Put 更安全。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1256,6 +1333,7 @@ rule_list:
       freshness: "日更"
   - rule_id: CTR-07
     description: {en: "Strike is a round number near the target with high volume", zh: "行权价是目标价附近的整数且成交量大"}
+    explanation: "行权价是否为整数且成交量大，这样的合约通常更容易成交。"
     default_weight: 1
     acquisition: "computed"
     availability: "not_implemented"
@@ -1269,6 +1347,7 @@ rule_list:
       freshness: "同上"
   - rule_id: CTR-08
     description: {en: "Covered Call strike = price +10%", zh: "Covered Call 行权价 = 现价 +10%"}
+    explanation: "Covered Call 的行权价设在现价上方多少。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -1282,6 +1361,7 @@ rule_list:
       freshness: "即时"
   - rule_id: CTR-09
     description: {en: "Covered Call expires in about 30 days", zh: "Covered Call 到期约 30 天"}
+    explanation: "Covered Call 的到期时间，通常选约 30 天。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -1295,6 +1375,7 @@ rule_list:
       freshness: "即时"
   - rule_id: CTR-10
     description: {en: "Strike outside the expected move (1 sigma)", zh: "Strike 在预期波动幅度（1σ）之外"}
+    explanation: "行权价是否在期权隐含的 1 倍标准差预期波动之外，相当于要求股价跌破这个范围才会被行权。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1308,6 +1389,7 @@ rule_list:
   # RET · Return and payoff
   - rule_id: RET-01
     description: {en: "Annualized return (>= 20% full credit, >= 8% half)", zh: "年化收益（>= 20% 满分，>= 8% 半分）"}
+    explanation: "把权利金换算成年化收益。太低不值得冒风险，太高往往说明风险也高。"
     default_weight: 4
     acquisition: "computed"
     availability: "automatic"
@@ -1323,6 +1405,7 @@ rule_list:
       freshness: "约 15 分钟延迟，休市失真"
   - rule_id: RET-02
     description: {en: "Monthly premium (>= 4% full credit, >= 2% half)", zh: "月化权利金（>= 4% 满分，>= 2% 半分）"}
+    explanation: "权利金换算成每月收益，占行权价的比例。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1338,6 +1421,7 @@ rule_list:
       freshness: "同上"
   - rule_id: RET-03
     description: {en: "Implied leverage (Δ × price ÷ premium) >= 10x", zh: "隐含杠杆（Δ × 股价 ÷ 权利金）>= 10 倍"}
+    explanation: "买方期权的杠杆倍数：用多少本金控制多少股票。"
     default_weight: 2
     acquisition: "computed"
     availability: "not_implemented"
@@ -1351,6 +1435,7 @@ rule_list:
       freshness: "同上"
   - rule_id: RET-04
     description: {en: "Breakeven price and maximum loss", zh: "盈亏平衡价与最大亏损"}
+    explanation: "盈亏平衡价（行权价减权利金）和最大亏损。开仓前先算清最坏的情况。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1363,6 +1448,7 @@ rule_list:
       freshness: "同上"
   - rule_id: RET-05
     description: {en: "Probability of profit (POP)", zh: "盈利概率（POP）"}
+    explanation: "这笔交易赚钱的大致概率，常用 1 减去 Delta 来近似。"
     default_weight: 3
     acquisition: "computed"
     availability: "not_implemented"
@@ -1373,432 +1459,6 @@ rule_list:
       source: "yfinance 期权链"
       free_python: "是"
       freshness: "同上"
-  # POS · Position, account and portfolio
-  - rule_id: POS-01
-    description: {en: "Option level >= L2 (L3 for spreads)", zh: "期权权限 >= L2（价差需 L3）"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["B14", "B15"]
-    review:
-      quantifiable: "是"
-      typical_range: "L2 可卖现金担保 Put 与 Covered Call，L3 可做价差（券商规则）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-02
-    description: {en: "No leverage, cash secured", zh: "零杠杆，现金担保"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["A20", "F11"]
-    review:
-      quantifiable: "是"
-      typical_range: "现金 ≥ Strike × 100 × 张数"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-03
-    description: {en: "Cash >= 30% of net value", zh: "现金 >= 净值 × 30%"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["A19"]
-    review:
-      quantifiable: "是"
-      typical_range: "现金储备 20%–40% 常见（作者设 30%）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-04
-    description: {en: "Cash >= Strike × 100", zh: "现金 >= Strike × 100"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["E09", "F10"]
-    review:
-      quantifiable: "是"
-      typical_range: "硬约束：现金 ≥ Strike × 100"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-05
-    description: {en: "Total Put notional (including the new one) <= 70% of net value", zh: "全部 Put 名义敞口（含新仓）<= 净值 × 70%"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["A17"]
-    review:
-      quantifiable: "是"
-      typical_range: "全部 Put 名义敞口占净值（作者设 ≤ 70%；保守者更低）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-06
-    description: {en: "Notional in this stock <= 35% of net value", zh: "该股名义敞口 <= 净值 × 35%"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["A18"]
-    review:
-      quantifiable: "是"
-      typical_range: "单票名义敞口 20%–35% 常见上限（经验）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-07
-    description: {en: "One sector <= 50% of total exposure", zh: "同板块敞口 <= 总敞口 50%"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["Z04"]
-    review:
-      quantifiable: "是"
-      typical_range: "同板块 ≤ 总敞口 50%（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-08
-    description: {en: "Largest loss per trade (to the stop) <= 2% of net value", zh: "单笔最大亏损（到止损）<= 净值 × 2%"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["Z03"]
-    review:
-      quantifiable: "是"
-      typical_range: "单笔最大亏损 1%–2% 净值（常见风控规则）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-09
-    description: {en: "Single option position <= 10% of net value", zh: "单只期权仓位 <= 净值 × 10%"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["D08"]
-    review:
-      quantifiable: "是"
-      typical_range: "单只期权仓位 ≤ 净值 10%（买方经验）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-10
-    description: {en: "Total long option premium <= 20% of net value", zh: "多头期权总权利金 <= 净值 × 20%"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["D10"]
-    review:
-      quantifiable: "是"
-      typical_range: "多头权利金总和 ≤ 净值 20%（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-11
-    description: {en: "Switch to a spread when one leg uses > 20% of net value", zh: "单腿占用 > 净值 × 20% 时改用价差"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["B13"]
-    review:
-      quantifiable: "是"
-      typical_range: "单腿占用 > 净值 20% 改用价差（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-12
-    description: {en: "Build the position in 2 or more steps", zh: "分 2 批以上建仓"}
-    default_weight: 2
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["D09"]
-    review:
-      quantifiable: "是"
-      typical_range: "分 2–3 批建仓（经验）"
-      latest_value: "按你的成交记录判断"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-13
-    description: {en: "Covered Call contracts = shares ÷ 100, never more", zh: "Covered Call 张数 = 持股 ÷ 100，不超卖"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["E13"]
-    review:
-      quantifiable: "是"
-      typical_range: "硬约束：张数 × 100 ≤ 持股数"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-14
-    description: {en: "Portfolio Greeks (Delta, Vega, Theta, beta-weighted Delta)", zh: "组合希腊字母（Delta、Vega、Theta、beta 加权 Delta）"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "account_data"
-    review:
-      quantifiable: "是"
-      typical_range: "组合 Delta、Vega、Theta 按净值标准化；阈值因人而异，无通用数值"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商直接提供，或由持仓＋期权链自算"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-15
-    description: {en: "Margin and buying power usage", zh: "保证金占用与购买力使用率"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "account_data"
-    review:
-      quantifiable: "是"
-      typical_range: "保证金占用常建议 ≤ 购买力的 50%（tastytrade 经验 25%–50%）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: POS-16
-    description: {en: "Position correlation and stress test", zh: "持仓相关性与压力测试"}
-    default_weight: 2
-    acquisition: "manual"
-    availability: "account_data"
-    review:
-      quantifiable: "是"
-      typical_range: "常见做法：假设标的 −20% 且 IV +50% 的情景损失；阈值因人而异"
-      latest_value: "未读取（需要你的账户）"
-      source: "由持仓＋期权链自算"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  # THS · Thesis and discipline
-  - rule_id: THS-01
-    description: {en: "Circle of competence: you can explain how the company makes money", zh: "能力圈：你能说清这家公司怎么赚钱"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "user_answer"
-    review:
-      quantifiable: "否"
-      typical_range: "定性，无数值"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: THS-02
-    description: {en: "The thesis is written down (why you trade, what you expect)", zh: "已写下投资逻辑（为什么做、预期什么）"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "user_answer"
-    review:
-      quantifiable: "否"
-      typical_range: "文字记录；可强制要求填写后才允许开仓"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: THS-03
-    description: {en: "You are willing to hold the stock long term", zh: "你愿意长期持有该股"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "user_answer"
-    legacy_id: ["A15", "E01"]
-    review:
-      quantifiable: "是"
-      typical_range: "是或否"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: THS-04
-    description: {en: "The purpose of the trade is clear (income or buying the stock)", zh: "开仓目的已经明确（收租或接盘）"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "user_answer"
-    legacy_id: ["E16"]
-    review:
-      quantifiable: "是"
-      typical_range: "二选一：收租或接盘"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: THS-05
-    description: {en: "Falsification: what proves you wrong is written down, and you exit when it happens", zh: "证伪条件：写下什么情况证明你错了，发生时就离场"}
-    default_weight: 5
-    acquisition: "manual"
-    availability: "user_answer"
-    review:
-      quantifiable: "部分"
-      typical_range: "证伪条件写成可检验的价格或指标（如跌破某均线、财报低于预期）才能量化"
-      latest_value: "你的回答"
-      source: "你的输入；价格与指标部分来自 yfinance"
-      free_python: "部分"
-      freshness: "即时"
-  - rule_id: THS-06
-    description: {en: "Sleep test: the loss at the 52-week low is bearable", zh: "睡眠测试：跌到 52 周低点时的亏损可以承受"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "user_answer"
-    legacy_id: ["A24"]
-    review:
-      quantifiable: "部分"
-      typical_range: "把「可承受亏损」换算成金额与净值占比"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: THS-07
-    description: {en: "At most 2 trades in the last 30 days", zh: "近 30 日出手 <= 2 次"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "user_answer"
-    legacy_id: ["D04"]
-    review:
-      quantifiable: "是"
-      typical_range: "近 30 天出手次数 ≤ 2（作者设）"
-      latest_value: "按成交记录计数"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  # EXT · Management and exit
-  - rule_id: EXT-01
-    description: {en: "Seller take profit: buy back at 50% or 70% profit", zh: "卖方止盈：盈利 50% 或 70% 时买回平仓"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["B16", "B17"]
-    review:
-      quantifiable: "是"
-      typical_range: "盈利 50% 买回（tastytrade 常用），70% 为另一档"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自期权链"
-      free_python: "是"
-      freshness: "即时"
-  - rule_id: EXT-02
-    description: {en: "Buyer take profit: +60% or +100%", zh: "买方止盈：+60% 或 +100%"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["D12", "D13"]
-    review:
-      quantifiable: "是"
-      typical_range: "+60% 或 +100%（作者设）"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自期权链"
-      free_python: "是"
-      freshness: "即时"
-  - rule_id: EXT-03
-    description: {en: "Stop loss at 2 times the premium", zh: "止损：亏损达到 2 倍权利金"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["Z01"]
-    review:
-      quantifiable: "是"
-      typical_range: "亏损达 2 倍权利金（tastytrade 常用）"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自期权链"
-      free_python: "是"
-      freshness: "即时"
-  - rule_id: EXT-04
-    description: {en: "Buyer stop: exit when the stock reaches the target but the option still loses", zh: "买方止损：正股到目标位而期权仍亏损时离场"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["D14"]
-    review:
-      quantifiable: "是"
-      typical_range: "正股到目标位而期权仍亏损时离场"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自行情"
-      free_python: "是"
-      freshness: "即时"
-  - rule_id: EXT-05
-    description: {en: "Time stop or roll at 21 days left", zh: "剩 21 天时时间止损或展期"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["Z02"]
-    review:
-      quantifiable: "是"
-      typical_range: "剩 21 天时间止损或展期（tastytrade 常用）"
-      latest_value: "交易计划，不是筛选"
-      source: "到期日直接算"
-      free_python: "是"
-      freshness: "即时"
-  - rule_id: EXT-06
-    description: {en: "Planned holding period (buyer 3-10 days, SPMO at least six months)", zh: "计划持有期（买方 3-10 天，SPMO 至少半年）"}
-    default_weight: 2
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["D11", "C04"]
-    review:
-      quantifiable: "是"
-      typical_range: "买方 3–10 天；SPMO 至少半年"
-      latest_value: "交易计划，不是筛选"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: EXT-07
-    description: {en: "Trade at the close on SPMO rebalance day", zh: "在 SPMO 换仓日以收盘价执行"}
-    default_weight: 1
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["C02"]
-    review:
-      quantifiable: "是"
-      typical_range: "在再平衡日收盘价执行"
-      latest_value: "交易计划，不是筛选"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: EXT-08
-    description: {en: "Covered Call already planned while holding shares", zh: "持股时已规划卖 Covered Call"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "trade_plan"
-    legacy_id: ["E10"]
-    review:
-      quantifiable: "是"
-      typical_range: "持股时已有卖 Covered Call 的计划"
-      latest_value: "交易计划，不是筛选"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
-  - rule_id: EXT-09
-    description: {en: "Covered Call strike >= cost basis", zh: "Covered Call 行权价 >= 成本价"}
-    default_weight: 4
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["E14"]
-    review:
-      quantifiable: "是"
-      typical_range: "Covered Call 行权价 ≥ 成本价"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
-  - rule_id: EXT-10
-    description: {en: "Cost basis <= price × 1.15, otherwise pause Covered Calls", zh: "成本 <= 现价 × 1.15，否则暂停 Covered Call"}
-    default_weight: 3
-    acquisition: "manual"
-    availability: "account_data"
-    legacy_id: ["E15", "F12"]
-    review:
-      quantifiable: "是"
-      typical_range: "成本 ≤ 现价 × 1.15，否则暂停 Covered Call（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
 
 # Old rules that did not become a rule here (strategy choices or strategy-level checks, move them into strategy files):
 #   B12 margin account path, D15 trade direction, C06 12-month Sharpe against SPY.

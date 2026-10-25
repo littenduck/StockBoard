@@ -1,0 +1,501 @@
+# Personal checklist: rules that need your own input, your trade plan or your brokerage account.
+# They are never scored, because the app has nowhere to collect the answers. Same fields as config/rules.yaml,
+# same ids (so the numbering has gaps in rules.yaml where a rule moved here).
+
+rule_group_list:
+  - {group_id: VAL, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "VAL · Valuation", zh: "VAL · 估值"}, description: {en: "Market and stock valuation, and your own margin of safety.", zh: "大盘与个股估值，以及你自己的安全边际。"}}
+  - {group_id: EVT, aspect: {en: "Events", zh: "事件面"}, display_name: {en: "EVT · Events", zh: "EVT · 事件"}, description: {en: "Earnings, central bank, data releases, policy and calendar effects.", zh: "财报、央行、数据公布、政策和日历效应。"}}
+  - {group_id: POS, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "POS · Position, account and portfolio", zh: "POS · 仓位、账户与组合"}, description: {en: "Option level, cash, exposure caps, loss limits and portfolio Greeks.", zh: "期权权限、现金、敞口上限、亏损上限和组合希腊字母。"}}
+  - {group_id: THS, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}}
+  - {group_id: EXT, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}}
+
+rule_list:
+  # VAL · Valuation
+  - rule_id: VAL-09
+    description: {en: "Safety margin: strike <= the price you are willing to buy at", zh: "安全边际：Strike <= 你愿意接盘的价格"}
+    explanation: "卖 Put 的行权价不能高于你自己愿意买入的价格，这是卖 Put 最核心的安全边际。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "user_answer"
+    legacy_id: ["A16"]
+    review:
+      quantifiable: "是"
+      typical_range: "由你决定的价格"
+      latest_value: "取决于你填写的价格；AAPL 现价 347.73 可作对照"
+      source: "你的输入；现价来自 yfinance"
+      free_python: "否"
+      freshness: "即时"
+  # EVT · Events
+  - rule_id: EVT-04
+    description: {en: "No election day inside the DTE window", zh: "DTE 窗口内无选举日"}
+    explanation: "存续期内是否有选举日。选举前后市场不确定性上升。"
+    default_weight: 1
+    acquisition: "manual"
+    availability: "not_implemented"
+    legacy_id: ["F07"]
+    review:
+      quantifiable: "是"
+      typical_range: "固定日期"
+      latest_value: "无"
+      source: "手工录入"
+      free_python: "是"
+      freshness: "一次性"
+  # POS · Position, account and portfolio
+  - rule_id: POS-01
+    description: {en: "Option level >= L2 (L3 for spreads)", zh: "期权权限 >= L2（价差需 L3）"}
+    explanation: "你的账户是否有足够的期权权限。没有权限就不能下这类单。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["B14", "B15"]
+    review:
+      quantifiable: "是"
+      typical_range: "L2 可卖现金担保 Put 与 Covered Call，L3 可做价差（券商规则）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-02
+    description: {en: "No leverage, cash secured", zh: "零杠杆，现金担保"}
+    explanation: "不借钱、有足够现金保证金，才算现金担保卖 Put。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["A20", "F11"]
+    review:
+      quantifiable: "是"
+      typical_range: "现金 ≥ Strike × 100 × 张数"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-03
+    description: {en: "Cash >= 30% of net value", zh: "现金 >= 净值 × 30%"}
+    explanation: "账户里至少保留一定比例的现金，应对被行权和行情波动。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["A19"]
+    review:
+      quantifiable: "是"
+      typical_range: "现金储备 20%–40% 常见（作者设 30%）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-04
+    description: {en: "Cash >= Strike × 100", zh: "现金 >= Strike × 100"}
+    explanation: "被行权时需要拿出 Strike × 100 的现金买入股票。现金不够就不该开仓。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["E09", "F10"]
+    review:
+      quantifiable: "是"
+      typical_range: "硬约束：现金 ≥ Strike × 100"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-05
+    description: {en: "Total Put notional (including the new one) <= 70% of net value", zh: "全部 Put 名义敞口（含新仓）<= 净值 × 70%"}
+    explanation: "所有 Put 假设全部被行权要买入的总金额，不能超过净值的一定比例。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["A17"]
+    review:
+      quantifiable: "是"
+      typical_range: "全部 Put 名义敞口占净值（作者设 ≤ 70%；保守者更低）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-06
+    description: {en: "Notional in this stock <= 35% of net value", zh: "该股名义敞口 <= 净值 × 35%"}
+    explanation: "单只股票的名义敞口不能太集中。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["A18"]
+    review:
+      quantifiable: "是"
+      typical_range: "单票名义敞口 20%–35% 常见上限（经验）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-07
+    description: {en: "One sector <= 50% of total exposure", zh: "同板块敞口 <= 总敞口 50%"}
+    explanation: "同一板块的敞口不能过大，避免一个板块出事时全线受损。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["Z04"]
+    review:
+      quantifiable: "是"
+      typical_range: "同板块 ≤ 总敞口 50%（作者设）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-08
+    description: {en: "Largest loss per trade (to the stop) <= 2% of net value", zh: "单笔最大亏损（到止损）<= 净值 × 2%"}
+    explanation: "单笔交易最坏亏损不能超过净值的 2%，这是最基本的风控。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["Z03"]
+    review:
+      quantifiable: "是"
+      typical_range: "单笔最大亏损 1%–2% 净值（常见风控规则）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-09
+    description: {en: "Single option position <= 10% of net value", zh: "单只期权仓位 <= 净值 × 10%"}
+    explanation: "买方期权的单笔投入要控制在小比例，因为可能归零。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["D08"]
+    review:
+      quantifiable: "是"
+      typical_range: "单只期权仓位 ≤ 净值 10%（买方经验）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-10
+    description: {en: "Total long option premium <= 20% of net value", zh: "多头期权总权利金 <= 净值 × 20%"}
+    explanation: "买方期权的总投入有上限，防止小额多笔累计亏光。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["D10"]
+    review:
+      quantifiable: "是"
+      typical_range: "多头权利金总和 ≤ 净值 20%（作者设）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-11
+    description: {en: "Switch to a spread when one leg uses > 20% of net value", zh: "单腿占用 > 净值 × 20% 时改用价差"}
+    explanation: "单腿占用资金太大时，改用价差把风险封顶。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["B13"]
+    review:
+      quantifiable: "是"
+      typical_range: "单腿占用 > 净值 20% 改用价差（作者设）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-12
+    description: {en: "Build the position in 2 or more steps", zh: "分 2 批以上建仓"}
+    explanation: "分批建仓，避免一次买在最差的价位。"
+    default_weight: 2
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["D09"]
+    review:
+      quantifiable: "是"
+      typical_range: "分 2–3 批建仓（经验）"
+      latest_value: "按你的成交记录判断"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-13
+    description: {en: "Covered Call contracts = shares ÷ 100, never more", zh: "Covered Call 张数 = 持股 ÷ 100，不超卖"}
+    explanation: "卖出的 Covered Call 张数不能超过持股数除以 100，否则会变成裸卖。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["E13"]
+    review:
+      quantifiable: "是"
+      typical_range: "硬约束：张数 × 100 ≤ 持股数"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-14
+    description: {en: "Portfolio Greeks (Delta, Vega, Theta, beta-weighted Delta)", zh: "组合希腊字母（Delta、Vega、Theta、beta 加权 Delta）"}
+    explanation: "整个期权组合的 Delta、Vega、Theta，反映整体方向、波动率和时间价值的敞口。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "account_data"
+    review:
+      quantifiable: "是"
+      typical_range: "组合 Delta、Vega、Theta 按净值标准化；阈值因人而异，无通用数值"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商直接提供，或由持仓＋期权链自算"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-15
+    description: {en: "Margin and buying power usage", zh: "保证金占用与购买力使用率"}
+    explanation: "已经用掉多少保证金或购买力。用得太满，遇到行情波动容易被强平。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "account_data"
+    review:
+      quantifiable: "是"
+      typical_range: "保证金占用常建议 ≤ 购买力的 50%（tastytrade 经验 25%–50%）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: POS-16
+    description: {en: "Position correlation and stress test", zh: "持仓相关性与压力测试"}
+    explanation: "持仓之间是否高度相关，以及极端行情下会亏多少。"
+    default_weight: 2
+    acquisition: "manual"
+    availability: "account_data"
+    review:
+      quantifiable: "是"
+      typical_range: "常见做法：假设标的 −20% 且 IV +50% 的情景损失；阈值因人而异"
+      latest_value: "未读取（需要你的账户）"
+      source: "由持仓＋期权链自算"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  # THS · Thesis and discipline
+  - rule_id: THS-01
+    description: {en: "Circle of competence: you can explain how the company makes money", zh: "能力圈：你能说清这家公司怎么赚钱"}
+    explanation: "你能不能说清这家公司怎么赚钱。说不清的公司不要碰。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "user_answer"
+    review:
+      quantifiable: "否"
+      typical_range: "定性，无数值"
+      latest_value: "你的回答"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: THS-02
+    description: {en: "The thesis is written down (why you trade, what you expect)", zh: "已写下投资逻辑（为什么做、预期什么）"}
+    explanation: "开仓前把理由写下来：为什么做、预期什么。写不出来多半是冲动。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "user_answer"
+    review:
+      quantifiable: "否"
+      typical_range: "文字记录；可强制要求填写后才允许开仓"
+      latest_value: "你的回答"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: THS-03
+    description: {en: "You are willing to hold the stock long term", zh: "你愿意长期持有该股"}
+    explanation: "卖 Put 可能被行权接股票，所以你必须愿意长期持有它。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "user_answer"
+    legacy_id: ["A15", "E01"]
+    review:
+      quantifiable: "是"
+      typical_range: "是或否"
+      latest_value: "你的回答"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: THS-04
+    description: {en: "The purpose of the trade is clear (income or buying the stock)", zh: "开仓目的已经明确（收租或接盘）"}
+    explanation: "这笔交易是想收租金（权利金），还是想接盘买股。目的不同，处理方式也不同。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "user_answer"
+    legacy_id: ["E16"]
+    review:
+      quantifiable: "是"
+      typical_range: "二选一：收租或接盘"
+      latest_value: "你的回答"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: THS-05
+    description: {en: "Falsification: what proves you wrong is written down, and you exit when it happens", zh: "证伪条件：写下什么情况证明你错了，发生时就离场"}
+    explanation: "写下什么情况证明你的判断错了，发生时就认错离场，不要事后找理由。"
+    default_weight: 5
+    acquisition: "manual"
+    availability: "user_answer"
+    review:
+      quantifiable: "部分"
+      typical_range: "证伪条件写成可检验的价格或指标（如跌破某均线、财报低于预期）才能量化"
+      latest_value: "你的回答"
+      source: "你的输入；价格与指标部分来自 yfinance"
+      free_python: "部分"
+      freshness: "即时"
+  - rule_id: THS-06
+    description: {en: "Sleep test: the loss at the 52-week low is bearable", zh: "睡眠测试：跌到 52 周低点时的亏损可以承受"}
+    explanation: "股价跌到 52 周低点时，你的亏损是否还能让你睡得着觉。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "user_answer"
+    legacy_id: ["A24"]
+    review:
+      quantifiable: "部分"
+      typical_range: "把「可承受亏损」换算成金额与净值占比"
+      latest_value: "你的回答"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: THS-07
+    description: {en: "At most 2 trades in the last 30 days", zh: "近 30 日出手 <= 2 次"}
+    explanation: "近 30 天出手次数是否过多。过于频繁通常说明在追涨杀跌。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "user_answer"
+    legacy_id: ["D04"]
+    review:
+      quantifiable: "是"
+      typical_range: "近 30 天出手次数 ≤ 2（作者设）"
+      latest_value: "按成交记录计数"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  # EXT · Management and exit
+  - rule_id: EXT-01
+    description: {en: "Seller take profit: buy back at 50% or 70% profit", zh: "卖方止盈：盈利 50% 或 70% 时买回平仓"}
+    explanation: "卖方赚到一半（或七成）权利金就买回平仓，把利润落袋。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["B16", "B17"]
+    review:
+      quantifiable: "是"
+      typical_range: "盈利 50% 买回（tastytrade 常用），70% 为另一档"
+      latest_value: "交易计划，不是筛选"
+      source: "价格来自期权链"
+      free_python: "是"
+      freshness: "即时"
+  - rule_id: EXT-02
+    description: {en: "Buyer take profit: +60% or +100%", zh: "买方止盈：+60% 或 +100%"}
+    explanation: "买方期权涨到一定幅度就止盈，避免利润回吐。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["D12", "D13"]
+    review:
+      quantifiable: "是"
+      typical_range: "+60% 或 +100%（作者设）"
+      latest_value: "交易计划，不是筛选"
+      source: "价格来自期权链"
+      free_python: "是"
+      freshness: "即时"
+  - rule_id: EXT-03
+    description: {en: "Stop loss at 2 times the premium", zh: "止损：亏损达到 2 倍权利金"}
+    explanation: "亏损达到权利金的 2 倍就止损离场。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["Z01"]
+    review:
+      quantifiable: "是"
+      typical_range: "亏损达 2 倍权利金（tastytrade 常用）"
+      latest_value: "交易计划，不是筛选"
+      source: "价格来自期权链"
+      free_python: "是"
+      freshness: "即时"
+  - rule_id: EXT-04
+    description: {en: "Buyer stop: exit when the stock reaches the target but the option still loses", zh: "买方止损：正股到目标位而期权仍亏损时离场"}
+    explanation: "买方：正股已经到目标位但期权仍亏损，说明时间或波动率在拖累，应该离场。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["D14"]
+    review:
+      quantifiable: "是"
+      typical_range: "正股到目标位而期权仍亏损时离场"
+      latest_value: "交易计划，不是筛选"
+      source: "价格来自行情"
+      free_python: "是"
+      freshness: "即时"
+  - rule_id: EXT-05
+    description: {en: "Time stop or roll at 21 days left", zh: "剩 21 天时时间止损或展期"}
+    explanation: "剩 21 天左右就处理：要么提前平仓，要么展期，避免临近到期的剧烈波动。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["Z02"]
+    review:
+      quantifiable: "是"
+      typical_range: "剩 21 天时间止损或展期（tastytrade 常用）"
+      latest_value: "交易计划，不是筛选"
+      source: "到期日直接算"
+      free_python: "是"
+      freshness: "即时"
+  - rule_id: EXT-06
+    description: {en: "Planned holding period (buyer 3-10 days, SPMO at least six months)", zh: "计划持有期（买方 3-10 天，SPMO 至少半年）"}
+    explanation: "事先定好持有多久，避免一直拿着不动。"
+    default_weight: 2
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["D11", "C04"]
+    review:
+      quantifiable: "是"
+      typical_range: "买方 3–10 天；SPMO 至少半年"
+      latest_value: "交易计划，不是筛选"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: EXT-07
+    description: {en: "Trade at the close on SPMO rebalance day", zh: "在 SPMO 换仓日以收盘价执行"}
+    explanation: "SPMO 换仓日用收盘价执行，保持规则一致。"
+    default_weight: 1
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["C02"]
+    review:
+      quantifiable: "是"
+      typical_range: "在再平衡日收盘价执行"
+      latest_value: "交易计划，不是筛选"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: EXT-08
+    description: {en: "Covered Call already planned while holding shares", zh: "持股时已规划卖 Covered Call"}
+    explanation: "持股后要提前计划卖 Covered Call，而不是被动持有。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "trade_plan"
+    legacy_id: ["E10"]
+    review:
+      quantifiable: "是"
+      typical_range: "持股时已有卖 Covered Call 的计划"
+      latest_value: "交易计划，不是筛选"
+      source: "你的输入"
+      free_python: "否"
+      freshness: "即时"
+  - rule_id: EXT-09
+    description: {en: "Covered Call strike >= cost basis", zh: "Covered Call 行权价 >= 成本价"}
+    explanation: "Covered Call 的行权价不低于成本价，避免被行权后亏损。"
+    default_weight: 4
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["E14"]
+    review:
+      quantifiable: "是"
+      typical_range: "Covered Call 行权价 ≥ 成本价"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
+  - rule_id: EXT-10
+    description: {en: "Cost basis <= price × 1.15, otherwise pause Covered Calls", zh: "成本 <= 现价 × 1.15，否则暂停 Covered Call"}
+    explanation: "成本比现价高很多时，先不要卖 Covered Call，避免在低价被行权而锁定亏损。"
+    default_weight: 3
+    acquisition: "manual"
+    availability: "account_data"
+    legacy_id: ["E15", "F12"]
+    review:
+      quantifiable: "是"
+      typical_range: "成本 ≤ 现价 × 1.15，否则暂停 Covered Call（作者设）"
+      latest_value: "未读取（需要你的账户）"
+      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
+      free_python: "部分"
+      freshness: "取决于券商，近实时"
