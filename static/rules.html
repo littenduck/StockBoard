@@ -23,11 +23,11 @@
   .rule-group .row > div > small { margin-top:var(--space-1); }
   .rule-group > header + .row { border-top:0; padding-top:0; padding-bottom:var(--space-1); }
   .rule-meta { display:grid; grid-template-columns:104px 1fr; gap:var(--space-1) var(--space-3); }
-  .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); }
+  .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); } .usage .box { white-space:normal; }
   @media (max-width:899px) {
     main { padding:var(--space-5) var(--space-4); }
     .rule-group .row { grid-template-columns:72px 1fr; row-gap:var(--space-1); }
-    .rule-meta { grid-column:2 / 3; grid-template-columns:auto 1fr; }
+    .rule-meta { grid-column:2 / 3; grid-template-columns:1fr; }
     .rule-group > header + .row { display:none; }
   }
 </style>
@@ -43,7 +43,7 @@
   <section class="box" id="explanation"></section>
   <div class="filter-row">
     <small><label for="filter-select" id="filter-label"></label></small>
-    <span class="field"><select id="filter-select"><option value="all"></option><option value="used"></option><option value="built"></option></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
+    <span class="field"><select id="filter-select"><option value="all"></option><option value="used"></option><option value="built"></option><option value="backtest"></option></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
   </div>
   <div id="rule-group-list"><small id="loading-rules"></small></div>
 </main>
@@ -66,7 +66,8 @@ function renderRuleRow(rule) {
   return `<div class="row" id="rule-${rule.rule_id}"><small>${rule.rule_id}</small>
     <div>${languageRenderText(rule.name)}<small>${languageRenderText(rule.description)}</small>${rule.note ? `<small>${languageRenderText(rule.note)}</small>` : ''}${bandLink}</div>
     <div class="rule-meta"><small class="${STATUS_COLOR[rule.status]}">${escapeText(languageText(rule.status))} · ${escapeText(languageText(rule.method))}</small>
-      <div class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<small class="box">${escapeText(primaryText(usage.display_name))} · W${usage.weight}${usage.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('') : `<small>${escapeText(languageText('not_used'))}</small>`}</div></div></div>`;
+      <div class="usage">${rule.used_by.length ? rule.used_by.map(usage => `<small class="box">${escapeText(primaryText(usage.display_name))} · W${usage.weight}${usage.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('') : `<small>${escapeText(languageText('not_used'))}</small>`}</div>
+      <small class="${rule.backtestable === 'yes' ? '' : 'muted'}">${escapeText(rule.backtestable === 'yes' ? languageText('backtest_yes', { start:rule.history_start }) : languageText('backtest_no'))}</small></div></div>`;
 }
 
 function renderStaticText() {
@@ -74,9 +75,10 @@ function renderStaticText() {
   document.getElementById('page-heading').innerHTML = languageRenderText(languageLocalize('rule_catalog'));
   document.getElementById('filter-label').textContent = languageText('show');
   [...document.getElementById('filter-select').options].forEach(option =>
-    option.textContent = languageText({ all:'all_rules', used:'used_rules', built:'built_rules' }[option.value]));
+    option.textContent = languageText({ all:'all_rules', used:'used_rules', built:'built_rules', backtest:'backtest_rules' }[option.value]));
   document.getElementById('explanation').innerHTML = languageRenderParagraphs(languageLocalize('id_explanation'))
     + languageRenderParagraphs(languageLocalize('gap_explanation'))
+    + languageRenderParagraphs(languageLocalize('backtest_explanation'))
     + `<small>${languageRenderText(languageLocalize('status_label'))}</small><ul>`
     + Object.keys(STATUS_COLOR).map(key => `<li><small><span class="${STATUS_COLOR[key]}">${escapeText(languageText(key))}</span>: ${escapeText(languageText(key + '_explanation'))}</small></li>`).join('') + '</ul>';
   const loading = document.getElementById('loading-rules');
@@ -87,7 +89,8 @@ function renderSummary() {
   if (!ruleCatalog) return;
   const ruleList = ruleCatalog.group_list.flatMap(group => group.rule_list);
   document.getElementById('summary').textContent = languageText('rule_summary', { total:ruleList.length,
-    built:ruleList.filter(rule => rule.status === 'built').length, used:ruleList.filter(rule => rule.used_by.length).length });
+    built:ruleList.filter(rule => rule.status === 'built').length, backtest:ruleList.filter(rule => rule.backtestable === 'yes').length,
+    used:ruleList.filter(rule => rule.used_by.length).length });
 }
 
 function handleLanguageChange() {
@@ -102,7 +105,7 @@ function renderLoadFailure() {
 
 function renderRuleCatalog(shouldScrollToTarget = true) {
   const filter = document.getElementById('filter-select').value;
-  const keepRule = rule => filter === 'all' || (filter === 'used' ? rule.used_by.length > 0 : rule.status === 'built');
+  const keepRule = rule => filter === 'all' || (filter === 'used' ? rule.used_by.length > 0 : filter === 'backtest' ? rule.backtestable === 'yes' : rule.status === 'built');
   document.getElementById('rule-group-list').innerHTML = ruleCatalog.group_list.map(group => {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
