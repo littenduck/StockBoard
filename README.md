@@ -23,9 +23,9 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 
 | Path | What |
 |---|---|
-| `config/rules.yaml` | every rule, defined once, in 15 categories from macro to detail (98 rules with a data source and 35 manual rules); strategies reference rules by id |
+| `config/rules.yaml` | every rule, defined once, in 15 categories from macro to detail (163 rules: 128 with a data source, 35 manual); strategies reference rules by id |
 | `config/settings.yaml` | refresh interval, indicator cards, watchlist, option expiration windows |
-| `strategies/*.yaml` | strategies: gates, rules, weights (see `docs/strategy.md`) |
+| `strategies/*.yaml` | strategies: gates, rules, per-strategy weights and veto flags (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, shape and states, five element families, status badges, layout) |
 | `docs/indicator.md` | every indicator, its meaning and source |
 | `docs/language.md` | English and Chinese glossary and writing rules |
@@ -38,7 +38,7 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 
 ## Two results per symbol
 
-- **Pass**: false if any weight 5 rule fails (veto).
+- **Pass**: false if any rule marked `veto: true` fails.
 - **Score**: weighted share of passed rules, 0 to 100.
 
 They are independent. Rules with missing data show 未知 and are left out of the score. Option rules need live bid and ask quotes, so they show 未知 while the market is closed.

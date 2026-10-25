@@ -13,7 +13,7 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 
 ## GET /api/v1/rules
 
-Every rule from `config/rules.yaml`, grouped by group, with the strategies that use it. The catalog now groups rules by category (`MAC`, `TRD`, ...) and carries more fields (`name`, `method`, `quantifiable`, `status` (replaces `availability`), `levels`, `legacy_id`; the long text moved into `description`); the response below still shows the old shape and the API does not return the new fields yet.
+Every rule from `config/rules.yaml`, grouped by group, with the strategies that use it. The catalog now groups rules by category (`MAC`, `TRD`, ...) and carries more fields (`name`, `method`, `quantifiable`, `status` replacing `availability`, `operator`, `value`, `band_of`, `legacy_id`; the long text lives in `description`). Rules no longer have `default_weight`: weights and `veto` flags live in the strategy files, so `used_by` will carry them. The response below still shows the old shape and the API does not return the new fields yet.
 
 ```json
 {"default_language": "en",

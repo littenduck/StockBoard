@@ -14,4 +14,18 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 ## Glossary
 
 | 中文 | English |
-|
+|---|---|
+| 权重 | weight |
+| 一票否决 | veto |
+| 分档 | tier |
+| 阈值 | threshold |
+| 通过 | pass |
+| 不通过 | fail |
+| 未知 | unknown |
+| 低于 | below |
+| 不高于 | at most |
+| 高于 | above |
+| 不低于 | at least |
+| 介于 … 之间 | between |
+| 规则 | rule |
+| 策略 | strategy |

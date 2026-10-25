@@ -2,7 +2,7 @@
 
 A strategy is one YAML file in `strategies/`. The app loads every file in that folder at startup and refuses to start if a rule refers to an unknown indicator.
 
-> **Status (branch `refactor/rule-catalog-by-theme`):** `config/rules.yaml` has been redesigned (new ids, `name`, `description`, `method`, `quantifiable`, `levels`). The files in `strategies/`, the loader and the evaluator still use the old ids and rules, so they do not load against the new catalog until they are migrated. Sections below describe the new catalog; the "Variant groups" section describes what the evaluator does today.
+> **Status (branch `refactor/rule-catalog-by-theme`):** `config/rules.yaml` and the four files in `strategies/` use the new design: theme-based ids, one rule per tier line, weights and veto flags in the strategy files. The loader, the evaluator, the API and the pages still read the old catalog, so the app does not load these files until the code is migrated. The "Variant groups" section describes what the evaluator does today; the new design retires it.
 
 ## File format
 
@@ -22,11 +22,12 @@ gates:                                    # evaluated in order, top to bottom
   - gate_id: gate_0_macro
     display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}
     rules:
-      - {rule_id: MAC-03, weight: 4}
-      - {rule_id: SEN-01, weight: 5}
+      - {rule_id: SEN-10, weight: 1}              # VIX at least 12
+      - {rule_id: SEN-01, weight: 2}              # VIX at least 15
+      - {rule_id: EVT-01, weight: 5, veto: true}  # no earnings before expiration
 ```
 
-A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, importance, method, quantifiable, status, indicator with operator and threshold or with levels, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `weight`) and an optional `variant_group`. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score (target behaviour; the current loader still refuses rules without an indicator).
+A strategy only references rules. Every rule is defined once in `config/rules.yaml` (name, description, method, quantifiable, status, indicator, operator and value, band_of, old ids). `name` is a short title; `description` explains the rule in plain words, spells out abbreviations, gives typical values and update frequency, and names the data source. A strategy entry has `rule_id`, a required `weight` (integer 1 to 5: how much this strategy cares about the rule) and an optional `veto: true`. The catalog has no weight, so the same rule can weigh 4 in one strategy and 1 in another. Any rule can be listed. A rule the app has no data for, including every `method: manual` rule, evaluates to unknown ❓ and is left out of the score (target behaviour; the current loader still refuses rules without an indicator).
 
 ## Languages
 
@@ -45,11 +46,20 @@ Id = category code + two digits, for example `TRD-03`. The same id means the sam
 | Options | `LIQ` liquidity, `VOL` volatility, `CTR` contract selection, `RET` return and payoff |
 | Risk | `POS` position, account and portfolio, `THS` thesis and discipline, `EXT` management and exit |
 
-Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and loose and strict tiers of one test became one rule with `levels`. Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. The full list is on the 规则目录 page (`/rules`).
+Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and every tiered measure was split into one rule per line (see Tiers). Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. The full list is on the 规则目录 page (`/rules`).
 
 `method` says how a rule's value is obtained: `api_fetch` (stable API or CSV such as FRED and yfinance), `scrape` (web page, unofficial endpoint, spreadsheet), `computed` (calculated from fetched prices, series or option chains), `ai_search` (an AI reads web pages and records the result with its source), or `manual` (no data in the app: your own input, your trade plan or your brokerage account; a manual rule can still sit in a strategy, where it always shows unknown).
 
-`weight` is the importance score from 1 to 5. A rule with `levels` gives partial credit: the first matching level wins and no match means `score` 0. A level's `score` is the share of the weight the rule earns (1.0 is all of it). Scores are a first draft. A weight 5 manual rule in a strategy keeps the pass result unknown, because the veto can never be checked.
+## Tiers: one rule per line
+
+A measure with several lines (VIX, Delta, DTE, RSI ...) is one rule per line, for example `SEN-10` VIX at least 12, `SEN-01` VIX at least 15, `SEN-11` VIX below 20, `SEN-12` VIX below 25, `SEN-13` VIX below 30, `SEN-14` VIX at least 30, `SEN-15` VIX at least 40. A rule only says pass, fail or unknown. The main rule (`SEN-01`) carries the full description; the other lines name it in `band_of`, which is for display only. A strategy lists the lines it wants and gives each its own weight.
+
+Two ways to use the lines:
+
+- **Nested lines give partial credit.** The score is passed weight divided by passed plus failed weight, so listing `MAC-13` (10Y below 5.0%, weight 2) and `MAC-03` (10Y below 4.5%, weight 2) gives 100% at 4.3%, 50% at 4.7% and 0% at 5.2%. Each line the value passes adds its weight.
+- **Lines that point opposite ways serve different strategies.** A seller wants fear and uses the floors (`SEN-10`, `SEN-01`); a trend or momentum strategy avoids panic and uses a cap (`SEN-12`); a contrarian buyer uses `SEN-14`. Because the weight lives in the strategy, each one picks its own.
+
+Do not list lines that exclude each other, such as `SEN-11` (below 20) together with `SEN-14` (at least 30): the one that cannot pass always counts as a fail.
 
 Operators: `less_than`, `less_or_equal`, `greater_than`, `greater_or_equal`, `between` (value is `[low, high]`, inclusive), `is_true`.
 
@@ -59,19 +69,19 @@ Operators: `less_than`, `less_or_equal`, `greater_than`, `greater_or_equal`, `be
 
 ## Two independent results per symbol
 
-- **Pass** (`is_pass`): any weight 5 rule failing makes it `false` (veto). All weight 5 rules passing makes it `true`. Weight 5 rules unknown with none failing makes it unknown.
-- **Score** (`score_percent`): `sum(weight x pass) / sum(weight x (pass + fail)) x 100`. Unknown and not applicable rules are left out. All rules count, including weight 5.
+- **Pass** (`is_pass`): any rule marked `veto: true` that fails makes it `false`. All veto rules passing makes it `true`. A veto rule that is unknown with none failing makes it unknown. A manual rule cannot be a veto, because it is always unknown.
+- **Score** (`score_percent`): `sum(weight x pass) / sum(weight x (pass + fail)) x 100`. Unknown and not applicable rules are left out. All rules count, including veto rules.
 
 A high score can still fail the veto, and a low score can still pass.
-`unknown_weight_ratio` is the weight share of unknown rules; above `max_unknown_weight_ratio` the page greys the score as "data insufficient".
+`unknown_weight_ratio` is the weight share of unknown rules (manual rules are not counted, otherwise one manual rule would grey every score; the evaluator still counts them today); above `max_unknown_weight_ratio` the page greys the score as "data insufficient".
 
 ## Variant groups
 
-Rules sharing a `variant_group` are loose and strict versions of one test (for example VIX at least 13 and at least 15). Only the strictest passing rule counts as pass; the looser ones become `not_applicable`. If none pass, only the loosest counts as fail. Order rules from loose to strict inside the file. The new catalog replaces most variant groups with `levels` on a single rule; the evaluator does not read `levels` yet.
+Retired. The old evaluator let rules sharing a `variant_group` act as loose and strict versions of one test (only the strictest passing rule counted). In the new catalog every tier is its own rule and nested lines give partial credit, so strategy entries have no `variant_group`. The evaluator still reads it until the code is migrated.
 
 ## Expiration windows
 
-A gate with `per_expiration_window: true` is evaluated once per window in `option_expiration_window_list` (`config/settings.yaml`). The symbol's result for that gate is the window with the highest score; the other windows are shown as alternatives. Rule `CTR-02` (DTE 30 to 45 is full credit; old id `B07`) is fixed, so the standard window normally wins.
+A gate with `per_expiration_window: true` is evaluated once per window in `option_expiration_window_list` (`config/settings.yaml`). The symbol's result for that gate is the window with the highest score; the other windows are shown as alternatives. Rule `CTR-02` (DTE 30 to 45; old id `B07`) is fixed, so the standard window normally wins.
 
 ## Converting to other formats
 
