@@ -63,6 +63,39 @@ Computed for the representative put of each expiration window.
 | `selected_put_annualized_return_percent` | bid divided by strike, annualized | yfinance chain |
 | `selected_put_implied_volatility_exceeds_realized` | implied volatility above realized | yfinance chain |
 
+## History series (FRED and Cboe)
+
+`stockboard_backend/history_series.py` rebuilds these indicators as a date-indexed series from free history, so a backtest and the live dashboard can share one definition. `python -m stockboard_backend.history_series` fetches every one and prints its first and last date, row count and latest value next to the start date in the rule catalog (the first date is later than the catalog start when a rolling window needs warm-up). The daily put/call cache is built once with `python -m stockboard_backend.cboe_data` (about 1,900 small requests, then only new days).
+
+| indicator_id | Built from |
+|---|---|
+| `federal_funds_target_rate_not_raised_in_182_days` | FRED DFEDTAR (1982 to 2008-12-15) joined to DFEDTARU; true when the rate is not above its level 182 calendar days earlier |
+| `six_month_treasury_bill_yield_minus_federal_funds_rate` | FRED DGS6MO minus DFF |
+| `treasury_ten_year_yield` | FRED DGS10 |
+| `treasury_ten_year_yield_twenty_day_change_basis_points` | FRED DGS10, change over 20 observations times 100 |
+| `high_yield_credit_spread_basis_points` | FRED BAMLH0A0HYM2 times 100 (FRED keeps about 3 years) |
+| `high_yield_credit_spread_twenty_day_change_basis_points` | FRED BAMLH0A0HYM2, change over 20 observations times 100 |
+| `moodys_baa_minus_ten_year_treasury_spread` | FRED BAA10Y |
+| `treasury_ten_year_minus_two_year_spread` | FRED T10Y2Y |
+| `treasury_ten_year_minus_three_month_spread` | FRED T10Y3M |
+| `consumer_price_index_year_over_year_percent` | FRED CPIAUCSL, 12 month percent change of the latest values (the point-in-time version uses ALFRED vintages) |
+| `core_pce_price_index_year_over_year_percent` | FRED PCEPILFE, 12 month percent change |
+| `sahm_rule_recession_indicator` | FRED SAHMREALTIME |
+| `initial_jobless_claims_four_week_average` | FRED ICSA, 4 week mean |
+| `chicago_fed_national_activity_index_three_month_average` | FRED CFNAIMA3 |
+| `wti_crude_oil_price` | FRED DCOILWTICO |
+| `wti_crude_oil_one_month_change_percent` | FRED DCOILWTICO, change over 21 observations |
+| `m2_money_supply_year_over_year_percent` | FRED M2SL, 12 month percent change |
+| `federal_reserve_total_assets_thirteen_week_change_percent` | FRED WALCL, change over 13 weeks |
+| `market_value_to_gdp_percent` | FRED NCBEILQ027S (millions) divided by 1,000 and by GDP (billions) |
+| `trade_policy_uncertainty_ten_year_percentile` | FRED EPUTRADE, percentile of the last 120 months |
+| `us_epu_thirty_day_average_percentile_five_year` | FRED USEPUINDXD, 30 day mean, percentile of the last 5 years |
+| `vix_level` | Cboe VIX_History.csv, close |
+| `vix_term_structure_is_contango` | Cboe VIX below VIX3M (from 2009-09-18) |
+| `vxn_to_vix_ratio` | Cboe VXN divided by VIX (from 2009-09-14) |
+| `vix_to_twenty_day_average_ratio` | Cboe VIX divided by its 20 day mean |
+| `put_call_ratio_total_five_day_average` | Cboe total put/call: old CSV 2006-11-01 to 2019-10-04, then the daily files kept in `data/cache/cboe_total_put_call.csv`; 5 day mean |
+
 ## Planned indicators (not built yet)
 
 Every rule in `config/rules.yaml` names the indicator that will give its value. These indicators do not exist in the code yet; the rule that uses each one, and where its free history comes from, is listed here. The meaning of each is in the rule's description.
