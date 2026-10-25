@@ -42,15 +42,11 @@ rule_group_list:
   - {group_id: "THS", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}}
   - {group_id: "EXT", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}}
 
-
-
-
-
 rule_list:
   # MAC · Macro
   - rule_id: MAC-01
     name: {en: "Fed target not raised", zh: "联储目标利率未上调"}
-    description: {en: "Passes when the Fed has not raised its federal funds target rate (upper bound) in the last 182 days. Rising rates push stock valuations down and make selling puts riskier. The original rule also asked about guidance wording; that half is dropped because it cannot be measured (MAC-02 covers market expectations). Source: FRED series DFEDTARU (2008 onward) joined to DFEDTAR (1982 to 2008). Updated daily. Typical values: a hiking cycle is a run of increases of 25bp or more. Backtest history: FRED (Federal Reserve Economic Data), DFEDTAR+DFEDTARU, from 1982.", zh: "美联储在最近 182 天内没有上调联邦基金目标利率（上限）时通过。利率上升会压低股票估值，让卖 Put 更危险。原规则还问了“指引措辞”，这一半无法量化，已删除（市场预期由 MAC-02 负责）。数据来源：FRED 的 DFEDTARU 序列（2008 年起）接 DFEDTAR（1982 到 2008）。每日更新。常见情形：加息周期指连续上调 25bp 或以上。回测历史：FRED（美联储经济数据库），DFEDTAR+DFEDTARU，自 1982 起。"}
+    description: {en: "Passes when the Fed has not raised its federal funds target rate (upper bound) in the last 182 days. Rising rates push stock valuations down and make selling puts riskier. Source: FRED series DFEDTARU (2008 onward) joined to DFEDTAR (1982 to 2008). Updated daily. Typical values: a hiking cycle is a run of increases of 25bp or more. Backtest history: FRED (Federal Reserve Economic Data), DFEDTAR+DFEDTARU, from 1982.", zh: "美联储在最近 182 天内没有上调联邦基金目标利率（上限）时通过。利率上升会压低股票估值，让卖 Put 更危险。数据来源：FRED 的 DFEDTARU 序列（2008 年起）接 DFEDTAR（1982 到 2008）。每日更新。常见情形：加息周期指连续上调 25bp 或以上。回测历史：FRED（美联储经济数据库），DFEDTAR+DFEDTARU，自 1982 起。"}
     indicator: "federal_funds_target_rate_not_raised_in_182_days"
     operator: "is_true"
     legacy_id: ["A01"]
@@ -113,7 +109,6 @@ rule_list:
     operator: "less_than"
     value: 50
     legacy_id: ["A04"]
-    note: {en: "Split from the old A04, where this half was never built", zh: "从旧 A04 拆出，这一半此前未实现"}
   - rule_id: MAC-22
     name: {en: "Baa spread below 2.8", zh: "Baa 利差低于 2.8"}
     description: {en: "Passes when Moody's seasoned Baa corporate bond yield minus the 10-year Treasury yield is below 2.8 percentage points. It is a long-history stand-in for the HY credit spread (MAC-05), which FRED only keeps for about 3 years. A wider gap means rising credit risk. The 2.8 is the 80th percentile of the spread since 1986 (measured). Source: FRED series BAA10Y, updated daily. Backtest history: FRED (Federal Reserve Economic Data), BAA10Y, from 1986.", zh: "穆迪 Baa 级公司债收益率减 10 年期国债收益率，低于 2.8 个百分点时通过。它是 HY 信用利差（MAC-05）的长历史替身，因为 FRED 只保留 HY 利差约 3 年。差距越大，说明信用风险越高。2.8 是 1986 年以来该利差的第 80 百分位（实测）。数据来源：FRED 的 BAA10Y 序列，每日更新。回测历史：FRED（美联储经济数据库），BAA10Y，自 1986 起。"}
@@ -170,7 +165,7 @@ rule_list:
     legacy_id: []
   - rule_id: MAC-20
     name: {en: "Activity index above -0.7", zh: "活动指数高于 -0.7"}
-    description: {en: "Passes when the 3-month average of the CFNAI (Chicago Fed National Activity Index, a broad gauge of US economic activity) is above -0.7, the level the Chicago Fed links to recession risk (from its documentation, not verified here). The old PMI idea is dropped because the ISM PMI is no longer on FRED. Source: FRED series CFNAIMA3, updated monthly. Backtest history: FRED (Federal Reserve Economic Data), CFNAIMA3, from 1967.", zh: "CFNAI（芝加哥联储全国活动指数，衡量美国经济整体活动）的 3 个月均值高于 -0.7 时通过，芝加哥联储把这个水平与衰退风险联系起来（来自其文档，这里没有验证）。原来的 PMI 思路已删除，因为 ISM PMI 已从 FRED 下架。数据来源：FRED 的 CFNAIMA3 序列，月更。回测历史：FRED（美联储经济数据库），CFNAIMA3，自 1967 起。"}
+    description: {en: "Passes when the 3-month average of the CFNAI (Chicago Fed National Activity Index, a broad gauge of US economic activity) is above -0.7, the level the Chicago Fed links to recession risk (from its documentation, not verified here). Source: FRED series CFNAIMA3, updated monthly. Backtest history: FRED (Federal Reserve Economic Data), CFNAIMA3, from 1967.", zh: "CFNAI（芝加哥联储全国活动指数，衡量美国经济整体活动）的 3 个月均值高于 -0.7 时通过，芝加哥联储把这个水平与衰退风险联系起来（来自其文档，这里没有验证）。数据来源：FRED 的 CFNAIMA3 序列，月更。回测历史：FRED（美联储经济数据库），CFNAIMA3，自 1967 起。"}
     indicator: "chicago_fed_national_activity_index_three_month_average"
     operator: "greater_than"
     value: -0.7
@@ -311,7 +306,7 @@ rule_list:
     value: 1.0
   - rule_id: QUA-16
     name: {en: "Cash flow covers 80% of profit", zh: "现金流覆盖 80% 利润"}
-    description: {en: "Passes when TTM operating cash flow divided by net income is at least 0.8. The looser line of QUA-08, which explains the measure. Source: SEC EDGAR cash flow and income statements. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "TTM 经营现金流除以净利润不低于 0.8 时通过。这是 QUA-08 较宽松的一条线，含义见 QUA-08。数据来源：SEC EDGAR 现金流量表和利润表。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
+    description: {en: "Passes when TTM operating cash flow divided by net income is at least 0.8. The looser line of QUA-08, which explains the measure. Source: Yahoo Finance via yfinance cash flow and income statements. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "TTM 经营现金流除以净利润不低于 0.8 时通过。这是 QUA-08 较宽松的一条线，含义见 QUA-08。数据来源：通过 yfinance 取 Yahoo Finance 的现金流量表和利润表。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
     indicator: "operating_cash_flow_to_net_income_ratio"
     operator: "greater_or_equal"
     value: 0.8
@@ -347,7 +342,7 @@ rule_list:
     legacy_id: []
   - rule_id: MGT-02
     name: {en: "Share count not rising", zh: "股数没有增加"}
-    description: {en: "Passes when the share count is not higher than a year ago (the company is buying back). Whether the company is buying back its shares (share count falling) or issuing more (shareholders diluted). A steady fall of 1% to 3% a year is typical of regular buybacks; a rise above 2% a year is dilution. Source: Yahoo Finance via yfinance balance sheet (ordinary shares). Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "总股数不比一年前多（公司在回购）时通过。公司是在回购股票（股数下降），还是不断增发（股东被稀释）。每年稳定下降 1%–3% 是常见的持续回购，每年上升超过 2% 就是稀释。数据来源：通过 yfinance 取 Yahoo Finance 资产负债表里的普通股股数。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
+    description: {en: "Passes when the share count is not higher than a year ago (the company is buying back). Whether the company is buying back its shares (share count falling) or issuing more (shareholders diluted). A steady fall of 1% to 3% a year is typical of regular buybacks; a rise above 2% a year is dilution. Source: SEC EDGAR balance sheets, updated each quarter. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "总股数不比一年前多（公司在回购）时通过。公司是在回购股票（股数下降），还是不断增发（股东被稀释）。每年稳定下降 1%–3% 是常见的持续回购，每年上升超过 2% 就是稀释。数据来源：SEC EDGAR 资产负债表，按季更新。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
     indicator: "shares_outstanding_year_over_year_percent"
     operator: "less_or_equal"
     value: 0
@@ -361,7 +356,7 @@ rule_list:
     legacy_id: []
   - rule_id: MGT-03
     name: {en: "Dividend covered", zh: "分红被覆盖"}
-    description: {en: "Passes when dividends paid divided by TTM FCF (free cash flow) are at most 0.8, or the company pays no dividend. A dividend that the cash flow covers is sustainable. The old part about acquisitions creating value is dropped because it cannot be measured. Source: SEC EDGAR cash flow statements, updated each quarter. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "分红除以 TTM FCF（自由现金流）不超过 0.8，或公司不分红时通过。现金流能覆盖的分红才可持续。原来“并购是否创造价值”那一部分无法量化，已删除。数据来源：SEC EDGAR 现金流量表，按季更新。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
+    description: {en: "Passes when dividends paid divided by TTM FCF (free cash flow) are at most 0.8, or the company pays no dividend. A dividend that the cash flow covers is sustainable. Source: SEC EDGAR cash flow statements, updated each quarter. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "分红除以 TTM FCF（自由现金流）不超过 0.8，或公司不分红时通过。现金流能覆盖的分红才可持续。数据来源：SEC EDGAR 现金流量表，按季更新。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
     indicator: "dividend_to_free_cash_flow_ratio"
     operator: "less_or_equal"
     value: 0.8
@@ -467,7 +462,6 @@ rule_list:
     operator: "greater_or_equal"
     value: 15
     legacy_id: ["A11"]
-    note: {en: "Sellers use the floors (SEN-01, SEN-10), trend and momentum strategies use the caps (SEN-11 to SEN-13), contrarian buyers use SEN-14 and SEN-15", zh: "卖方用下限（SEN-01、SEN-10），趋势和动量策略用上限（SEN-11 到 SEN-13），逆向买方用 SEN-14 和 SEN-15"}
   - rule_id: SEN-10
     name: {en: "VIX at least 12", zh: "VIX 不低于 12"}
     description: {en: "Passes when the VIX is at least 12. One of the VIX tiers; see SEN-01 for what it measures, the source and typical values. Backtest history: Cboe free data files, VIX_History, from 1990-01-02.", zh: "VIX 不低于 12 时通过。VIX 分档之一；含义、数据来源和常见数值见 SEN-01。回测历史：Cboe 免费数据文件，VIX_History，自 1990-01-02 起。"}
@@ -583,7 +577,7 @@ rule_list:
     value: 80
   - rule_id: SEN-21
     name: {en: "NAAIM below 40", zh: "NAAIM 低于 40"}
-    description: {en: "Passes when the NAAIM exposure index is below 40 (managers are defensive). The stricter line of SEN-06, which explains the measure. Source: naaim.org. Backtest history: NAAIM data (Wayback Machine archive plus the embedded table), exposure-index, from 2006.", zh: "NAAIM 仓位指数低于 40（经理人偏防守）时通过。这是 SEN-06 较严格的一条线，含义见 SEN-06。数据来源：naaim.org。回测历史：NAAIM 数据（Wayback 存档加嵌入表格），exposure-index，自 2006 起。"}
+    description: {en: "Passes when the NAAIM exposure index is below 40 (managers are defensive). The stricter line of SEN-06, which explains the measure. Source: naaim.org, the embedded table (2024 onward) and Wayback Machine copies of the old Excel files (2006 to 2024), updated every Thursday.org. Backtest history: NAAIM data (Wayback Machine archive plus the embedded table), exposure-index, from 2006.", zh: "NAAIM 仓位指数低于 40（经理人偏防守）时通过。这是 SEN-06 较严格的一条线，含义见 SEN-06。数据来源：naaim.org 的嵌入表格（2024 年起）和 Wayback 保存的旧 Excel 文件（2006 到 2024），每周四更新。回测历史：NAAIM 数据（Wayback 存档加嵌入表格），exposure-index，自 2006 起。"}
     indicator: "naaim_exposure_index"
     operator: "less_than"
     value: 40
@@ -626,7 +620,7 @@ rule_list:
   # TRD · Trend and momentum
   - rule_id: TRD-01
     name: {en: "Market above 200-day", zh: "大盘在 200 日线上"}
-    description: {en: "Passes when the S&P 500 closes above its 200-day moving average (the average close of the last 200 days), which marks an uptrend for the whole market. Source: Yahoo Finance symbol ^GSPC via yfinance, already wired in. Backtest history: Yahoo Finance via yfinance, ^GSPC, from 1927-12-30.", zh: "标普 500 收盘价在 200 日均线（最近 200 天收盘价的平均值）之上时通过，表示整个市场处于上升趋势。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC，已接入。回测历史：通过 yfinance 取 Yahoo Finance，^GSPC，自 1927-12-30 起。"}
+    description: {en: "Passes when the S&P 500 closes above its 200-day moving average (the average close of the last 200 days), which marks an uptrend for the whole market. Source: Yahoo Finance symbol ^GSPC via yfinance. Backtest history: Yahoo Finance via yfinance, ^GSPC, from 1927-12-30.", zh: "标普 500 收盘价在 200 日均线（最近 200 天收盘价的平均值）之上时通过，表示整个市场处于上升趋势。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC。回测历史：通过 yfinance 取 Yahoo Finance，^GSPC，自 1927-12-30 起。"}
     indicator: "spx_above_two_hundred_day_average"
     operator: "is_true"
     legacy_id: ["Z18"]
@@ -654,32 +648,31 @@ rule_list:
     legacy_id: []
   - rule_id: TRD-03
     name: {en: "Stock above 200-day", zh: "个股在 200 日线上"}
-    description: {en: "Passes when the stock closes above its own 200-day average. Selling puts on stocks in a downtrend means catching a falling knife. Source: Yahoo Finance via yfinance, already wired in. The no-new-52-week-low half of the old rule is TRD-23. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "这只股票收盘价在自己的 200 日均线之上时通过。去给下跌趋势里的股票卖 Put，等于接下坠的飞刀。数据来源：通过 yfinance 取 Yahoo Finance，已接入。旧规则里“未创 52 周新低”这一半是 TRD-23。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the stock closes above its own 200-day average. Selling puts on stocks in a downtrend means catching a falling knife. Source: Yahoo Finance via yfinance. The no-new-52-week-low test is TRD-23. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "这只股票收盘价在自己的 200 日均线之上时通过。去给下跌趋势里的股票卖 Put，等于接下坠的飞刀。数据来源：通过 yfinance 取 Yahoo Finance。“未创 52 周新低”这一项是 TRD-23。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "price_above_two_hundred_day_average"
     operator: "is_true"
     legacy_id: ["Z20"]
-    note: {en: "The old rule also required no new 52-week low; that half is TRD-23", zh: "旧规则还要求未创 52 周新低；这一半是 TRD-23"}
   - rule_id: TRD-23
     name: {en: "No new 52-week low", zh: "未创 52 周新低"}
-    description: {en: "Passes when the stock made no new 52-week low in the last 20 trading days. This is the second half of the old rule 'above the 200-day average and no new 52-week low' (the first half is TRD-03). A stock that keeps making lows is still falling. Source: Yahoo Finance via yfinance, calculated. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "该股在最近 20 个交易日没有创 52 周新低时通过。这是旧规则“在 200 日线上方且未创 52 周新低”的后一半（前一半是 TRD-03）。不断创新低的股票还在下跌。数据来源：通过 yfinance 取 Yahoo Finance 后计算。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the stock made no new 52-week low in the last 20 trading days. It pairs with TRD-03 (above the 200-day average). A stock that keeps making lows is still falling. Source: Yahoo Finance via yfinance, calculated. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "该股在最近 20 个交易日没有创 52 周新低时通过。它和 TRD-03（在 200 日线上方）配对。不断创新低的股票还在下跌。数据来源：通过 yfinance 取 Yahoo Finance 后计算。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "no_new_fifty_two_week_low_in_last_20_days"
     operator: "is_true"
     legacy_id: ["Z20"]
   - rule_id: TRD-04
     name: {en: "Golden cross state", zh: "黄金交叉状态"}
-    description: {en: "Passes when the 50-day moving average is above the 200-day moving average, called the golden cross state, the most common trend confirmation. Source: Yahoo Finance via yfinance, already wired in. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "50 日均线在 200 日均线之上时通过，称为黄金交叉状态，是最常见的趋势确认。数据来源：通过 yfinance 取 Yahoo Finance，已接入。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the 50-day moving average is above the 200-day moving average, called the golden cross state, the most common trend confirmation. Source: Yahoo Finance via yfinance. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "50 日均线在 200 日均线之上时通过，称为黄金交叉状态，是最常见的趋势确认。数据来源：通过 yfinance 取 Yahoo Finance。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "fifty_day_average_above_two_hundred_day_average"
     operator: "is_true"
     legacy_id: ["T02"]
   - rule_id: TRD-05
     name: {en: "Above 50-day", zh: "在 50 日线上"}
-    description: {en: "Passes when the close is above the 50-day average, showing the medium-term trend is healthy. Source: Yahoo Finance via yfinance, already wired in. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "收盘价在 50 日均线之上时通过，说明中期走势健康。数据来源：通过 yfinance 取 Yahoo Finance，已接入。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the close is above the 50-day average, showing the medium-term trend is healthy. Source: Yahoo Finance via yfinance. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "收盘价在 50 日均线之上时通过，说明中期走势健康。数据来源：通过 yfinance 取 Yahoo Finance。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "price_above_fifty_day_average"
     operator: "is_true"
     legacy_id: ["T03"]
   - rule_id: TRD-06
     name: {en: "Within 5% of 52-week high", zh: "距 52 周高点 5% 以内"}
-    description: {en: "Passes when the price is within 5% of its 52-week high. How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, already wired in. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio). Other tier: TRD-17. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "价格距 52 周高点不超过 5% 时通过。价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。其他分档：TRD-17。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the price is within 5% of its 52-week high. How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio). Other tier: TRD-17. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "价格距 52 周高点不超过 5% 时通过。价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。其他分档：TRD-17。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "distance_from_fifty_two_week_high_percent"
     operator: "less_or_equal"
     value: 5
@@ -694,7 +687,7 @@ rule_list:
     legacy_id: ["T05"]
   - rule_id: TRD-07
     name: {en: "52-week position at most 25", zh: "52 周位置不高于 25"}
-    description: {en: "Passes when the price sits in the lowest quarter of its 52-week range (position 25 or below). Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance, already wired in. Other tier: TRD-18. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "价格处于 52 周区间的最低四分之一（位置不高于 25）时通过。价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，已接入。其他分档：TRD-18。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the price sits in the lowest quarter of its 52-week range (position 25 or below). Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance. Other tier: TRD-18. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "价格处于 52 周区间的最低四分之一（位置不高于 25）时通过。价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance。其他分档：TRD-18。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "fifty_two_week_range_percentile"
     operator: "less_or_equal"
     value: 25
@@ -710,7 +703,7 @@ rule_list:
     legacy_id: ["F03"]
   - rule_id: TRD-08
     name: {en: "6-month gain", zh: "6 个月涨幅"}
-    description: {en: "Passes when the stock is up more than 10% over the last 6 months. Winners tend to keep winning for a while (momentum effect). Source: Yahoo Finance via yfinance, already wired in. Typical values: above 10% is a common line; academic momentum uses 3 to 12 months (Jegadeesh and Titman 1993). Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "股票最近 6 个月涨幅超过 10% 时通过。涨得好的股票往往会在一段时间内继续跑赢（动量效应）。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：10% 是常用线；学术上的动量用 3–12 个月（Jegadeesh 与 Titman 1993）。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the stock is up more than 10% over the last 6 months. Winners tend to keep winning for a while (momentum effect). Source: Yahoo Finance via yfinance. Typical values: above 10% is a common line; academic momentum uses 3 to 12 months (Jegadeesh and Titman 1993). Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "股票最近 6 个月涨幅超过 10% 时通过。涨得好的股票往往会在一段时间内继续跑赢（动量效应）。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：10% 是常用线；学术上的动量用 3–12 个月（Jegadeesh 与 Titman 1993）。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "return_six_month_percent"
     operator: "greater_than"
     value: 10
@@ -723,14 +716,14 @@ rule_list:
     value: 0
   - rule_id: TRD-10
     name: {en: "Volume surge", zh: "放量"}
-    description: {en: "Passes when the latest day's volume is at least 1.5 times the 20-day average volume. A breakout on heavy volume is more believable than one on thin volume. Source: Yahoo Finance via yfinance, already wired in. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "最近一天的成交量至少是 20 日平均成交量的 1.5 倍时通过。放量突破比缩量突破更可信。数据来源：通过 yfinance 取 Yahoo Finance，已接入。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the latest day's volume is at least 1.5 times the 20-day average volume. A breakout on heavy volume is more believable than one on thin volume. Source: Yahoo Finance via yfinance. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "最近一天的成交量至少是 20 日平均成交量的 1.5 倍时通过。放量突破比缩量突破更可信。数据来源：通过 yfinance 取 Yahoo Finance。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "volume_ratio_to_twenty_day_average"
     operator: "greater_or_equal"
     value: 1.5
     legacy_id: ["M03"]
   - rule_id: TRD-11
     name: {en: "RSI(14) 40 to 70", zh: "RSI(14) 介于 40 和 70 之间"}
-    description: {en: "Passes when the 14-day RSI is between 40 and 70. RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, already wired in. Other tier: TRD-19. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "14 日 RSI 介于 40 和 70 之间时通过。14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。其他分档：TRD-19。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the 14-day RSI is between 40 and 70. RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated. Other tier: TRD-19. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "14 日 RSI 介于 40 和 70 之间时通过。14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算。其他分档：TRD-19。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "relative_strength_index_fourteen_day"
     operator: "between"
     value: [40, 70]
@@ -745,7 +738,7 @@ rule_list:
     legacy_id: ["M04"]
   - rule_id: TRD-12
     name: {en: "RSI(2) below 5", zh: "RSI(2) 低于 5"}
-    description: {en: "Passes when the 2-day RSI is below 5. RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, already wired in. Other tier: TRD-20. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "2 日 RSI 低于 5 时通过。只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。其他分档：TRD-20。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the 2-day RSI is below 5. RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated. Other tier: TRD-20. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "2 日 RSI 低于 5 时通过。只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算。其他分档：TRD-20。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "relative_strength_index_two_day"
     operator: "less_than"
     value: 5
@@ -760,13 +753,13 @@ rule_list:
     legacy_id: ["R01"]
   - rule_id: TRD-13
     name: {en: "Below 5-day", zh: "跌破 5 日线"}
-    description: {en: "Passes when the close is below the 5-day average, confirming a short-term pullback is under way. Source: Yahoo Finance via yfinance, already wired in. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "收盘价低于 5 日均线时通过，确认正处于短期回调中。数据来源：通过 yfinance 取 Yahoo Finance，已接入。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the close is below the 5-day average, confirming a short-term pullback is under way. Source: Yahoo Finance via yfinance. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "收盘价低于 5 日均线时通过，确认正处于短期回调中。数据来源：通过 yfinance 取 Yahoo Finance。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "price_below_five_day_average"
     operator: "is_true"
     legacy_id: ["R03"]
   - rule_id: TRD-14
     name: {en: "Near 60-day low", zh: "靠近 60 日低点"}
-    description: {en: "Passes when the price is within 3% above its lowest close of the last 60 trading days. Near a recent low the downside is more limited. The old idea of a support level is hard to define, so a recent low is used. Source: Yahoo Finance via yfinance, calculated. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "价格在最近 60 个交易日最低收盘价上方 3% 以内时通过。靠近近期低点时，下跌空间更有限。原来“支撑位”的概念很难定义，所以改用近期低点。数据来源：通过 yfinance 取 Yahoo Finance 后计算。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
+    description: {en: "Passes when the price is within 3% above its lowest close of the last 60 trading days. Near a recent low the downside is more limited. A recent low is used because a support level is hard to define. Source: Yahoo Finance via yfinance, calculated. Backtest history: Yahoo Finance via yfinance, daily-prices, from 1980-12-12.", zh: "价格在最近 60 个交易日最低收盘价上方 3% 以内时通过。靠近近期低点时，下跌空间更有限。支撑位很难定义，所以用近期低点代替。数据来源：通过 yfinance 取 Yahoo Finance 后计算。回测历史：通过 yfinance 取 Yahoo Finance，daily-prices，自 1980-12-12 起。"}
     indicator: "distance_above_sixty_day_low_close_percent"
     operator: "less_or_equal"
     value: 3
@@ -803,7 +796,7 @@ rule_list:
   # EVT · Events
   - rule_id: EVT-01
     name: {en: "No earnings", zh: "无财报"}
-    description: {en: "Passes when there is no earnings report before the option expires. Earnings make the stock gap up or down, the most common veto for option sellers. Source: Yahoo Finance via yfinance calendar, already wired in; the date is an estimate until the company confirms it. Backtest history: SEC EDGAR filings (valued as of the filing date), submissions, from 2004.", zh: "期权到期前没有财报时通过。财报会让股价跳空，是期权卖方最常见的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的财报日历，已接入；公司确认之前日期只是估计。回测历史：SEC EDGAR 披露文件（按披露日期取值），submissions，自 2004 起。"}
+    description: {en: "Passes when there is no earnings report before the option expires. Earnings make the stock gap up or down, the most common veto for option sellers. Source: Yahoo Finance via yfinance calendar; the date is an estimate until the company confirms it. Backtest history: SEC EDGAR filings (valued as of the filing date), submissions, from 2004.", zh: "期权到期前没有财报时通过。财报会让股价跳空，是期权卖方最常见的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的财报日历；公司确认之前日期只是估计。回测历史：SEC EDGAR 披露文件（按披露日期取值），submissions，自 2004 起。"}
     indicator: "no_earnings_before_expiration"
     operator: "is_true"
     legacy_id: ["A22", "F05"]
@@ -853,7 +846,7 @@ rule_list:
     legacy_id: ["Z10"]
   - rule_id: EVT-14
     name: {en: "Policy uncertainty low", zh: "政策不确定性低"}
-    description: {en: "Passes when the 30-day average of the daily US EPU (Economic Policy Uncertainty index) is below its 90th percentile of the past 5 years. It replaces the old regulation-event rule, which could not be measured. Source: FRED series USEPUINDXD, updated daily. Backtest history: FRED (Federal Reserve Economic Data), USEPUINDXD, from 1985.", zh: "美国每日 EPU（经济政策不确定性指数）的 30 日均值低于它过去 5 年的第 90 百分位时通过。它取代了无法量化的旧“监管事件”规则。数据来源：FRED 的 USEPUINDXD 序列，每日更新。回测历史：FRED（美联储经济数据库），USEPUINDXD，自 1985 起。"}
+    description: {en: "Passes when the 30-day average of the daily US EPU (Economic Policy Uncertainty index) is below its 90th percentile of the past 5 years. Source: FRED series USEPUINDXD, updated daily. Backtest history: FRED (Federal Reserve Economic Data), USEPUINDXD, from 1985.", zh: "美国每日 EPU（经济政策不确定性指数）的 30 日均值低于它过去 5 年的第 90 百分位时通过。数据来源：FRED 的 USEPUINDXD 序列，每日更新。回测历史：FRED（美联储经济数据库），USEPUINDXD，自 1985 起。"}
     indicator: "us_epu_thirty_day_average_percentile_five_year"
     operator: "less_than"
     value: 90
@@ -899,7 +892,7 @@ rule_list:
     legacy_id: []
   - rule_id: LIQ-07
     name: {en: "Market cap above $100B", zh: "市值高于 1000 亿美元"}
-    description: {en: "Passes when market capitalization is above $100 billion (the rule value is in billions of dollars). A fixed size line that replaces the old 'top 100' rule, whose ranking line drifts over time. See LIQ-01. Source: SEC EDGAR share counts times the price from Yahoo Finance. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "市值高于 1000 亿美元时通过（规则数值以十亿美元为单位）。这是一条固定的规模线，取代了旧的“前 100 大”规则，因为排名的分界线会随时间漂移。见 LIQ-01。数据来源：SEC EDGAR 的股数乘以 Yahoo Finance 的价格。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
+    description: {en: "Passes when market capitalization is above $100 billion (the rule value is in billions of dollars). A fixed size line, because a ranking line such as 'top 100' drifts over time. See LIQ-01. Source: Yahoo Finance via yfinance. Backtest history: SEC EDGAR filings (valued as of the filing date), companyfacts, from 2009.", zh: "市值高于 1000 亿美元时通过（规则数值以十亿美元为单位）。这是一条固定的规模线，因为“前 100 大”这类排名的分界线会随时间漂移。见 LIQ-01。数据来源：通过 yfinance 取 Yahoo Finance。回测历史：SEC EDGAR 披露文件（按披露日期取值），companyfacts，自 2009 起。"}
     indicator: "market_capitalization_billion_usd"
     operator: "greater_than"
     value: 100
@@ -981,7 +974,7 @@ rule_list:
     legacy_id: []
   - rule_id: VOL-03
     name: {en: "IV vs realized", zh: "IV 对实际波动"}
-    description: {en: "Passes when ATM (at-the-money, strike near the current price) IV for 30 to 45 days is above RV30, the 30-day realized volatility. The gap is the volatility risk premium, the extra the seller is paid. Source: Yahoo Finance option chain and prices via yfinance, already wired in. Typical values: IV above RV is the normal state. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "30–45 天的 ATM（平值，行权价接近现价）IV 高于 RV30，即 30 天实际波动率时通过。两者的差就是波动率风险溢价，也就是卖方额外拿到的补偿。数据来源：通过 yfinance 取 Yahoo Finance 的期权链和价格，已接入。常见情形：IV 高于 RV 是常态。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
+    description: {en: "Passes when ATM (at-the-money, strike near the current price) IV for 30 to 45 days is above RV30, the 30-day realized volatility. The gap is the volatility risk premium, the extra the seller is paid. Source: Yahoo Finance option chain and prices via yfinance. Typical values: IV above RV is the normal state. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "30–45 天的 ATM（平值，行权价接近现价）IV 高于 RV30，即 30 天实际波动率时通过。两者的差就是波动率风险溢价，也就是卖方额外拿到的补偿。数据来源：通过 yfinance 取 Yahoo Finance 的期权链和价格。常见情形：IV 高于 RV 是常态。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
     indicator: "selected_put_implied_volatility_exceeds_realized"
     operator: "is_true"
     legacy_id: ["Z05"]
@@ -1000,7 +993,7 @@ rule_list:
   # CTR · Contract selection
   - rule_id: CTR-01
     name: {en: "Delta 0.15 to 0.20", zh: "Delta 介于 0.15 和 0.20 之间"}
-    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.20. Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance, already wired in. Other tiers: CTR-11, CTR-12. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "期权 Delta 的绝对值介于 0.15 和 0.20 之间时通过。卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance，已接入。其他分档：CTR-11、CTR-12。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
+    description: {en: "Passes when the option's absolute Delta is between 0.15 and 0.20. Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance. Other tiers: CTR-11, CTR-12. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "期权 Delta 的绝对值介于 0.15 和 0.20 之间时通过。卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance。其他分档：CTR-11、CTR-12。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
     indicator: "selected_put_absolute_delta"
     operator: "between"
     value: [0.15, 0.2]
@@ -1023,7 +1016,7 @@ rule_list:
     legacy_id: ["F08"]
   - rule_id: CTR-02
     name: {en: "DTE 30 to 45", zh: "DTE 介于 30 和 45 之间"}
-    description: {en: "Passes when days to expiration (DTE) is between 30 and 45. Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, already wired in. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard). Other tiers: CTR-13, CTR-14. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "到期天数（DTE）介于 30 和 45 之间时通过。到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，已接入。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。其他分档：CTR-13、CTR-14。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
+    description: {en: "Passes when days to expiration (DTE) is between 30 and 45. Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard). Other tiers: CTR-13, CTR-14. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "到期天数（DTE）介于 30 和 45 之间时通过。到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。其他分档：CTR-13、CTR-14。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
     indicator: "selected_put_days_to_expiration"
     operator: "between"
     value: [30, 45]
@@ -1098,7 +1091,7 @@ rule_list:
   # RET · Return and payoff
   - rule_id: RET-01
     name: {en: "Annualized return at least 20%", zh: "年化收益不低于 20%"}
-    description: {en: "Passes when the annualized return is at least 20%. The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, already wired in; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers. Other tier: RET-06. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "年化收益不低于 20% 时通过。把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，已接入；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。其他分档：RET-06。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
+    description: {en: "Passes when the annualized return is at least 20%. The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers. Other tier: RET-06. Backtest history: the community DoltHub databases, options, from 2019-02-09.", zh: "年化收益不低于 20% 时通过。把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。其他分档：RET-06。回测历史：社区 DoltHub 数据库，options，自 2019-02-09 起。"}
     indicator: "selected_put_annualized_return_percent"
     operator: "greater_or_equal"
     value: 20

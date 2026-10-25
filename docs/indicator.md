@@ -47,7 +47,7 @@ Daily change of these indicators is reported in basis points (`change_unit: basi
 | indicator_id | Meaning | Source |
 |---|---|---|
 | `spx_above_two_hundred_day_average` | `^GSPC` close above its 200 day average | yfinance |
-| `fear_greed_index` | CNN Fear and Greed | no free stable source, always unknown for now |
+| `fear_greed_index` | CNN Fear and Greed, 0 to 100 | CNN `graphdata` JSON (needs a cnn.com Referer header) |
 
 ## Symbol technicals
 
