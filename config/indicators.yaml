@@ -18,16 +18,17 @@
 #   display_name, is_higher_value_risky   only for the indicators on the sidebar (config/settings.yaml lists which); a rising value is colored as bad
 #
 # fetch_group_list: market_hours_only groups are fetched only while the US market is open; fetch_at lists New York times of day at which the
-# group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open).
+# group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
+# while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
 
 fetch_group_list:
   - {fetch_group_id: yahoo_history, market_hours_only: false, fetch_at: ["16:30"], fetch_every: "1d", note: "Daily price history of every symbol (an internal job, no indicator): loaded once a day and again after the close"}
   - {fetch_group_id: yahoo_quote, market_hours_only: true, fetch_at: ["16:20"], note: "Prices and everything computed from them; the latest price of every symbol comes from one batched request and replaces today's bar of the daily history"}
   - {fetch_group_id: yahoo_options, market_hours_only: true, fetch_at: [], note: "Option chains: expiration list and one chain per expiry"}
-  - {fetch_group_id: yahoo_company, market_hours_only: false, fetch_at: ["06:00"], note: "Company figures, estimates, ratings, insider trades, dividends and earnings dates: one request per symbol"}
+  - {fetch_group_id: yahoo_company, market_hours_only: true, fetch_at: ["06:00"], note: "Company figures, estimates, ratings, insider trades, dividends and earnings dates: one request per symbol"}
   - {fetch_group_id: fred, market_hours_only: false, fetch_at: ["06:00"], note: "FRED CSV series"}
   - {fetch_group_id: cboe_put_call, market_hours_only: false, fetch_at: ["06:00"], note: "Cboe total put/call ratio"}
-  - {fetch_group_id: cnn, market_hours_only: false, fetch_at: [], note: "CNN Fear and Greed"}
+  - {fetch_group_id: cnn, market_hours_only: true, fetch_at: ["16:30"], note: "CNN Fear and Greed"}
   - {fetch_group_id: aaii, market_hours_only: false, fetch_at: ["06:00"], note: "AAII survey through the Internet Archive"}
   - {fetch_group_id: reference_files, market_hours_only: false, fetch_at: ["06:00"], note: "Shiller CAPE, Damodaran premium and GPR files"}
   - {fetch_group_id: calendar, market_hours_only: false, fetch_at: [], note: "Release calendar and date arithmetic"}
