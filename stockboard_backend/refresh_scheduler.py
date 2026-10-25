@@ -8,13 +8,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 
-from stockboard_backend import (indicator_calculation, macro_data, market_data, option_chain,
-                                snapshot_storage, strategy_evaluation)
+from stockboard_backend import (company_indicators, event_calendar, indicator_calculation, live_indicators, macro_data,
+                                market_data, option_chain, snapshot_storage, strategy_evaluation)
 from stockboard_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
 from stockboard_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
 
 SNAPSHOT_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "data", "latest_snapshot.json")
-MARKET_GAUGE_SYMBOL_LIST = ["^VIX", "^VXN", "^VVIX", "^VIX3M", "^GSPC"]
+SECTOR_ETF_SYMBOL_LIST = sorted(set(company_indicators.SECTOR_ETF_BY_SECTOR_NAME.values()))
+MARKET_GAUGE_SYMBOL_LIST = ["^VIX", "^VXN", "^VVIX", "^VIX3M", "^GSPC", "CL=F", "DX-Y.NYB", "SPY", "RSP"] + SECTOR_ETF_SYMBOL_LIST
+SUPPORT_LOW_TRADING_DAY_COUNT = 60
 HISTORY_PERIOD = "1y"
 SYMBOL_WORKER_COUNT = 4
 POLL_SECONDS = 60
@@ -30,9 +32,19 @@ def refresh_scheduler_fetch_series_or_none(fetch_function):
         return None
 
 
+def refresh_scheduler_find_next_ex_dividend_date(snapshot: dict) -> Optional[datetime.date]:
+    """The last known ex-dividend date (info first, then the calendar); later ones are projected from it."""
+    info = snapshot.get("info") if isinstance(snapshot.get("info"), dict) else {}
+    if isinstance(info.get("exDividendDate"), (int, float)):
+        return datetime.datetime.fromtimestamp(info["exDividendDate"], datetime.timezone.utc).date()
+    calendar = snapshot.get("calendar") if isinstance(snapshot.get("calendar"), dict) else {}
+    return calendar.get("Ex-Dividend Date")
+
+
 def refresh_scheduler_build_option_indicator_value_by_window_label(
     symbol: str, underlying_price: float, realized_volatility_percent: Optional[float],
     settings: ApplicationSettings, risk_free_rate_percent: float, today: datetime.date,
+    support_price: Optional[float] = None, dividend_snapshot: Optional[dict] = None,
 ) -> Dict[str, Dict[str, IndicatorValue]]:
     expiration_date_list = option_chain.option_chain_fetch_expiration_date_list_by_symbol(symbol)
     put_table_by_expiration_date = {}
@@ -48,17 +60,51 @@ def refresh_scheduler_build_option_indicator_value_by_window_label(
             selected_contract = option_chain.option_chain_determine_representative_put_contract_from_table(
                 put_table_by_expiration_date[expiration_date], underlying_price, expiration_date, today,
                 settings.target_absolute_delta, risk_free_rate_percent)
-        indicator_by_window_label[window.label] = (
-            indicator_calculation.indicator_calculation_build_option_indicator_value_by_id(
-                selected_contract, realized_volatility_percent))
+        value_by_id = indicator_calculation.indicator_calculation_build_option_indicator_value_by_id(
+            selected_contract, realized_volatility_percent, underlying_price, support_price,
+            None if selected_contract is None else option_chain.option_chain_calculate_put_skew_points(
+                put_table_by_expiration_date[expiration_date], underlying_price))
+        if expiration_date is not None:
+            value_by_id.update(refresh_scheduler_build_option_life_indicator_value_by_id(
+                settings, today, expiration_date, dividend_snapshot or {}))
+        indicator_by_window_label[window.label] = value_by_id
     return indicator_by_window_label
+
+
+def refresh_scheduler_build_option_life_indicator_value_by_id(
+    settings: ApplicationSettings, today: datetime.date, expiration_date: datetime.date, dividend_snapshot: dict,
+) -> Dict[str, IndicatorValue]:
+    """Event answers for the days between today and the expiration. They need no option quote, so they are known after hours too."""
+    covered_until = event_calendar.event_calendar_build_covered_until_by_event_name(settings.macro_event_covered_until)
+    value_by_id = event_calendar.event_calendar_build_option_life_indicator_value_by_id(
+        settings.macro_event_calendar, covered_until, today, expiration_date)
+    info = dividend_snapshot.get("info") if isinstance(dividend_snapshot.get("info"), dict) else {}
+    if info.get("dividendRate") or info.get("dividendYield"):
+        last_ex_date = refresh_scheduler_find_next_ex_dividend_date(dividend_snapshot)
+        value_by_id["no_ex_dividend_date_inside_option_life"] = None if last_ex_date is None else not (
+            event_calendar.event_calendar_project_next_ex_dividend_date_list(last_ex_date, today, expiration_date))
+    elif "trailingEps" in info:
+        value_by_id["no_ex_dividend_date_inside_option_life"] = True  # a company that pays no dividend has no ex-dividend date
+    return {key: IndicatorValue(key, value, "calendar") for key, value in value_by_id.items() if value is not None}
 
 
 def refresh_scheduler_evaluate_symbol_for_all_strategies(
     symbol: str, price_history, shared_indicator_value_by_id: Dict[str, IndicatorValue],
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
+    market_history_by_symbol: Optional[Dict[str, object]] = None,
 ) -> dict:
     today = datetime.date.today()
+    market_history_by_symbol = market_history_by_symbol or {}
+    try:
+        company_snapshot = live_indicators.live_indicators_fetch_company_snapshot(symbol)
+        company_indicator_value_by_id = live_indicators.live_indicators_build_company_indicator_value_by_id(symbol, today)
+    except Exception as error:  # a symbol without company data keeps its price indicators
+        print("company data failed:", symbol, error)
+        company_snapshot, company_indicator_value_by_id = {}, {}
+    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_edgar_indicator_value_by_id(symbol, today))
+    info = company_snapshot.get("info") if isinstance(company_snapshot.get("info"), dict) else {}
+    sector_etf_symbol = company_indicators.company_indicators_find_sector_etf_symbol(info)
+    spy_history, sector_history = market_history_by_symbol.get("SPY"), market_history_by_symbol.get(sector_etf_symbol)
     try:
         next_earnings_date = market_data.market_data_fetch_next_earnings_date_by_symbol(symbol)
         is_earnings_date_known = True
@@ -67,7 +113,8 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
         next_earnings_date, is_earnings_date_known = None, False
     symbol_indicator_value_by_id = indicator_calculation.indicator_calculation_build_symbol_indicator_value_by_id(
         price_history, is_earnings_date_known, next_earnings_date,
-        settings.option_expiration_window_list[0].maximum_days, today)
+        settings.option_expiration_window_list[0].maximum_days, today,
+        None if spy_history is None else spy_history["Close"], None if sector_history is None else sector_history["Close"])
 
     realized_volatility = symbol_indicator_value_by_id.get("realized_volatility_thirty_day")
     ten_year_yield = shared_indicator_value_by_id.get("treasury_ten_year_yield")
@@ -75,12 +122,13 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
         option_indicator_by_window_label = refresh_scheduler_build_option_indicator_value_by_window_label(
             symbol, float(price_history["Close"].iloc[-1]),
             None if realized_volatility is None else realized_volatility.value, settings,
-            ten_year_yield.value if ten_year_yield else option_chain.DEFAULT_RISK_FREE_RATE_PERCENT, today)
+            ten_year_yield.value if ten_year_yield else option_chain.DEFAULT_RISK_FREE_RATE_PERCENT, today,
+            float(price_history["Close"].iloc[-SUPPORT_LOW_TRADING_DAY_COUNT:].min()), company_snapshot)
     except Exception as error:
         print("option chain failed:", symbol, error)
         option_indicator_by_window_label = {}
 
-    combined_indicator_value_by_id = {**shared_indicator_value_by_id, **symbol_indicator_value_by_id}
+    combined_indicator_value_by_id = {**shared_indicator_value_by_id, **company_indicator_value_by_id, **symbol_indicator_value_by_id}
     last_price = symbol_indicator_value_by_id["last_price"]
     return {
         "symbol": symbol,
@@ -97,6 +145,22 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     }
 
 
+def refresh_scheduler_build_calendar_indicator_value_by_id(
+    settings: ApplicationSettings, today: datetime.date,
+) -> Dict[str, IndicatorValue]:
+    """Answers that depend on the date only (and on the release calendar in config/settings.yaml)."""
+    covered_until = event_calendar.event_calendar_build_covered_until_by_event_name(settings.macro_event_covered_until)
+    jobs_report_is_near = event_calendar.event_calendar_determine_whether_jobs_report_is_within_one_day(
+        settings.macro_event_calendar, covered_until, today)
+    value_by_id = {
+        "no_quadruple_witching_in_next_five_trading_days":
+            not event_calendar.event_calendar_determine_whether_quadruple_witching_is_within_trading_days(today),
+        "is_spmo_rebalance_window": event_calendar.event_calendar_determine_whether_spmo_rebalance_month(today),
+        "no_jobs_report_within_one_day": None if jobs_report_is_near is None else not jobs_report_is_near,
+    }
+    return {key: IndicatorValue(key, value, "calendar") for key, value in value_by_id.items() if value is not None}
+
+
 def refresh_scheduler_build_dashboard_snapshot(
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
 ) -> dict:
@@ -108,6 +172,10 @@ def refresh_scheduler_build_dashboard_snapshot(
         refresh_scheduler_fetch_series_or_none(macro_data.macro_data_fetch_treasury_ten_year_yield_series),
         refresh_scheduler_fetch_series_or_none(macro_data.macro_data_fetch_high_yield_credit_spread_series))
 
+    shared_indicator_value_by_id.update(refresh_scheduler_fetch_series_or_none(
+        live_indicators.live_indicators_fetch_series_indicator_value_by_id) or {})
+    shared_indicator_value_by_id.update(refresh_scheduler_build_calendar_indicator_value_by_id(settings, datetime.date.today()))
+
     symbol_history_by_symbol = market_data.market_data_fetch_daily_price_history_for_symbol_list(
         settings.watchlist_symbol_list, HISTORY_PERIOD)
     symbol_list = [s for s in settings.watchlist_symbol_list if s in symbol_history_by_symbol]
@@ -117,7 +185,7 @@ def refresh_scheduler_build_dashboard_snapshot(
         try:
             return refresh_scheduler_evaluate_symbol_for_all_strategies(
                 symbol, symbol_history_by_symbol[symbol], shared_indicator_value_by_id, settings,
-                strategy_definition_by_id)
+                strategy_definition_by_id, market_history_by_symbol)
         except Exception as error:  # one broken symbol must not abort the whole snapshot
             print("symbol failed:", symbol, error)
             return None

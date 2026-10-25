@@ -119,109 +119,52 @@ The archive copies can be weeks behind the live sites and the archive answers 42
 
 `python -m stockboard_backend.fundamental_series AAPL` prints a sample of the table for one ticker.
 
+## Live indicators on the dashboard
+
+Each refresh (every 10 minutes while the market is open) adds these to the indicators above. A source that fails or is too old only turns its own rules to Unknown.
+
+| What | Source | Kept for | Newest value counts for |
+|---|---|---|---|
+| FRED series (rates, spreads, inflation, jobs, money, EPU), Cboe put/call, CNN Fear and Greed, AAII | the history series builders; the newest observation is the live value | 30 minutes | daily series 10 days, weekly 16, monthly 100, quarterly 270, put/call 7, Fear and Greed 5 |
+| Oil, dollar index, RSP versus SPY, VXN/VIX, VIX versus its 20-day average, sector ETF versus SPY | yfinance price history | each refresh | the last close |
+| 60-day low, ATR, 52-week low, 200-day distance, trading value, relative strength | yfinance price history of the symbol | each refresh | the last close |
+| Market cap, EV/EBITDA, free cash flow, margins, ROE, forward PE, dividend cover | yfinance `info` | 1 hour | now |
+| EPS estimate change (4 weeks), PEG, buy share of ratings | yfinance `eps_trend`, `recommendations_summary` | 1 hour | now (PEG is forward PE over the growth of next-year over this-year EPS) |
+| Insider net selling (180 days) and purchase count (90 days) | yfinance `insider_transactions`, told apart by the text "Sale" and "Purchase" | 1 hour | now |
+| Short interest, percent of shares | FINRA with yfinance shares outstanding | 1 hour | 45 days |
+| 3-year growth, ROIC, interest coverage, FCF change, share count change | SEC EDGAR (needs `EDGAR_CONTACT`, else unknown) | 1 day | the latest filing |
+| FOMC, CPI, PCE and jobs report dates | the release calendar in `config/settings.yaml` (`macro_event_calendar`), kept by hand; unknown past `macro_event_covered_until` | file | the window of the option |
+| Election day, quadruple witching, SPMO rebalance (the months March and September) | the calendar | none | today |
+| Option quotes (spread, open interest, volume, strike, premium, expected move, skew) | yfinance option chain | each refresh | only while the market is open; skew and spreads need a live bid |
+
+Funds (SPY, QQQ) have no company figures, so their company rules read Unknown.
+
 ## Planned indicators (not built yet)
 
-Every rule in `config/rules.yaml` names the indicator that will give its value. These indicators do not exist in the code yet; the rule that uses each one, and where its free history comes from, is listed here. The meaning of each is in the rule's description.
+Every rule in `config/rules.yaml` names the indicator that will give its value. These indicators do not exist in the code yet (those the dashboard computes now are listed in the live section above); the rule that uses each one, and where its free history comes from, is listed here. The meaning of each is in the rule's description.
 
 | indicator_id | Rules | History source |
 |---|---|---|
-| `federal_funds_target_rate_not_raised_in_182_days` | `MAC-01` | `fred:DFEDTAR+DFEDTARU` |
-| `six_month_treasury_bill_yield_minus_federal_funds_rate` | `MAC-02` | `fred:DGS6MO+DFF` |
-| `high_yield_credit_spread_twenty_day_change_basis_points` | `MAC-06` | `fred:BAMLH0A0HYM2` |
-| `moodys_baa_minus_ten_year_treasury_spread` | `MAC-22`, `MAC-23` | `fred:BAA10Y` |
-| `treasury_ten_year_minus_two_year_spread` | `MAC-07` | `fred:T10Y2Y` |
-| `treasury_ten_year_minus_three_month_spread` | `MAC-17` | `fred:T10Y3M` |
-| `consumer_price_index_year_over_year_percent` | `MAC-08` | `alfred:CPIAUCSL` |
-| `core_pce_price_index_year_over_year_percent` | `MAC-18` | `alfred:PCEPILFE` |
-| `sahm_rule_recession_indicator` | `MAC-09` | `fred:SAHMREALTIME` |
-| `initial_jobless_claims_four_week_average` | `MAC-19` | `fred:ICSA` |
-| `chicago_fed_national_activity_index_three_month_average` | `MAC-20` | `fred:CFNAIMA3` |
-| `us_dollar_index_twenty_day_change_percent` | `MAC-10` | `yfinance:DX-Y.NYB` |
-| `wti_crude_oil_price` | `MAC-11` | `fred:DCOILWTICO` |
-| `wti_crude_oil_one_month_change_percent` | `MAC-16` | `fred:DCOILWTICO` |
-| `m2_money_supply_year_over_year_percent` | `MAC-12` | `fred:M2SL` |
-| `federal_reserve_total_assets_thirteen_week_change_percent` | `MAC-21` | `fred:WALCL` |
-| `sector_etf_return_minus_spy_return_one_hundred_twenty_six_day` | `IND-01` | `yfinance:sector-etfs` |
 | `sector_next_year_eps_estimate_four_week_change_median_percent` | `IND-02` | `dolthub:earnings` |
-| `trailing_twelve_month_eps` | `QUA-01` | `edgar:companyfacts` |
-| `revenue_year_over_year_percent` | `QUA-02` | `edgar:companyfacts` |
-| `revenue_three_year_cagr_percent` | `QUA-03` | `edgar:companyfacts` |
-| `eps_three_year_cagr_percent` | `QUA-13` | `edgar:companyfacts` |
-| `return_on_invested_capital_percent` | `QUA-04` | `edgar:companyfacts` |
-| `return_on_equity_percent` | `QUA-14` | `edgar:companyfacts` |
-| `gross_margin_percent` | `QUA-05` | `edgar:companyfacts` |
-| `trailing_twelve_month_free_cash_flow` | `QUA-06` | `edgar:companyfacts` |
-| `free_cash_flow_year_over_year_change` | `QUA-15` | `edgar:companyfacts` |
-| `net_debt_to_ebitda` | `QUA-07`, `QUA-11` | `edgar:companyfacts` |
-| `interest_coverage_ratio` | `QUA-12` | `edgar:companyfacts` |
-| `operating_cash_flow_to_net_income_ratio` | `QUA-08`, `QUA-16` | `edgar:companyfacts` |
-| `eps_estimate_next_year_four_week_change_percent` | `QUA-09` | `dolthub:earnings` |
-| `buy_rating_share_percent` | `QUA-10` | `yfinance:upgrades_downgrades` |
-| `insider_net_open_market_selling_percent_of_shares_180_days` | `MGT-01` | `edgar:form345` |
-| `insider_open_market_purchase_count_90_days` | `MGT-05` | `edgar:form345` |
-| `shares_outstanding_year_over_year_percent` | `MGT-02`, `MGT-06` | `edgar:companyfacts` |
-| `dividend_to_free_cash_flow_ratio` | `MGT-03` | `edgar:companyfacts` |
 | `no_audit_or_late_filing_problem_in_last_365_days` | `MGT-04` | `edgar:submissions` |
 | `sp500_forward_pe` | `VAL-01` | `wayback:sp-dji-eps` |
 | `equity_risk_premium_simple_percent` | `VAL-03` | `shiller:ie_data` |
 | `shiller_cape` | `VAL-11` | `shiller:ie_data` |
 | `damodaran_implied_equity_risk_premium_percent` | `VAL-12` | `damodaran:implied-erp` |
-| `market_value_to_gdp_percent` | `VAL-04`, `VAL-14` | `fred:NCBEILQ027S` |
 | `price_earnings_ttm_to_five_year_median_ratio` | `VAL-05` | `edgar:companyfacts` |
-| `forward_pe_to_trailing_pe_ratio` | `VAL-06` | `dolthub:earnings` |
-| `enterprise_value_to_ebitda` | `VAL-07` | `edgar:companyfacts` |
-| `peg_ratio` | `VAL-13` | `dolthub:earnings` |
-| `free_cash_flow_yield_percent` | `VAL-08`, `VAL-10` | `edgar:companyfacts` |
-| `vxn_to_vix_ratio` | `SEN-03` | `yfinance:^VXN` |
-| `aaii_bullish_minus_bearish_percent` | `SEN-05` | `aaii:sentiment` |
-| `aaii_bullish_percent` | `SEN-20` | `aaii:sentiment` |
 | `naaim_exposure_index` | `SEN-06`, `SEN-21` | `naaim:exposure-index` |
-| `put_call_ratio_total_five_day_average` | `SEN-07`, `SEN-22` | `cboe:putcall` |
 | `no_mega_ipo_in_last_30_trading_days` | `SEN-08` | `ritter:ipo-data` |
-| `short_interest_percent_of_shares_outstanding` | `SEN-09`, `SEN-19` | `finra:short-interest` |
 | `sp500_share_above_two_hundred_day_average_percent` | `TRD-02`, `TRD-21` | `fja05680:sp500-components` |
-| `rsp_to_spy_ratio_above_two_hundred_day_average` | `TRD-22` | `yfinance:RSP` |
-| `no_new_fifty_two_week_low_in_last_20_days` | `TRD-23` | `yfinance:daily-prices` |
-| `return_one_hundred_twenty_six_day_minus_spy_percent` | `TRD-09` | `yfinance:daily-prices` |
-| `distance_above_sixty_day_low_close_percent` | `TRD-14` | `yfinance:daily-prices` |
-| `absolute_distance_from_two_hundred_day_average_percent` | `TRD-24` | `yfinance:daily-prices` |
-| `average_true_range_fourteen_day_percent` | `TRD-15` | `yfinance:daily-prices` |
 | `spmo_holding_rank` | `TRD-16`, `TRD-25` | `sec:n-port` |
-| `no_fomc_meeting_inside_option_life` | `EVT-02` | `federalreserve:fomc-calendar` |
-| `no_cpi_or_pce_release_inside_option_life` | `EVT-03` | `fred:release-dates` |
-| `no_election_day_inside_option_life` | `EVT-04` | `rule:us-election-calendar` |
-| `no_jobs_report_within_one_day` | `EVT-05` | `fred:PAYEMS-release-dates` |
-| `no_ex_dividend_date_inside_option_life` | `EVT-06` | `yfinance:dividends` |
-| `trade_policy_uncertainty_ten_year_percentile` | `EVT-07` | `fred:EPUTRADE` |
 | `geopolitical_risk_index_thirty_day_average_percentile_five_year` | `EVT-08` | `gpr:daily` |
-| `us_epu_thirty_day_average_percentile_five_year` | `EVT-14` | `fred:USEPUINDXD` |
 | `industry_leader_has_no_earnings_inside_option_life` | `EVT-10` | `edgar:submissions` |
 | `customers_and_suppliers_have_no_earnings_inside_option_life` | `EVT-11` | `edgar:submissions` |
-| `is_spmo_rebalance_window` | `EVT-12` | `rule:spmo-rebalance-calendar` |
-| `no_quadruple_witching_in_next_five_trading_days` | `EVT-13` | `rule:option-expiration-calendar` |
-| `market_capitalization_billion_usd` | `LIQ-01`, `LIQ-06`, `LIQ-07` | `edgar:companyfacts` |
-| `average_daily_trading_value_twenty_day_usd` | `LIQ-03`, `LIQ-08` | `yfinance:daily-prices` |
-| `selected_put_bid_ask_spread_percent_of_mid` | `LIQ-04` | `dolthub:options` |
-| `selected_put_open_interest` | `LIQ-05` | `none yet` |
-| `selected_put_volume` | `LIQ-09` | `none yet` |
 | `implied_volatility_percentile` | `VOL-01`, `VOL-06`, `VOL-07` | `dolthub:volatility_history` |
-| `vix_to_twenty_day_average_ratio` | `VOL-02` | `cboe:VIX_History` |
 | `implied_volatility_to_one_month_ago_ratio` | `VOL-08` | `dolthub:options` |
-| `one_sigma_expected_move_thirty_day_percent` | `VOL-04` | `dolthub:options` |
-| `put_skew_ten_percent_otm_minus_atm_iv_points` | `VOL-05` | `dolthub:options` |
-| `selected_option_days_to_expiration` | `CTR-03` | `dolthub:options` |
-| `selected_expiration_is_third_friday` | `CTR-04` | `rule:option-expiration-calendar` |
-| `selected_put_strike_discount_percent` | `CTR-05` | `dolthub:options` |
-| `selected_put_strike_below_support` | `CTR-06` | `dolthub:options` |
-| `selected_strike_is_multiple_of_five` | `CTR-07` | `dolthub:options` |
 | `selected_call_strike_premium_percent` | `CTR-08` | `dolthub:options` |
 | `selected_call_days_to_expiration` | `CTR-09` | `dolthub:options` |
-| `selected_put_strike_outside_one_sigma_move` | `CTR-10` | `dolthub:options` |
-| `selected_put_monthly_premium_percent` | `RET-02`, `RET-07` | `dolthub:options` |
 | `selected_option_implied_leverage` | `RET-03` | `dolthub:options` |
-| `selected_put_breakeven_discount_percent` | `RET-04` | `dolthub:options` |
-| `selected_put_probability_of_profit` | `RET-05` | `dolthub:options` |
 
 ## Not built yet
 
-Account values (net value, cash, positions) and the strategy gates that need them (capital structure, position limits). Macro event dates (FOMC, CPI) are kept by hand in `config/settings.yaml` until the calendar sources in the rule catalog are built.
+Account values (net value, cash, positions) and the strategy gates that need them (capital structure, position limits). The release calendar in `config/settings.yaml` ends in 2027 (PCE in 2026); add the next year's dates before then. Rules still unknown: sector EPS revisions (IND-02), S&P 500 forward PE (VAL-01), equity risk premium (VAL-03), PE against its own median (VAL-05), CAPE and Damodaran premium (VAL-11/12), audit problems (MGT-04), NAAIM (SEN-06/21, the archive copy is months old), mega IPO list (SEN-08), market breadth (TRD-02/21), SPMO rank (TRD-16/25), geopolitical risk (EVT-08), industry and customer earnings dates (EVT-10/11), implied volatility history (VOL-01/06/07/08), covered call and leverage (CTR-08/09, RET-03).

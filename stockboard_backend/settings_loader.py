@@ -43,6 +43,7 @@ class ApplicationSettings:
     market_holiday_date_set: FrozenSet[datetime.date] = frozenset()
     market_early_close_date_set: FrozenSet[datetime.date] = frozenset()
     default_language: str = "en"
+    macro_event_covered_until: dict = field(default_factory=dict)
 
 
 def settings_loader_validate_language_code(language_code: str) -> str:
@@ -63,6 +64,7 @@ def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> App
         option_expiration_window_list=[ExpirationWindowSetting(**item) for item in raw["option_expiration_window_list"]],
         target_absolute_delta=raw["target_absolute_delta"],
         macro_event_calendar=raw.get("macro_event_calendar") or [],
+        macro_event_covered_until=raw.get("macro_event_covered_until") or {},
         stale_after_minutes=raw.get("stale_after_minutes", 60),
         allowed_origin_list=raw.get("allowed_origin_list") or [],
         max_requests_per_second=raw.get("max_requests_per_second", 30),

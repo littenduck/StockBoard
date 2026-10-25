@@ -19,6 +19,14 @@ class SelectedPutContract:
     premium: float
     days_to_expiration: int
     annualized_return_percent: float
+    bid: float = 0.0
+    ask: float = 0.0
+    open_interest: Optional[float] = None
+    volume: Optional[float] = None
+
+
+def option_chain_read_number_or_none(value) -> Optional[float]:
+    return None if value is None or pandas.isna(value) else float(value)
 
 
 def option_chain_fetch_expiration_date_list_by_symbol(symbol: str) -> List[datetime.date]:
@@ -80,5 +88,21 @@ def option_chain_determine_representative_put_contract_from_table(
                 expiration_date=expiration_date, strike_price=float(row.strike),
                 absolute_delta=round(absolute_delta, 3), implied_volatility=float(row.impliedVolatility),
                 premium=float(premium), days_to_expiration=days_to_expiration,
-                annualized_return_percent=round(premium / row.strike * 365 / days_to_expiration * 100, 1))
+                annualized_return_percent=round(premium / row.strike * 365 / days_to_expiration * 100, 1),
+                bid=float(row.bid), ask=float(row.ask),
+                open_interest=option_chain_read_number_or_none(getattr(row, "openInterest", None)),
+                volume=option_chain_read_number_or_none(getattr(row, "volume", None)))
     return best_contract
+
+
+def option_chain_calculate_put_skew_points(put_contract_table: pandas.DataFrame, underlying_price: float) -> Optional[float]:
+    """Implied volatility of the put struck about 10% below the price minus that of the at-the-money put, in volatility points.
+    Only contracts with a live bid count (an empty quote has a meaningless implied volatility)."""
+    live_table = put_contract_table[(put_contract_table["bid"] > 0) & (put_contract_table["impliedVolatility"] >= 0.01)]
+    if len(live_table) < 2:
+        return None
+    at_the_money = live_table.iloc[(live_table["strike"] - underlying_price).abs().argsort().iloc[0]]
+    out_of_the_money = live_table.iloc[(live_table["strike"] - underlying_price * 0.9).abs().argsort().iloc[0]]
+    if out_of_the_money["strike"] >= at_the_money["strike"]:
+        return None
+    return round(float(out_of_the_money["impliedVolatility"] - at_the_money["impliedVolatility"]) * 100, 2)
