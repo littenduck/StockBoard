@@ -1,181 +1,186 @@
-# Rule catalog: every rule any strategy may use, in one place.
-# Rule id = group letter + two digits. A to F and Z come from the Notion scorecard
-# ("个股期权评分卡: 任意股票×6策略×100指标"); T, R, M were added with the stock strategies.
-# A strategy file only lists rule ids and weights; the definition lives here.
+# Rule catalog, regrouped by theme (first draft of the redesign; strategies/*.yaml still use the old ids).
+# Rule id = category code + two digits, for example TRD-03. Categories run from macro down to detail.
+# legacy_id lists the old ids (A01 to Z20, plus T, R, M) that each rule replaces; old alias rules are merged away.
+# default_weight is the importance score 1 to 5 from the redesign review (5 = core or veto). Strategies may override it.
+# A rule with bands gives partial credit: the first matching band wins, no match means credit 0. Credits are a first draft.
 #
 # availability:
 #   automatic            computed from data the app already fetches
-#   missing_data_source  needs data with no stable free source yet (FGI, IV percentile, news, fundamentals)
-#   account_data         needs your brokerage account (net value, cash, positions, option level)
-#   user_answer          needs your answer (willingness to hold, sleep test)
-#   trade_plan           a plan for after the trade (take profit, stop loss), not a screen
+#   missing_data_source  needs data with no stable free source yet
+#   account_data         needs your brokerage account
+#   user_answer          needs your answer
+#   trade_plan           a plan for after the trade, not a screen
 #   not_implemented      computable in principle, not built yet
-# alias_of: the Notion scorecard lists some rules twice under two letters; the copy points to the original.
+#   proposed             new in this catalog, not assessed yet
 #
 # Every text a person reads is {en, zh}; see docs/language.md.
 
 rule_group_list:
-  - group_id: A
-    display_name: {en: "A · #1 Sell Put five-layer framework", zh: "A · #1 Sell Put 五层决策框架"}
-    description: {en: "Macro and sentiment switch, position caps, no earnings before expiration.", zh: "宏观与情绪开关、仓位硬顶、到期前无财报。"}
-  - group_id: B
-    display_name: {en: "B · #2 CSP execution parameters", zh: "B · #2 CSP 执行参数"}
-    description: {en: "IV timing, Delta, DTE, premium and take profit.", zh: "IV 择时、Delta、DTE、权利金和止盈。"}
-  - group_id: C
-    display_name: {en: "C · #3 SPMO momentum rotation", zh: "C · #3 SPMO 动量轮动"}
-    description: {en: "Half-yearly rotation by SPMO holdings; not an options strategy.", zh: "按 SPMO 成分股做半年轮动，不是期权策略。"}
-  - group_id: D
-    display_name: {en: "D · #4 Directional option buying", zh: "D · #4 买方方向性期权"}
-    description: {en: "Buy options at sentiment extremes with position and exit limits.", zh: "极端情绪时买入期权，控制仓位和止盈止损。"}
-  - group_id: E
-    display_name: {en: "E · #5 Sell Put plus Covered Call cycle (Wheel)", zh: "E · #5 Sell Put 加 Covered Call 循环（Wheel）"}
-    description: {en: "Selling Covered Calls after assignment, and the cycle back.", zh: "被行权后卖 Covered Call 的循环机制。"}
-  - group_id: F
-    display_name: {en: "F · #6 Wheel stock selection and tail risk", zh: "F · #6 车轮选股与尾部风险"}
-    description: {en: "Fundamentals, 52-week low zone, avoiding event windows.", zh: "基本面、52 周低位、避开事件窗口。"}
-  - group_id: Z
-    display_name: {en: "Z · Common layer", zh: "Z · 公共补充层"}
-    description: {en: "Risk, liquidity, event and trend rules shared by all option-selling strategies.", zh: "适用于所有卖方策略的风控、流动性、事件和趋势规则。"}
-  - group_id: T
-    display_name: {en: "T · Trend following", zh: "T · 趋势跟踪"}
-    description: {en: "Moving average trend rules such as the golden cross.", zh: "黄金交叉一类的均线趋势规则。"}
-  - group_id: R
-    display_name: {en: "R · Short-term pullback", zh: "R · 短期超跌回调"}
-    description: {en: "Pullback rules such as Larry Connors' RSI(2).", zh: "Larry Connors RSI(2) 一类的回调规则。"}
-  - group_id: M
-    display_name: {en: "M · Momentum breakout", zh: "M · 动量突破"}
-    description: {en: "Near the 52-week high, higher volume, medium-term gains.", zh: "接近 52 周新高、放量、中期涨幅。"}
+  - {group_id: MAC, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "MAC · Macro", zh: "MAC · 宏观"}, description: {en: "Policy, rates, credit, inflation, growth, dollar, oil and liquidity.", zh: "政策、利率、信用、通胀、增长、美元、油价和流动性。"}}
+  - {group_id: IND, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "IND · Industry", zh: "IND · 行业"}, description: {en: "Industry strength and cycle.", zh: "行业强弱与景气周期。"}}
+  - {group_id: QUA, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "QUA · Company quality", zh: "QUA · 公司质量"}, description: {en: "Profitability, growth, cash flow, balance sheet and analyst expectations.", zh: "盈利、增长、现金流、财务稳健和分析师预期。"}}
+  - {group_id: MGT, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "MGT · Management and governance", zh: "MGT · 管理层与治理"}, description: {en: "Insider activity, buybacks, dilution and capital allocation.", zh: "内部人交易、回购、稀释和资本配置。"}}
+  - {group_id: VAL, aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "VAL · Valuation", zh: "VAL · 估值"}, description: {en: "Market and stock valuation, and your own margin of safety.", zh: "大盘与个股估值，以及你自己的安全边际。"}}
+  - {group_id: SEN, aspect: {en: "Sentiment and flows", zh: "情绪资金面"}, display_name: {en: "SEN · Sentiment and positioning", zh: "SEN · 情绪与仓位"}, description: {en: "VIX, VXN, Fear and Greed, surveys, manager positioning, put/call, short interest.", zh: "VIX、VXN、恐惧贪婪、问卷、经理人仓位、Put/Call、空头比例。"}}
+  - {group_id: TRD, aspect: {en: "Technicals", zh: "技术面"}, display_name: {en: "TRD · Trend and momentum", zh: "TRD · 趋势与动量"}, description: {en: "Market and stock trend, breadth, momentum, pullback and support.", zh: "大盘与个股趋势、广度、动量、回调和支撑。"}}
+  - {group_id: EVT, aspect: {en: "Events", zh: "事件面"}, display_name: {en: "EVT · Events", zh: "EVT · 事件"}, description: {en: "Earnings, central bank, data releases, policy and calendar effects.", zh: "财报、央行、数据公布、政策和日历效应。"}}
+  - {group_id: LIQ, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "LIQ · Liquidity", zh: "LIQ · 流动性"}, description: {en: "Stock size and volume, option spread and open interest.", zh: "股票规模与成交额，期权价差与持仓量。"}}
+  - {group_id: VOL, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "VOL · Volatility", zh: "VOL · 波动率"}, description: {en: "IV percentile, IV against realized, event volatility, skew.", zh: "IV 百分位、IV 对实际波动、事件波动、偏斜。"}}
+  - {group_id: CTR, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "CTR · Contract selection", zh: "CTR · 合约选择"}, description: {en: "Delta, expiration, strike and Covered Call terms.", zh: "Delta、到期日、行权价和 Covered Call 条款。"}}
+  - {group_id: RET, aspect: {en: "Options", zh: "期权面"}, display_name: {en: "RET · Return and payoff", zh: "RET · 收益与盈亏比"}, description: {en: "Annualized return, premium, leverage, breakeven and win probability.", zh: "年化收益、权利金、杠杆、盈亏平衡和盈利概率。"}}
+  - {group_id: POS, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "POS · Position, account and portfolio", zh: "POS · 仓位、账户与组合"}, description: {en: "Option level, cash, exposure caps, loss limits and portfolio Greeks.", zh: "期权权限、现金、敞口上限、亏损上限和组合希腊字母。"}}
+  - {group_id: THS, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}}
+  - {group_id: EXT, aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}}
 
 rule_list:
-  # A · #1 Sell Put 五层决策框架
-  - {rule_id: A01, description: {en: "No Fed hike and no new hiking guidance in the last 6 months", zh: "近 6 个月 Fed 未加息且无新加息指引"}, default_weight: 4, availability: missing_data_source}
-  - {rule_id: A02, description: {en: "10Y < 4.5%", zh: "10Y < 4.5%"}, default_weight: 4, availability: automatic, indicator: treasury_ten_year_yield, operator: less_than, value: 4.5}
-  - {rule_id: A03, description: {en: "10Y up < 25bp over 20 days", zh: "10Y 20 日升幅 < 25bp"}, default_weight: 3, availability: automatic, indicator: treasury_ten_year_yield_twenty_day_change_basis_points, operator: less_than, value: 25}
-  - {rule_id: A04, description: {en: "HY credit spread < 400bp", zh: "HY 信用利差 < 400bp"}, default_weight: 4, availability: automatic, indicator: high_yield_credit_spread_basis_points, operator: less_than, value: 400, note: {en: "The original rule also requires a 20-day rise < 50bp; that part is not built yet", zh: "原规则还要求 20 日升幅 < 50bp，这部分尚未实现"}}
-  - {rule_id: A05, description: {en: "No IPO of $10B or more in the window", zh: "窗口内无 ≥ $10B 的大型 IPO"}, default_weight: 1, availability: missing_data_source}
-  - {rule_id: A06, description: {en: "Odds of a hike at the next FOMC < 50%", zh: "下次 FOMC 加息概率 < 50%"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: A07, description: {en: "10Y < 5.0% (loose tier of A02)", zh: "10Y < 5.0%（A02 宽松档）"}, default_weight: 2, availability: automatic, indicator: treasury_ten_year_yield, operator: less_than, value: 5.0}
-  - {rule_id: A08, description: {en: "FGI < 55", zh: "FGI < 55"}, default_weight: 2, availability: missing_data_source, indicator: fear_greed_index, operator: less_than, value: 55}
-  - {rule_id: A09, description: {en: "FGI < 45 (strict tier of A08)", zh: "FGI < 45（A08 严格档）"}, default_weight: 2, availability: missing_data_source, indicator: fear_greed_index, operator: less_than, value: 45}
-  - {rule_id: A10, description: {en: "VIX >= 13", zh: "VIX >= 13"}, default_weight: 3, availability: automatic, indicator: vix_level, operator: greater_or_equal, value: 13}
-  - {rule_id: A11, description: {en: "VIX >= 15 (strict tier of A10)", zh: "VIX >= 15（A10 严格档）"}, default_weight: 3, availability: automatic, indicator: vix_level, operator: greater_or_equal, value: 15}
-  - {rule_id: A12, description: {en: "IV percentile >= 40", zh: "IV 百分位 >= 40"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: A13, description: {en: "IV percentile >= 50 (strict tier of A12)", zh: "IV 百分位 >= 50（A12 严格档）"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: A14, description: {en: "IV percentile >= 70 (strict tier)", zh: "IV 百分位 >= 70（严格档）"}, default_weight: 2, availability: missing_data_source}
-  - {rule_id: A15, description: {en: "You are willing to hold the stock long term", zh: "你愿意长期持有该股"}, default_weight: 4, availability: user_answer}
-  - {rule_id: A16, description: {en: "Strike <= the price you are willing to buy at", zh: "Strike <= 你愿意接盘的价格"}, default_weight: 4, availability: user_answer}
-  - {rule_id: A17, description: {en: "Total Put notional (including the new one) <= 70% of net value", zh: "全部 Put 名义敞口（含新仓）<= 净值 × 70%"}, default_weight: 4, availability: account_data}
-  - {rule_id: A18, description: {en: "Notional in this stock <= 35% of net value", zh: "该股名义敞口 <= 净值 × 35%"}, default_weight: 4, availability: account_data}
-  - {rule_id: A19, description: {en: "Cash >= 30% of net value", zh: "现金 >= 净值 × 30%"}, default_weight: 3, availability: account_data}
-  - {rule_id: A20, description: {en: "No leverage, cash secured", zh: "零杠杆，现金担保"}, default_weight: 3, availability: account_data}
-  - {rule_id: A21, description: {en: "Annualized return >= 8%", zh: "年化收益 >= 8%"}, default_weight: 3, availability: automatic, indicator: selected_put_annualized_return_percent, operator: greater_or_equal, value: 8}
-  - {rule_id: A22, description: {en: "No earnings before expiration", zh: "到期前无财报"}, default_weight: 5, availability: automatic, indicator: no_earnings_before_expiration, operator: is_true}
-  - {rule_id: A23, description: {en: "DTE 14-45", zh: "DTE 14-45"}, default_weight: 2, availability: automatic, indicator: selected_put_days_to_expiration, operator: between, value: [14, 45]}
-  - {rule_id: A24, description: {en: "Sleep test: the loss at the 52-week low is bearable", zh: "睡眠测试：跌到 52 周低点时的亏损可以承受"}, default_weight: 3, availability: user_answer}
-  # B · #2 CSP 执行参数
-  - {rule_id: B01, description: {en: "IV elevated: VIX above its 20-day average, or IV > RV30", zh: "IV 抬升期：VIX 高于 20 日均值，或 IV > RV30"}, default_weight: 3, availability: not_implemented}
-  - {rule_id: B02, description: {en: "FGI < 35", zh: "FGI < 35"}, default_weight: 2, availability: missing_data_source, indicator: fear_greed_index, operator: less_than, value: 35}
-  - {rule_id: B03, description: {en: "|Δ| 0.15-0.30", zh: "|Δ| 0.15-0.30"}, default_weight: 4, availability: automatic, indicator: selected_put_absolute_delta, operator: between, value: [0.15, 0.3]}
-  - {rule_id: B04, description: {en: "|Δ| 0.15-0.20 (strict tier of B03)", zh: "|Δ| 0.15-0.20（B03 严格档）"}, default_weight: 3, availability: automatic, indicator: selected_put_absolute_delta, operator: between, value: [0.15, 0.2]}
-  - {rule_id: B05, description: {en: "Strike below the nearest support", zh: "Strike 低于最近支撑位"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: B06, description: {en: "Price within 3% of the nearest support", zh: "现价距最近支撑 <= 3%"}, default_weight: 3, availability: not_implemented}
-  - {rule_id: B07, description: {en: "DTE 30-45", zh: "DTE 30-45"}, default_weight: 4, availability: automatic, indicator: selected_put_days_to_expiration, operator: between, value: [30, 45]}
-  - {rule_id: B08, description: {en: "Monthly expiration (third Friday)", zh: "到期日是月度期权（第三个周五）"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: B09, description: {en: "Annualized return >= 8%", zh: "年化收益 >= 8%"}, alias_of: A21}
-  - {rule_id: B10, description: {en: "Monthly premium >= 2%", zh: "月化权利金 >= 2%"}, default_weight: 3, availability: not_implemented}
-  - {rule_id: B11, description: {en: "Monthly premium >= 4% (strict tier of B10)", zh: "月化权利金 >= 4%（B10 严格档）"}, default_weight: 1, availability: not_implemented}
-  - {rule_id: B12, description: {en: "Path A: margin account", zh: "路径 A：使用 margin 账户"}, default_weight: 2, availability: user_answer}
-  - {rule_id: B13, description: {en: "Switch to a spread when one leg uses > 20% of net value", zh: "单腿占用 > 净值 × 20% 时改用价差"}, default_weight: 3, availability: account_data}
-  - {rule_id: B14, description: {en: "Option level >= L2", zh: "期权权限 >= L2"}, default_weight: 5, availability: account_data}
-  - {rule_id: B15, description: {en: "Option level >= L3 (spreads)", zh: "期权权限 >= L3（做价差）"}, default_weight: 3, availability: account_data}
-  - {rule_id: B16, description: {en: "Buy back at 50% profit", zh: "盈利 50% 时买回平仓"}, default_weight: 4, availability: trade_plan}
-  - {rule_id: B17, description: {en: "Buy back at 70% profit (alternative to B16)", zh: "盈利 70% 时买回平仓（B16 另一档）"}, default_weight: 3, availability: trade_plan}
-  # C · #3 SPMO 动量轮动
-  - {rule_id: C01, description: {en: "Now is the March or September rebalance window", zh: "现在处于 3 月或 9 月换仓窗口"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: C02, description: {en: "Trade at the close on rebalance day", zh: "在换仓日以收盘价执行"}, default_weight: 1, availability: trade_plan}
-  - {rule_id: C03, description: {en: "The symbol is SPMO's largest holding", zh: "标的是 SPMO 权重最大的 1 只"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: C04, description: {en: "Plan to hold at least six months (no stop loss)", zh: "计划持有至少半年（不设止损）"}, default_weight: 2, availability: trade_plan}
-  - {rule_id: C05, description: {en: "The symbol is in SPMO's top 20 holdings", zh: "标的在 SPMO 权重前 20"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: C06, description: {en: "Strategy Sharpe over 12 months >= SPY (still working)", zh: "近 12 个月策略夏普 >= SPY（策略未失效）"}, default_weight: 3, availability: not_implemented}
-  # D · #4 买方方向性期权
-  - {rule_id: D01, description: {en: "Top 100 by market value or trading value", zh: "市值或成交额前 100"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: D02, description: {en: "Extreme fear (FGI < 25 or VIX > 30): buy calls", zh: "极度恐慌（FGI < 25 或 VIX > 30）时看涨"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: D03, description: {en: "Extreme greed (FGI > 75): small put position", zh: "极度贪婪（FGI > 75）时小仓看跌"}, default_weight: 2, availability: missing_data_source}
-  - {rule_id: D04, description: {en: "At most 2 trades in the last 30 days", zh: "近 30 日出手 <= 2 次"}, default_weight: 3, availability: user_answer}
-  - {rule_id: D05, description: {en: "Implied leverage (Δ × price ÷ premium) >= 10x", zh: "隐含杠杆（Δ × 股价 ÷ 权利金）>= 10 倍"}, default_weight: 3, availability: not_implemented}
-  - {rule_id: D06, description: {en: "Expiration 60-90 days", zh: "到期 60-90 天"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: D07, description: {en: "Strike is a round number near the target with high volume", zh: "行权价是目标价附近的整数且成交量大"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: D08, description: {en: "Single option position <= 10% of net value", zh: "单只期权仓位 <= 净值 × 10%"}, default_weight: 4, availability: account_data}
-  - {rule_id: D09, description: {en: "Build the position in 2 or more steps", zh: "分 2 批以上建仓"}, default_weight: 2, availability: trade_plan}
-  - {rule_id: D10, description: {en: "Total long option premium <= 20% of net value", zh: "多头期权总权利金 <= 净值 × 20%"}, default_weight: 4, availability: account_data}
-  - {rule_id: D11, description: {en: "Plan to hold 3-10 days", zh: "计划持有 3-10 天"}, default_weight: 2, availability: trade_plan}
-  - {rule_id: D12, description: {en: "Take profit at +60%", zh: "止盈 +60%"}, default_weight: 3, availability: trade_plan}
-  - {rule_id: D13, description: {en: "Take profit at +100% (alternative to D12)", zh: "止盈 +100%（D12 另一档）"}, default_weight: 3, availability: trade_plan}
-  - {rule_id: D14, description: {en: "Exit when the stock reaches the target but the option still loses", zh: "止损：正股到目标位而期权仍亏损时离场"}, default_weight: 3, availability: trade_plan}
-  - {rule_id: D15, description: {en: "Direction is long (short only small, for sentiment-driven stocks)", zh: "方向为做多（做空只限情绪股小仓）"}, default_weight: 2, availability: not_implemented}
-  # E · #5 Sell Put 加 Covered Call 循环（Wheel）
-  - {rule_id: E01, description: {en: "You are willing to hold the stock long term", zh: "你愿意长期持有该股"}, alias_of: A15}
-  - {rule_id: E02, description: {en: "Market value > $200B", zh: "市值 > $200B"}, default_weight: 2, availability: missing_data_source}
-  - {rule_id: E03, description: {en: "Strike = price −10% to −15%", zh: "Strike = 现价 −10% 到 −15%"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: E04, description: {en: "Strike = price −10% to −20% (alternative to E03)", zh: "Strike = 现价 −10% 到 −20%（E03 另一档）"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: E05, description: {en: "DTE 30-45", zh: "DTE 30-45"}, alias_of: B07}
-  - {rule_id: E06, description: {en: "Monthly premium >= 2%", zh: "月化权利金 >= 2%"}, alias_of: B10}
-  - {rule_id: E07, description: {en: "Monthly premium >= 4%", zh: "月化权利金 >= 4%"}, alias_of: B11}
-  - {rule_id: E08, description: {en: "Annualized return >= 20% (strict tier of A21)", zh: "年化收益 >= 20%（A21 严格档）"}, default_weight: 2, availability: automatic, indicator: selected_put_annualized_return_percent, operator: greater_or_equal, value: 20}
-  - {rule_id: E09, description: {en: "Cash >= Strike × 100", zh: "现金 >= Strike × 100"}, default_weight: 4, availability: account_data}
-  - {rule_id: E10, description: {en: "Covered Call already planned while holding shares", zh: "持股时已规划卖 Covered Call"}, default_weight: 3, availability: trade_plan}
-  - {rule_id: E11, description: {en: "Covered Call strike = price +10%", zh: "Covered Call 行权价 = 现价 +10%"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: E12, description: {en: "Covered Call expires in about 30 days", zh: "Covered Call 到期约 30 天"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: E13, description: {en: "Covered Call contracts = shares ÷ 100, never more", zh: "Covered Call 张数 = 持股 ÷ 100，不超卖"}, default_weight: 5, availability: account_data}
-  - {rule_id: E14, description: {en: "Covered Call strike >= cost basis", zh: "Covered Call 行权价 >= 成本价"}, default_weight: 4, availability: account_data}
-  - {rule_id: E15, description: {en: "Cost basis <= price × 1.15, otherwise pause Covered Calls", zh: "成本 <= 现价 × 1.15，否则暂停 Covered Call"}, default_weight: 3, availability: account_data}
-  - {rule_id: E16, description: {en: "The purpose of the trade is clear (income or buying the stock)", zh: "开仓目的已经明确（收租或接盘）"}, default_weight: 4, availability: user_answer}
-  # F · #6 车轮选股与尾部风险
-  - {rule_id: F01, description: {en: "Quality fundamentals: positive earnings, revenue growth > 0, buy ratings > 60%", zh: "基本面优质：盈利为正、营收同比 > 0、买入评级 > 60%"}, default_weight: 4, availability: missing_data_source}
-  - {rule_id: F02, description: {en: "52-week range position <= 25 (strict tier of F03)", zh: "52 周区间分位 <= 25（F03 严格档）"}, default_weight: 3, availability: automatic, indicator: fifty_two_week_range_percentile, operator: less_or_equal, value: 25}
-  - {rule_id: F03, description: {en: "52-week range position <= 50", zh: "52 周区间分位 <= 50"}, default_weight: 2, availability: automatic, indicator: fifty_two_week_range_percentile, operator: less_or_equal, value: 50}
-  - {rule_id: F04, description: {en: "Price within 3% of the nearest support", zh: "现价距最近支撑 <= 3%"}, alias_of: B06}
-  - {rule_id: F05, description: {en: "No earnings before expiration", zh: "到期前无财报"}, alias_of: A22}
-  - {rule_id: F06, description: {en: "No FOMC decision inside the DTE window", zh: "DTE 窗口内无 FOMC 决议日"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: F07, description: {en: "No CPI, PCE or election day inside the DTE window", zh: "DTE 窗口内无 CPI、PCE 或选举日"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: F08, description: {en: "|Δ| <= 0.30", zh: "|Δ| <= 0.30"}, default_weight: 4, availability: automatic, indicator: selected_put_absolute_delta, operator: less_or_equal, value: 0.3}
-  - {rule_id: F09, description: {en: "DTE > 30", zh: "DTE > 30"}, default_weight: 3, availability: automatic, indicator: selected_put_days_to_expiration, operator: greater_than, value: 30}
-  - {rule_id: F10, description: {en: "Cash >= Strike × 100", zh: "现金 >= Strike × 100"}, alias_of: E09}
-  - {rule_id: F11, description: {en: "No leverage, cash secured", zh: "零杠杆，现金担保"}, alias_of: A20}
-  - {rule_id: F12, description: {en: "Cost basis <= price × 1.15", zh: "成本 <= 现价 × 1.15"}, alias_of: E15}
-  # Z · 公共补充层
-  - {rule_id: Z01, description: {en: "Stop loss at 2 times the premium", zh: "止损：亏损达到 2 倍权利金"}, default_weight: 4, availability: trade_plan}
-  - {rule_id: Z02, description: {en: "Time stop or roll at 21 days left", zh: "剩 21 天时时间止损或展期"}, default_weight: 3, availability: trade_plan}
-  - {rule_id: Z03, description: {en: "Largest loss per trade (to the stop) <= 2% of net value", zh: "单笔最大亏损（到止损）<= 净值 × 2%"}, default_weight: 5, availability: account_data}
-  - {rule_id: Z04, description: {en: "One sector <= 50% of total exposure", zh: "同板块敞口 <= 总敞口 50%"}, default_weight: 4, availability: account_data}
-  - {rule_id: Z05, description: {en: "ATM IV (30-45 days) > RV30", zh: "ATM IV（30-45 天）> RV30"}, default_weight: 4, availability: automatic, indicator: selected_put_implied_volatility_exceeds_realized, operator: is_true}
-  - {rule_id: Z06, description: {en: "Bid-ask spread <= 5% of the mid price", zh: "买卖价差 <= 中间价 5%"}, default_weight: 3, availability: not_implemented}
-  - {rule_id: Z07, description: {en: "Open interest >= 500 and daily volume >= 100", zh: "OI >= 500 且当日成交量 >= 100"}, default_weight: 3, availability: not_implemented}
-  - {rule_id: Z08, description: {en: "No ex-dividend date in the window", zh: "窗口内无除息日"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: Z09, description: {en: "No tariff or policy deadline in the window", zh: "窗口内无关税或政策截止日"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: Z10, description: {en: "No escalating geopolitical conflict", zh: "没有正在升级的地缘冲突"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: Z11, description: {en: "No pending industry regulation or export control event", zh: "没有待决的行业监管或出口管制事件"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: Z12, description: {en: "WTI < $100 and up < 15% this month", zh: "WTI < $100 且月涨幅 < 15%"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: Z13, description: {en: "No new position within 1 day of the jobs report", zh: "不在非农数据前后 1 天开仓"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: Z14, description: {en: "No new position on CPI or PCE release days", zh: "不在 CPI 或 PCE 公布日开仓"}, default_weight: 2, availability: not_implemented}
-  - {rule_id: Z15, description: {en: "No earnings from industry leaders in the window", zh: "同业龙头财报不在窗口内"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: Z16, description: {en: "No earnings from major customers or suppliers in the window", zh: "大客户或上下游财报不在窗口内"}, default_weight: 3, availability: missing_data_source}
-  - {rule_id: Z17, description: {en: "More analyst EPS upgrades than downgrades", zh: "分析师 EPS 上修多于下修"}, default_weight: 2, availability: missing_data_source}
-  - {rule_id: Z18, description: {en: "SPX > 200-day average", zh: "SPX > 200 日线"}, default_weight: 4, availability: automatic, indicator: spx_above_two_hundred_day_average, operator: is_true}
-  - {rule_id: Z19, description: {en: "VIX term structure in contango", zh: "VIX 期限结构为 contango"}, default_weight: 3, availability: automatic, indicator: vix_term_structure_is_contango, operator: is_true}
-  - {rule_id: Z20, description: {en: "Stock > 200-day average", zh: "个股 > 200 日线"}, default_weight: 3, availability: automatic, indicator: price_above_two_hundred_day_average, operator: is_true, note: {en: "The original rule also requires no new 52-week low; that part is not built yet", zh: "原规则还要求未创 52 周新低，这部分尚未实现"}}
-  # T · 趋势跟踪
-  - {rule_id: T01, description: {en: "VIX < 25 (no market panic)", zh: "VIX < 25（市场没有恐慌）"}, default_weight: 2, availability: automatic, indicator: vix_level, operator: less_than, value: 25}
-  - {rule_id: T02, description: {en: "50-day average > 200-day average (golden cross state)", zh: "50 日线 > 200 日线（黄金交叉状态）"}, default_weight: 5, availability: automatic, indicator: fifty_day_average_above_two_hundred_day_average, operator: is_true}
-  - {rule_id: T03, description: {en: "Close > 50-day average", zh: "收盘价 > 50 日线"}, default_weight: 4, availability: automatic, indicator: price_above_fifty_day_average, operator: is_true}
-  - {rule_id: T04, description: {en: "RSI(14) between 40 and 70 (healthy trend, not overheated)", zh: "RSI(14) 在 40-70 之间（趋势健康、不过热）"}, default_weight: 3, availability: automatic, indicator: relative_strength_index_fourteen_day, operator: between, value: [40, 70]}
-  - {rule_id: T05, description: {en: "Within 15% of the 52-week high", zh: "距 52 周高点 <= 15%"}, default_weight: 2, availability: automatic, indicator: distance_from_fifty_two_week_high_percent, operator: less_or_equal, value: 15}
-  # R · 短期超跌回调
-  - {rule_id: R01, description: {en: "RSI(2) < 10", zh: "RSI(2) < 10"}, default_weight: 4, availability: automatic, indicator: relative_strength_index_two_day, operator: less_than, value: 10}
-  - {rule_id: R02, description: {en: "RSI(2) < 5 (strict tier of R01)", zh: "RSI(2) < 5（R01 严格档）"}, default_weight: 3, availability: automatic, indicator: relative_strength_index_two_day, operator: less_than, value: 5}
-  - {rule_id: R03, description: {en: "Close < 5-day average (in a short-term pullback)", zh: "收盘价 < 5 日线（短期回调中）"}, default_weight: 3, availability: automatic, indicator: price_below_five_day_average, operator: is_true}
-  # M · 动量突破
-  - {rule_id: M01, description: {en: "6-month gain > 10%", zh: "6 个月涨幅 > 10%"}, default_weight: 4, availability: automatic, indicator: return_six_month_percent, operator: greater_than, value: 10}
-  - {rule_id: M02, description: {en: "Within 5% of the 52-week high (near a new high)", zh: "距 52 周高点 <= 5%（接近新高）"}, default_weight: 5, availability: automatic, indicator: distance_from_fifty_two_week_high_percent, operator: less_or_equal, value: 5}
-  - {rule_id: M03, description: {en: "Volume >= 1.5 × 20-day average (higher volume)", zh: "成交量 >= 20 日均量 × 1.5（放量）"}, default_weight: 3, availability: automatic, indicator: volume_ratio_to_twenty_day_average, operator: greater_or_equal, value: 1.5}
-  - {rule_id: M04, description: {en: "RSI(14) < 80 (not extremely overbought)", zh: "RSI(14) < 80（没有极度超买）"}, default_weight: 2, availability: automatic, indicator: relative_strength_index_fourteen_day, operator: less_than, value: 80}
+  # MAC · Macro
+  - {rule_id: MAC-01, description: {en: "No Fed hike and no new hiking guidance in the last 6 months", zh: "近 6 个月 Fed 未加息且无新加息指引"}, default_weight: 3, availability: missing_data_source, legacy_id: [A01]}
+  - {rule_id: MAC-02, description: {en: "Odds of a hike at the next FOMC < 50%", zh: "下次 FOMC 加息概率 < 50%"}, default_weight: 2, availability: missing_data_source, legacy_id: [A06]}
+  - {rule_id: MAC-03, description: {en: "10Y yield level (< 4.5% full credit, < 5.0% half)", zh: "10Y 收益率水平（< 4.5% 满分，< 5.0% 半分）"}, default_weight: 4, availability: automatic, indicator: treasury_ten_year_yield, bands: [{operator: less_than, value: 4.5, credit: 1.0}, {operator: less_than, value: 5.0, credit: 0.5}], legacy_id: [A02, A07]}
+  - {rule_id: MAC-04, description: {en: "10Y up < 25bp over 20 days", zh: "10Y 20 日升幅 < 25bp"}, default_weight: 3, availability: automatic, indicator: treasury_ten_year_yield_twenty_day_change_basis_points, operator: less_than, value: 25, legacy_id: [A03]}
+  - {rule_id: MAC-05, description: {en: "HY credit spread < 400bp", zh: "HY 信用利差 < 400bp"}, default_weight: 4, availability: automatic, indicator: high_yield_credit_spread_basis_points, operator: less_than, value: 400, legacy_id: [A04]}
+  - {rule_id: MAC-06, description: {en: "HY credit spread up < 50bp over 20 days", zh: "HY 信用利差 20 日升幅 < 50bp"}, default_weight: 3, availability: not_implemented, legacy_id: [A04], note: {en: "Split from the old A04, where this half was never built", zh: "从旧 A04 拆出，这一半此前未实现"}}
+  - {rule_id: MAC-07, description: {en: "Yield curve not inverted (10Y minus 2Y or 3M above 0)", zh: "收益率曲线未倒挂（10Y 减 2Y 或 3M 大于 0）"}, default_weight: 4, availability: proposed}
+  - {rule_id: MAC-08, description: {en: "Inflation (CPI, core PCE) level and trend", zh: "通胀（CPI、核心 PCE）的水平与趋势"}, default_weight: 3, availability: proposed}
+  - {rule_id: MAC-09, description: {en: "Growth and jobs (PMI, unemployment, jobless claims)", zh: "增长与就业（PMI、失业率、初请）"}, default_weight: 3, availability: proposed}
+  - {rule_id: MAC-10, description: {en: "US dollar index trend", zh: "美元指数趋势"}, default_weight: 2, availability: proposed}
+  - {rule_id: MAC-11, description: {en: "WTI < $100 and up < 15% this month", zh: "WTI < $100 且月涨幅 < 15%"}, default_weight: 2, availability: missing_data_source, legacy_id: [Z12]}
+  - {rule_id: MAC-12, description: {en: "Global liquidity trend (Fed balance sheet, M2)", zh: "全球流动性趋势（Fed 资产负债表、M2）"}, default_weight: 2, availability: proposed}
+  # IND · Industry
+  - {rule_id: IND-01, description: {en: "Industry relative strength (sector ETF against SPY)", zh: "行业相对强弱（行业 ETF 对 SPY）"}, default_weight: 3, availability: proposed}
+  - {rule_id: IND-02, description: {en: "Industry cycle and earnings revisions", zh: "行业景气周期与盈利修正"}, default_weight: 2, availability: proposed}
+  # QUA · Company quality
+  - {rule_id: QUA-01, description: {en: "Earnings are positive (EPS TTM > 0)", zh: "盈利为正（EPS TTM > 0）"}, default_weight: 4, availability: missing_data_source, legacy_id: [F01]}
+  - {rule_id: QUA-02, description: {en: "Revenue growth year over year > 0", zh: "营收同比增长 > 0"}, default_weight: 3, availability: missing_data_source, legacy_id: [F01]}
+  - {rule_id: QUA-03, description: {en: "Earnings and revenue 3-year growth", zh: "盈利与营收 3 年增速"}, default_weight: 3, availability: proposed}
+  - {rule_id: QUA-04, description: {en: "ROIC / ROE level and stability (moat evidence)", zh: "ROIC / ROE 水平与稳定性（护城河证据）"}, default_weight: 4, availability: proposed}
+  - {rule_id: QUA-05, description: {en: "Gross margin level and stability", zh: "毛利率水平与稳定性"}, default_weight: 3, availability: proposed}
+  - {rule_id: QUA-06, description: {en: "Free cash flow positive and growing", zh: "自由现金流为正且增长"}, default_weight: 4, availability: proposed}
+  - {rule_id: QUA-07, description: {en: "Balance sheet strength (net debt to EBITDA, interest coverage)", zh: "财务稳健（净债务/EBITDA、利息覆盖）"}, default_weight: 4, availability: proposed}
+  - {rule_id: QUA-08, description: {en: "Earnings quality (operating cash flow to net income, accruals)", zh: "盈利质量（经营现金流/净利润、应计）"}, default_weight: 2, availability: proposed}
+  - {rule_id: QUA-09, description: {en: "More analyst EPS upgrades than downgrades", zh: "分析师 EPS 上修多于下修"}, default_weight: 3, availability: missing_data_source, legacy_id: [Z17]}
+  - {rule_id: QUA-10, description: {en: "Buy ratings above 60% of analysts", zh: "买入评级占比 > 60%"}, default_weight: 2, availability: missing_data_source, legacy_id: [F01]}
+  # MGT · Management and governance
+  - {rule_id: MGT-01, description: {en: "Insider net buying or selling", zh: "内部人净买入或净卖出"}, default_weight: 3, availability: proposed}
+  - {rule_id: MGT-02, description: {en: "Net buybacks and share dilution", zh: "净回购与股本稀释"}, default_weight: 3, availability: proposed}
+  - {rule_id: MGT-03, description: {en: "Capital allocation record (acquisitions, sustainable dividend)", zh: "资本配置记录（并购、分红可持续）"}, default_weight: 2, availability: proposed}
+  - {rule_id: MGT-04, description: {en: "Governance and accounting risk (audit opinion, restatements)", zh: "治理与会计风险（审计意见、重述）"}, default_weight: 2, availability: proposed}
+  # VAL · Valuation
+  - {rule_id: VAL-01, description: {en: "S&P 500 forward PE and its historical percentile", zh: "标普 500 Forward PE 及历史分位"}, default_weight: 3, availability: proposed}
+  - {rule_id: VAL-02, description: {en: "Nasdaq-100 / QQQ PE (TTM and forward) and premium over SPY", zh: "纳指 100 / QQQ 的 PE（TTM 与 Forward）及相对 SPY 的溢价"}, default_weight: 3, availability: proposed}
+  - {rule_id: VAL-03, description: {en: "Earnings yield minus 10Y yield (equity risk premium)", zh: "盈利收益率减 10Y 收益率（股权风险溢价）"}, default_weight: 3, availability: proposed}
+  - {rule_id: VAL-04, description: {en: "Market cap to GDP (Buffett indicator)", zh: "市值/GDP（巴菲特指标）"}, default_weight: 1, availability: proposed}
+  - {rule_id: VAL-05, description: {en: "Stock PE TTM and premium over its own history", zh: "个股 PE TTM 及相对自身历史的溢价"}, default_weight: 4, availability: proposed}
+  - {rule_id: VAL-06, description: {en: "Stock forward PE and its gap to TTM", zh: "个股 Forward PE 及与 TTM 的差"}, default_weight: 4, availability: proposed}
+  - {rule_id: VAL-07, description: {en: "EV/EBITDA and PEG", zh: "EV/EBITDA 与 PEG"}, default_weight: 2, availability: proposed}
+  - {rule_id: VAL-08, description: {en: "Free cash flow yield", zh: "自由现金流收益率"}, default_weight: 4, availability: proposed}
+  - {rule_id: VAL-09, description: {en: "Safety margin: strike <= the price you are willing to buy at", zh: "安全边际：Strike <= 你愿意接盘的价格"}, default_weight: 5, availability: user_answer, legacy_id: [A16]}
+  # SEN · Sentiment and positioning
+  - {rule_id: SEN-01, description: {en: "VIX level (15-25 full credit, 12-15 and 25-30 half)", zh: "VIX 水平（15-25 满分，12-15 与 25-30 半分）"}, default_weight: 5, availability: automatic, indicator: vix_level, bands: [{operator: between, value: [15, 25], credit: 1.0}, {operator: between, value: [12, 15], credit: 0.5}, {operator: between, value: [25, 30], credit: 0.5}], legacy_id: [A10, A11, T01, D02], note: {en: "Seller view. Buyer strategies (old D02) read VIX above 30 as extreme fear and override the credits", zh: "卖方视角。买方策略（旧 D02）把 VIX 高于 30 视为极度恐慌，需要覆盖分档"}}
+  - {rule_id: SEN-02, description: {en: "VIX term structure in contango", zh: "VIX 期限结构为 contango"}, default_weight: 4, availability: automatic, indicator: vix_term_structure_is_contango, operator: is_true, legacy_id: [Z19]}
+  - {rule_id: SEN-03, description: {en: "VXN level (Nasdaq-100 volatility), and VXN to VIX ratio", zh: "VXN 水平（纳指 100 波动率），及 VXN/VIX 比值"}, default_weight: 3, availability: automatic, indicator: vxn_level, note: {en: "Indicator exists; no bands yet", zh: "指标已有，暂无分档"}}
+  - {rule_id: SEN-04, description: {en: "CNN Fear and Greed (< 25 full credit, < 45 three quarters, < 55 half)", zh: "CNN 恐惧贪婪（< 25 满分，< 45 七成半，< 55 半分）"}, default_weight: 3, availability: missing_data_source, indicator: fear_greed_index, bands: [{operator: less_than, value: 25, credit: 1.0}, {operator: less_than, value: 45, credit: 0.75}, {operator: less_than, value: 55, credit: 0.5}], legacy_id: [A08, A09, B02, D02, D03], note: {en: "Contrarian seller view. Old D03 (FGI above 75) is the opposite direction and belongs to a bearish strategy", zh: "逆向的卖方视角。旧 D03（FGI 高于 75）方向相反，属于看空策略"}}
+  - {rule_id: SEN-05, description: {en: "AAII retail bull/bear survey", zh: "AAII 散户多空问卷"}, default_weight: 2, availability: proposed}
+  - {rule_id: SEN-06, description: {en: "NAAIM active manager exposure index", zh: "NAAIM 主动经理人仓位指数"}, default_weight: 2, availability: proposed}
+  - {rule_id: SEN-07, description: {en: "Put/call ratio", zh: "Put/Call 比率"}, default_weight: 2, availability: proposed}
+  - {rule_id: SEN-08, description: {en: "No IPO of $10B or more in the window", zh: "窗口内无 ≥ $10B 的大型 IPO"}, default_weight: 1, availability: missing_data_source, legacy_id: [A05]}
+  - {rule_id: SEN-09, description: {en: "Stock short interest", zh: "个股空头比例"}, default_weight: 2, availability: proposed}
+  # TRD · Trend and momentum
+  - {rule_id: TRD-01, description: {en: "SPX > 200-day average", zh: "标普 500 > 200 日线"}, default_weight: 5, availability: automatic, indicator: spx_above_two_hundred_day_average, operator: is_true, legacy_id: [Z18]}
+  - {rule_id: TRD-02, description: {en: "Market breadth (share of stocks above their 200-day average, new highs minus new lows)", zh: "市场广度（站上 200 日线的股票占比、新高减新低）"}, default_weight: 3, availability: proposed}
+  - {rule_id: TRD-03, description: {en: "Stock > 200-day average", zh: "个股 > 200 日线"}, default_weight: 5, availability: automatic, indicator: price_above_two_hundred_day_average, operator: is_true, legacy_id: [Z20], note: {en: "The original rule also requires no new 52-week low; that part is not built yet", zh: "原规则还要求未创 52 周新低，这部分尚未实现"}}
+  - {rule_id: TRD-04, description: {en: "50-day average > 200-day average (golden cross state)", zh: "50 日线 > 200 日线（黄金交叉状态）"}, default_weight: 4, availability: automatic, indicator: fifty_day_average_above_two_hundred_day_average, operator: is_true, legacy_id: [T02]}
+  - {rule_id: TRD-05, description: {en: "Close > 50-day average", zh: "收盘价 > 50 日线"}, default_weight: 3, availability: automatic, indicator: price_above_fifty_day_average, operator: is_true, legacy_id: [T03]}
+  - {rule_id: TRD-06, description: {en: "Distance from the 52-week high (<= 5% full credit, <= 15% half)", zh: "距 52 周高点（<= 5% 满分，<= 15% 半分）"}, default_weight: 4, availability: automatic, indicator: distance_from_fifty_two_week_high_percent, bands: [{operator: less_or_equal, value: 5, credit: 1.0}, {operator: less_or_equal, value: 15, credit: 0.5}], legacy_id: [M02, T05]}
+  - {rule_id: TRD-07, description: {en: "52-week range position (<= 25 full credit, <= 50 half)", zh: "52 周区间分位（<= 25 满分，<= 50 半分）"}, default_weight: 3, availability: automatic, indicator: fifty_two_week_range_percentile, bands: [{operator: less_or_equal, value: 25, credit: 1.0}, {operator: less_or_equal, value: 50, credit: 0.5}], legacy_id: [F02, F03], note: {en: "Low zone is the Wheel view; momentum strategies want the opposite and use TRD-06", zh: "低位是 Wheel 的视角；动量策略方向相反，用 TRD-06"}}
+  - {rule_id: TRD-08, description: {en: "6-month gain > 10%", zh: "6 个月涨幅 > 10%"}, default_weight: 4, availability: automatic, indicator: return_six_month_percent, operator: greater_than, value: 10, legacy_id: [M01]}
+  - {rule_id: TRD-09, description: {en: "Stock relative strength against SPY or its sector", zh: "个股相对 SPY 或行业的强弱"}, default_weight: 3, availability: proposed}
+  - {rule_id: TRD-10, description: {en: "Volume >= 1.5 × 20-day average (higher volume)", zh: "成交量 >= 20 日均量 × 1.5（放量）"}, default_weight: 3, availability: automatic, indicator: volume_ratio_to_twenty_day_average, operator: greater_or_equal, value: 1.5, legacy_id: [M03]}
+  - {rule_id: TRD-11, description: {en: "RSI(14) (40-70 full credit healthy trend, 70-80 half)", zh: "RSI(14)（40-70 满分趋势健康，70-80 半分）"}, default_weight: 3, availability: automatic, indicator: relative_strength_index_fourteen_day, bands: [{operator: between, value: [40, 70], credit: 1.0}, {operator: between, value: [70, 80], credit: 0.5}], legacy_id: [T04, M04]}
+  - {rule_id: TRD-12, description: {en: "RSI(2) oversold (< 5 full credit, < 10 three quarters)", zh: "RSI(2) 超卖（< 5 满分，< 10 七成半）"}, default_weight: 4, availability: automatic, indicator: relative_strength_index_two_day, bands: [{operator: less_than, value: 5, credit: 1.0}, {operator: less_than, value: 10, credit: 0.75}], legacy_id: [R01, R02]}
+  - {rule_id: TRD-13, description: {en: "Close < 5-day average (in a short-term pullback)", zh: "收盘价 < 5 日线（短期回调中）"}, default_weight: 3, availability: automatic, indicator: price_below_five_day_average, operator: is_true, legacy_id: [R03]}
+  - {rule_id: TRD-14, description: {en: "Price within 3% of the nearest support", zh: "现价距最近支撑 <= 3%"}, default_weight: 3, availability: not_implemented, legacy_id: [B06, F04]}
+  - {rule_id: TRD-15, description: {en: "ATR and typical daily price range", zh: "ATR 与日常价格波动幅度"}, default_weight: 2, availability: proposed}
+  - {rule_id: TRD-16, description: {en: "The symbol is in SPMO's holdings (largest, or top 20)", zh: "标的在 SPMO 持仓中（最大一只，或前 20）"}, default_weight: 3, availability: missing_data_source, legacy_id: [C03, C05], note: {en: "Depends on an external holdings list", zh: "依赖外部持仓名单"}}
+  # EVT · Events
+  - {rule_id: EVT-01, description: {en: "No earnings before expiration", zh: "到期前无财报"}, default_weight: 5, availability: automatic, indicator: no_earnings_before_expiration, operator: is_true, legacy_id: [A22, F05]}
+  - {rule_id: EVT-02, description: {en: "No FOMC decision inside the DTE window", zh: "DTE 窗口内无 FOMC 决议日"}, default_weight: 3, availability: not_implemented, legacy_id: [F06]}
+  - {rule_id: EVT-03, description: {en: "No CPI or PCE inside the DTE window, and no new position on release days", zh: "DTE 窗口内无 CPI、PCE，且不在公布日开仓"}, default_weight: 2, availability: not_implemented, legacy_id: [F07, Z14]}
+  - {rule_id: EVT-04, description: {en: "No election day inside the DTE window", zh: "DTE 窗口内无选举日"}, default_weight: 1, availability: not_implemented, legacy_id: [F07]}
+  - {rule_id: EVT-05, description: {en: "No new position within 1 day of the jobs report", zh: "不在非农数据前后 1 天开仓"}, default_weight: 2, availability: not_implemented, legacy_id: [Z13]}
+  - {rule_id: EVT-06, description: {en: "No ex-dividend date in the window", zh: "窗口内无除息日"}, default_weight: 3, availability: not_implemented, legacy_id: [Z08]}
+  - {rule_id: EVT-07, description: {en: "No tariff or policy deadline in the window", zh: "窗口内无关税或政策截止日"}, default_weight: 2, availability: missing_data_source, legacy_id: [Z09]}
+  - {rule_id: EVT-08, description: {en: "No escalating geopolitical conflict", zh: "没有正在升级的地缘冲突"}, default_weight: 2, availability: missing_data_source, legacy_id: [Z10]}
+  - {rule_id: EVT-09, description: {en: "No pending industry regulation or export control event", zh: "没有待决的行业监管或出口管制事件"}, default_weight: 3, availability: missing_data_source, legacy_id: [Z11]}
+  - {rule_id: EVT-10, description: {en: "No earnings from industry leaders in the window", zh: "同业龙头财报不在窗口内"}, default_weight: 2, availability: missing_data_source, legacy_id: [Z15]}
+  - {rule_id: EVT-11, description: {en: "No earnings from major customers or suppliers in the window", zh: "大客户或上下游财报不在窗口内"}, default_weight: 2, availability: missing_data_source, legacy_id: [Z16]}
+  - {rule_id: EVT-12, description: {en: "Now is the March or September SPMO rebalance window", zh: "现在处于 3 月或 9 月 SPMO 换仓窗口"}, default_weight: 1, availability: not_implemented, legacy_id: [C01]}
+  - {rule_id: EVT-13, description: {en: "Expiration calendar effects (monthly expiration, quadruple witching)", zh: "到期日历效应（月度到期、四巫日）"}, default_weight: 1, availability: proposed}
+  # LIQ · Liquidity
+  - {rule_id: LIQ-01, description: {en: "Market value > $200B", zh: "市值 > $200B"}, default_weight: 3, availability: missing_data_source, legacy_id: [E02]}
+  - {rule_id: LIQ-02, description: {en: "Top 100 by market value or trading value", zh: "市值或成交额前 100"}, default_weight: 3, availability: missing_data_source, legacy_id: [D01]}
+  - {rule_id: LIQ-03, description: {en: "Stock average daily trading value", zh: "股票日均成交额"}, default_weight: 3, availability: proposed}
+  - {rule_id: LIQ-04, description: {en: "Bid-ask spread <= 5% of the mid price", zh: "买卖价差 <= 中间价 5%"}, default_weight: 4, availability: not_implemented, legacy_id: [Z06]}
+  - {rule_id: LIQ-05, description: {en: "Open interest >= 500 and daily volume >= 100", zh: "OI >= 500 且当日成交量 >= 100"}, default_weight: 4, availability: not_implemented, legacy_id: [Z07]}
+  # VOL · Volatility
+  - {rule_id: VOL-01, description: {en: "IV percentile (>= 70 full credit, >= 50 three quarters, >= 40 half)", zh: "IV 百分位（>= 70 满分，>= 50 七成半，>= 40 半分）"}, default_weight: 5, availability: missing_data_source, indicator: implied_volatility_percentile, bands: [{operator: greater_or_equal, value: 70, credit: 1.0}, {operator: greater_or_equal, value: 50, credit: 0.75}, {operator: greater_or_equal, value: 40, credit: 0.5}], legacy_id: [A12, A13, A14]}
+  - {rule_id: VOL-02, description: {en: "IV elevated: VIX above its 20-day average, or IV > RV30", zh: "IV 抬升期：VIX 高于 20 日均值，或 IV > RV30"}, default_weight: 3, availability: not_implemented, legacy_id: [B01]}
+  - {rule_id: VOL-03, description: {en: "ATM IV (30-45 days) > RV30", zh: "ATM IV（30-45 天）> RV30"}, default_weight: 4, availability: automatic, indicator: selected_put_implied_volatility_exceeds_realized, operator: is_true, legacy_id: [Z05]}
+  - {rule_id: VOL-04, description: {en: "Pre-earnings IV and the expected move", zh: "财报前 IV 与预期波动幅度"}, default_weight: 3, availability: proposed}
+  - {rule_id: VOL-05, description: {en: "Put skew", zh: "Put 偏斜（skew）"}, default_weight: 2, availability: proposed}
+  # CTR · Contract selection
+  - {rule_id: CTR-01, description: {en: "|Δ| (0.15-0.20 full credit, 0.15-0.30 three quarters, <= 0.30 half)", zh: "|Δ|（0.15-0.20 满分，0.15-0.30 七成半，<= 0.30 半分）"}, default_weight: 5, availability: automatic, indicator: selected_put_absolute_delta, bands: [{operator: between, value: [0.15, 0.2], credit: 1.0}, {operator: between, value: [0.15, 0.3], credit: 0.75}, {operator: less_or_equal, value: 0.3, credit: 0.5}], legacy_id: [B03, B04, F08]}
+  - {rule_id: CTR-02, description: {en: "DTE (30-45 full credit, 14-45 and above 30 half)", zh: "DTE（30-45 满分，14-45 与 > 30 半分）"}, default_weight: 4, availability: automatic, indicator: selected_put_days_to_expiration, bands: [{operator: between, value: [30, 45], credit: 1.0}, {operator: between, value: [14, 45], credit: 0.5}, {operator: greater_than, value: 30, credit: 0.5}], legacy_id: [B07, A23, F09, E05]}
+  - {rule_id: CTR-03, description: {en: "Buyer expiration 60-90 days", zh: "买方到期 60-90 天"}, default_weight: 3, availability: not_implemented, legacy_id: [D06]}
+  - {rule_id: CTR-04, description: {en: "Monthly expiration (third Friday)", zh: "到期日是月度期权（第三个周五）"}, default_weight: 2, availability: not_implemented, legacy_id: [B08]}
+  - {rule_id: CTR-05, description: {en: "Strike = price −10% to −15% (or −20%)", zh: "Strike = 现价 −10% 到 −15%（或 −20%）"}, default_weight: 2, availability: not_implemented, legacy_id: [E03, E04]}
+  - {rule_id: CTR-06, description: {en: "Strike below the nearest support", zh: "Strike 低于最近支撑位"}, default_weight: 3, availability: not_implemented, legacy_id: [B05]}
+  - {rule_id: CTR-07, description: {en: "Strike is a round number near the target with high volume", zh: "行权价是目标价附近的整数且成交量大"}, default_weight: 1, availability: not_implemented, legacy_id: [D07]}
+  - {rule_id: CTR-08, description: {en: "Covered Call strike = price +10%", zh: "Covered Call 行权价 = 现价 +10%"}, default_weight: 2, availability: not_implemented, legacy_id: [E11]}
+  - {rule_id: CTR-09, description: {en: "Covered Call expires in about 30 days", zh: "Covered Call 到期约 30 天"}, default_weight: 2, availability: not_implemented, legacy_id: [E12]}
+  - {rule_id: CTR-10, description: {en: "Strike outside the expected move (1 sigma)", zh: "Strike 在预期波动幅度（1σ）之外"}, default_weight: 3, availability: proposed}
+  # RET · Return and payoff
+  - {rule_id: RET-01, description: {en: "Annualized return (>= 20% full credit, >= 8% half)", zh: "年化收益（>= 20% 满分，>= 8% 半分）"}, default_weight: 4, availability: automatic, indicator: selected_put_annualized_return_percent, bands: [{operator: greater_or_equal, value: 20, credit: 1.0}, {operator: greater_or_equal, value: 8, credit: 0.5}], legacy_id: [A21, E08, B09]}
+  - {rule_id: RET-02, description: {en: "Monthly premium (>= 4% full credit, >= 2% half)", zh: "月化权利金（>= 4% 满分，>= 2% 半分）"}, default_weight: 3, availability: not_implemented, indicator: selected_put_monthly_premium_percent, bands: [{operator: greater_or_equal, value: 4, credit: 1.0}, {operator: greater_or_equal, value: 2, credit: 0.5}], legacy_id: [B10, B11, E06, E07]}
+  - {rule_id: RET-03, description: {en: "Implied leverage (Δ × price ÷ premium) >= 10x", zh: "隐含杠杆（Δ × 股价 ÷ 权利金）>= 10 倍"}, default_weight: 2, availability: not_implemented, legacy_id: [D05]}
+  - {rule_id: RET-04, description: {en: "Breakeven price and maximum loss", zh: "盈亏平衡价与最大亏损"}, default_weight: 3, availability: proposed}
+  - {rule_id: RET-05, description: {en: "Probability of profit (POP)", zh: "盈利概率（POP）"}, default_weight: 3, availability: proposed}
+  # POS · Position, account and portfolio
+  - {rule_id: POS-01, description: {en: "Option level >= L2 (L3 for spreads)", zh: "期权权限 >= L2（价差需 L3）"}, default_weight: 5, availability: account_data, legacy_id: [B14, B15]}
+  - {rule_id: POS-02, description: {en: "No leverage, cash secured", zh: "零杠杆，现金担保"}, default_weight: 4, availability: account_data, legacy_id: [A20, F11]}
+  - {rule_id: POS-03, description: {en: "Cash >= 30% of net value", zh: "现金 >= 净值 × 30%"}, default_weight: 3, availability: account_data, legacy_id: [A19]}
+  - {rule_id: POS-04, description: {en: "Cash >= Strike × 100", zh: "现金 >= Strike × 100"}, default_weight: 5, availability: account_data, legacy_id: [E09, F10]}
+  - {rule_id: POS-05, description: {en: "Total Put notional (including the new one) <= 70% of net value", zh: "全部 Put 名义敞口（含新仓）<= 净值 × 70%"}, default_weight: 4, availability: account_data, legacy_id: [A17]}
+  - {rule_id: POS-06, description: {en: "Notional in this stock <= 35% of net value", zh: "该股名义敞口 <= 净值 × 35%"}, default_weight: 4, availability: account_data, legacy_id: [A18]}
+  - {rule_id: POS-07, description: {en: "One sector <= 50% of total exposure", zh: "同板块敞口 <= 总敞口 50%"}, default_weight: 3, availability: account_data, legacy_id: [Z04]}
+  - {rule_id: POS-08, description: {en: "Largest loss per trade (to the stop) <= 2% of net value", zh: "单笔最大亏损（到止损）<= 净值 × 2%"}, default_weight: 5, availability: account_data, legacy_id: [Z03]}
+  - {rule_id: POS-09, description: {en: "Single option position <= 10% of net value", zh: "单只期权仓位 <= 净值 × 10%"}, default_weight: 4, availability: account_data, legacy_id: [D08]}
+  - {rule_id: POS-10, description: {en: "Total long option premium <= 20% of net value", zh: "多头期权总权利金 <= 净值 × 20%"}, default_weight: 4, availability: account_data, legacy_id: [D10]}
+  - {rule_id: POS-11, description: {en: "Switch to a spread when one leg uses > 20% of net value", zh: "单腿占用 > 净值 × 20% 时改用价差"}, default_weight: 3, availability: account_data, legacy_id: [B13]}
+  - {rule_id: POS-12, description: {en: "Build the position in 2 or more steps", zh: "分 2 批以上建仓"}, default_weight: 2, availability: trade_plan, legacy_id: [D09]}
+  - {rule_id: POS-13, description: {en: "Covered Call contracts = shares ÷ 100, never more", zh: "Covered Call 张数 = 持股 ÷ 100，不超卖"}, default_weight: 5, availability: account_data, legacy_id: [E13]}
+  - {rule_id: POS-14, description: {en: "Portfolio Greeks (Delta, Vega, Theta, beta-weighted Delta)", zh: "组合希腊字母（Delta、Vega、Theta、beta 加权 Delta）"}, default_weight: 3, availability: proposed}
+  - {rule_id: POS-15, description: {en: "Margin and buying power usage", zh: "保证金占用与购买力使用率"}, default_weight: 3, availability: proposed}
+  - {rule_id: POS-16, description: {en: "Position correlation and stress test", zh: "持仓相关性与压力测试"}, default_weight: 2, availability: proposed}
+  # THS · Thesis and discipline
+  - {rule_id: THS-01, description: {en: "Circle of competence: you can explain how the company makes money", zh: "能力圈：你能说清这家公司怎么赚钱"}, default_weight: 3, availability: proposed}
+  - {rule_id: THS-02, description: {en: "The thesis is written down (why you trade, what you expect)", zh: "已写下投资逻辑（为什么做、预期什么）"}, default_weight: 4, availability: proposed}
+  - {rule_id: THS-03, description: {en: "You are willing to hold the stock long term", zh: "你愿意长期持有该股"}, default_weight: 5, availability: user_answer, legacy_id: [A15, E01]}
+  - {rule_id: THS-04, description: {en: "The purpose of the trade is clear (income or buying the stock)", zh: "开仓目的已经明确（收租或接盘）"}, default_weight: 4, availability: user_answer, legacy_id: [E16]}
+  - {rule_id: THS-05, description: {en: "Falsification: what proves you wrong is written down, and you exit when it happens", zh: "证伪条件：写下什么情况证明你错了，发生时就离场"}, default_weight: 5, availability: proposed}
+  - {rule_id: THS-06, description: {en: "Sleep test: the loss at the 52-week low is bearable", zh: "睡眠测试：跌到 52 周低点时的亏损可以承受"}, default_weight: 3, availability: user_answer, legacy_id: [A24]}
+  - {rule_id: THS-07, description: {en: "At most 2 trades in the last 30 days", zh: "近 30 日出手 <= 2 次"}, default_weight: 3, availability: user_answer, legacy_id: [D04]}
+  # EXT · Management and exit
+  - {rule_id: EXT-01, description: {en: "Seller take profit: buy back at 50% or 70% profit", zh: "卖方止盈：盈利 50% 或 70% 时买回平仓"}, default_weight: 4, availability: trade_plan, legacy_id: [B16, B17]}
+  - {rule_id: EXT-02, description: {en: "Buyer take profit: +60% or +100%", zh: "买方止盈：+60% 或 +100%"}, default_weight: 3, availability: trade_plan, legacy_id: [D12, D13]}
+  - {rule_id: EXT-03, description: {en: "Stop loss at 2 times the premium", zh: "止损：亏损达到 2 倍权利金"}, default_weight: 4, availability: trade_plan, legacy_id: [Z01]}
+  - {rule_id: EXT-04, description: {en: "Buyer stop: exit when the stock reaches the target but the option still loses", zh: "买方止损：正股到目标位而期权仍亏损时离场"}, default_weight: 3, availability: trade_plan, legacy_id: [D14]}
+  - {rule_id: EXT-05, description: {en: "Time stop or roll at 21 days left", zh: "剩 21 天时时间止损或展期"}, default_weight: 3, availability: trade_plan, legacy_id: [Z02]}
+  - {rule_id: EXT-06, description: {en: "Planned holding period (buyer 3-10 days, SPMO at least six months)", zh: "计划持有期（买方 3-10 天，SPMO 至少半年）"}, default_weight: 2, availability: trade_plan, legacy_id: [D11, C04]}
+  - {rule_id: EXT-07, description: {en: "Trade at the close on SPMO rebalance day", zh: "在 SPMO 换仓日以收盘价执行"}, default_weight: 1, availability: trade_plan, legacy_id: [C02]}
+  - {rule_id: EXT-08, description: {en: "Covered Call already planned while holding shares", zh: "持股时已规划卖 Covered Call"}, default_weight: 3, availability: trade_plan, legacy_id: [E10]}
+  - {rule_id: EXT-09, description: {en: "Covered Call strike >= cost basis", zh: "Covered Call 行权价 >= 成本价"}, default_weight: 4, availability: account_data, legacy_id: [E14]}
+  - {rule_id: EXT-10, description: {en: "Cost basis <= price × 1.15, otherwise pause Covered Calls", zh: "成本 <= 现价 × 1.15，否则暂停 Covered Call"}, default_weight: 3, availability: account_data, legacy_id: [E15, F12]}
+
+# Old rules that did not become a rule here (strategy choices or strategy-level checks, move them into strategy files):
+#   B12 margin account path, D15 trade direction, C06 12-month Sharpe against SPY.
