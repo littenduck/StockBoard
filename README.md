@@ -32,6 +32,7 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 | `docs/strategy.md` | strategy file format, scoring, pass veto |
 | `stockboard_backend/` | Python package, one module per job, function names are `module_verb_object` |
 | `static/index.html`, `static/rules.html`, `static/base.css`, `static/language.js` | dashboard, rule catalog page (`/rules`), shared design tokens, interface text in both languages |
+| `docs/deployment.md` | where it runs (Oracle VM, Tailscale), the firewall, how to operate and update it |
 | `docs/api.md` | JSON API (`/api/v1`) for the page and any future client |
 | `.claude/skills/` | skills that point Claude at the design and strategy docs |
 

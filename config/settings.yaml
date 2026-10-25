@@ -5,6 +5,8 @@ default_language: en
 stale_after_minutes: 60
 # Other web origins allowed to call the API (CORS). Empty: same-origin page and native apps only.
 allowed_origin_list: []
+# Most requests the whole server answers per second; the rest get HTTP 429. Raise it on a bigger machine, 0 turns it off.
+max_requests_per_second: 30
 default_strategy_id: sell_put_four_in_one
 
 # First row of the page. is_higher_value_risky inverts the up/down colors.

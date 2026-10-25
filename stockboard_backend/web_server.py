@@ -9,8 +9,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from stockboard_backend import (indicator_calculation, market_data, refresh_scheduler, rule_catalog, settings_loader,
-                                snapshot_storage, strategy_loader)
+from stockboard_backend import (indicator_calculation, market_data, refresh_scheduler, request_limiter, rule_catalog,
+                                settings_loader, snapshot_storage, strategy_loader)
 
 PROJECT_DIRECTORY = settings_loader.PROJECT_DIRECTORY
 application_settings = settings_loader.settings_loader_load_settings_from_yaml_file(
@@ -39,15 +39,31 @@ async def web_server_run_application_lifespan(application: FastAPI):
 app = FastAPI(lifespan=web_server_run_application_lifespan)
 if application_settings.allowed_origin_list:
     app.add_middleware(CORSMiddleware, allow_origins=application_settings.allowed_origin_list, allow_methods=["GET"])
+if application_settings.max_requests_per_second > 0:
+    app.add_middleware(request_limiter.RequestLimiterMiddleware,
+                       requests_per_second=application_settings.max_requests_per_second)
+
+# (file stamp, parsed snapshot). Replaced as one tuple, so concurrent requests need no lock.
+snapshot_cache = (None, None)
 
 
 def web_server_load_snapshot_or_empty_snapshot() -> dict:
-    """A snapshot from an older schema counts as missing; the refresher rebuilds it."""
-    snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(refresh_scheduler.SNAPSHOT_FILE_PATH)
-    if snapshot is None or snapshot.get("schema_version") != refresh_scheduler.SNAPSHOT_SCHEMA_VERSION:
-        return {"schema_version": refresh_scheduler.SNAPSHOT_SCHEMA_VERSION, "generated_at": None,
-                "market_indicator_card_list": [], "symbol_result_list": [], "failed_symbol_list": []}
-    return snapshot
+    """Parse the snapshot file once and reuse it until the refresher replaces the file.
+
+    A snapshot from an older schema counts as missing; the refresher rebuilds it.
+    """
+    global snapshot_cache
+    path = refresh_scheduler.SNAPSHOT_FILE_PATH
+    status = os.stat(path) if os.path.exists(path) else None
+    # The stamp is read before the file, so the cached content is never older than its stamp.
+    stamp = (path, status and (status.st_ino, status.st_mtime_ns, status.st_size))
+    if snapshot_cache[0] != stamp:
+        snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(path)
+        if snapshot is None or snapshot.get("schema_version") != refresh_scheduler.SNAPSHOT_SCHEMA_VERSION:
+            snapshot = {"schema_version": refresh_scheduler.SNAPSHOT_SCHEMA_VERSION, "generated_at": None,
+                        "market_indicator_card_list": [], "symbol_result_list": [], "failed_symbol_list": []}
+        snapshot_cache = (stamp, snapshot)
+    return snapshot_cache[1]
 
 
 def web_server_find_strategy_id_or_raise(strategy_id: Optional[str]) -> str:
