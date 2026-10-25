@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional, Tuple
 
 from stockboard_backend import (company_indicators, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
-                                option_chain, snapshot_storage, strategy_evaluation, yahoo_gate)
+                                option_chain, snapshot_storage, strategy_evaluation, yahoo_company, yahoo_gate)
 from stockboard_backend.fetch_cache import FetchCache
 from stockboard_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
 from stockboard_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
@@ -139,7 +139,8 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     fetch_cache = fetch_cache or refresh_scheduler_get_fetch_cache(settings)
     registry = fetch_cache.registry
     market_history_by_symbol = market_history_by_symbol or {}
-    company_snapshot = live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, symbol)
+    company_snapshot = yahoo_company.yahoo_company_overlay_quote(
+        live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, symbol), fetch_cache.peek("yahoo_quote", "all", {}).get(symbol))
     info = company_snapshot.get("info") if isinstance(company_snapshot.get("info"), dict) else {}
     shares_outstanding = company_indicators.company_indicators_get_number(info, "sharesOutstanding")
     company_indicator_value_by_id = live_indicators.live_indicators_build_company_indicator_value_by_id(company_snapshot, today)
@@ -263,7 +264,8 @@ def refresh_scheduler_build_dashboard_snapshot(
         refresh_scheduler_build_calendar_indicator_value_by_id(settings, today), now))
     ten_year_yield = shared_indicator_value_by_id.get("treasury_ten_year_yield")
     shared_indicator_value_by_id.update(live_indicators.live_indicators_build_equity_risk_premium_indicator_value_by_id(
-        live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, "SPY"), None if ten_year_yield is None else ten_year_yield.value))
+        yahoo_company.yahoo_company_overlay_quote(
+            live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, "SPY"), fetch_cache.peek("yahoo_quote", "all", {}).get("SPY")), None if ten_year_yield is None else ten_year_yield.value))
     shared_indicator_value_by_id = indicator_registry.indicator_registry_drop_stale_values(shared_indicator_value_by_id, registry, now)
 
     symbol_history_by_symbol = {symbol: history_by_symbol[symbol] for symbol in settings.watchlist_symbol_list if symbol in history_by_symbol}

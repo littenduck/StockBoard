@@ -14,7 +14,7 @@ import pandas
 import yfinance
 
 from stockboard_backend import (cboe_data, company_indicators, dolthub_data, edgar_data, finra_data, fundamental_series, history_series,
-                                macro_data, sentiment_data)
+                                macro_data, sentiment_data, yahoo_company)
 from stockboard_backend.fetch_cache import FetchCache
 from stockboard_backend.indicator_registry import IndicatorRegistry
 from stockboard_backend.strategy_evaluation import IndicatorValue
@@ -104,22 +104,9 @@ def live_indicators_fetch_treasury_series(fetch_cache: FetchCache) -> Tuple[Opti
 # ---- company figures from yfinance --------------------------------------------------------------------------------------------
 
 def live_indicators_fetch_company_snapshot(fetch_cache: FetchCache, symbol: str) -> dict:
-    """info, eps_trend, recommendations_summary, insider_transactions and calendar from yfinance; each piece may come back None."""
-    def fetch():
-        ticker = yfinance.Ticker(symbol)
-        snapshot = {"info": None, "eps_trend": None, "recommendations_summary": None, "insider_transactions": None, "calendar": None}
-        try:
-            snapshot["info"] = ticker.info
-        except Exception as error:
-            print("company data failed:", symbol, "info", error)
-        is_fund = isinstance(snapshot["info"], dict) and snapshot["info"].get("quoteType") == "ETF"
-        for key in () if is_fund else ("eps_trend", "recommendations_summary", "insider_transactions", "calendar"):  # a fund has none
-            try:
-                snapshot[key] = getattr(ticker, key)
-            except Exception as error:
-                print("company data failed:", symbol, key, error)
-        return snapshot
-    snapshot, fetched_at = fetch_cache.get("yahoo_company", symbol, fetch, default={"info": None})
+    """info, eps_trend, recommendations_summary, insider_transactions and calendar, from one Yahoo request (a fund simply has fewer)."""
+    snapshot, fetched_at = fetch_cache.get(
+        "yahoo_company", symbol, lambda: yahoo_company.yahoo_company_fetch_snapshot(symbol), default={"info": None})
     return {**snapshot, "fetched_at": fetched_at}
 
 

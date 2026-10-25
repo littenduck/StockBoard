@@ -87,6 +87,11 @@ class FetchCache:
             self._entry_by_key[cache_key] = (now, value)
             return value, now
 
+    def peek(self, group_id: str, key: Optional[str], default: Any = None) -> Any:
+        """The last answer kept, without asking."""
+        entry = self._entry_by_key.get((group_id, key))
+        return default if entry is None else entry[1]
+
     def force_due(self, group_id: str, key: Optional[str]) -> None:
         """The next get asks the source again whatever the schedule says."""
         self._forced_due_key_set.add((group_id, key))
