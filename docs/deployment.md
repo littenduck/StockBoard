@@ -51,6 +51,11 @@ Funnel needs no domain, no inbound port and hides the server's own IP. It only s
    ExecStart=/home/ubuntu/StockBoard/.venv/bin/python -m uvicorn stockboard_backend.web_server:app --host 127.0.0.1 --port 8000
    Restart=always
    RestartSec=5
+   MemoryHigh=300M
+   MemoryMax=400M
+   MemorySwapMax=64M
+   TasksMax=96
+   CPUWeight=50
 
    [Install]
    WantedBy=multi-user.target
@@ -93,6 +98,27 @@ cd ~/StockBoard && git pull && sudo systemctl restart stockboard
 ```
 
 After `requirements.txt` changes run `~/StockBoard/.venv/bin/pip install -r requirements.txt`, then restart the service. Turn the public address off with `sudo tailscale funnel --https=443 off`.
+
+## Hardening: what and why
+
+The page is public and has no login. The aim is that the *website* may fail and be restarted, while the *server* (SSH, Tailscale) never goes down.
+
+1. **Snapshot cache** (`web_server.py`). The dashboard reads one JSON snapshot that changes at most every 10 minutes, yet every request used to re-read and re-parse it, the main repeated cost on a 1/8-core machine. The snapshot is now parsed once and kept until the refresher replaces the file. The cache key is the file's identity (path, inode, modification time, size), not a timer, so data is never older than the file and nothing a visitor sends can grow the cache. It is one tuple swapped in a single assignment, so it needs no lock and no endpoint changes.
+2. **Global request limit** (`request_limiter.py`, `max_requests_per_second` in `config/settings.yaml`). A cache lowers the cost of a request, not their number. One token bucket for the whole server turns a flood into cheap `429` replies before any route runs. `0` turns it off; raise it on a bigger machine. It is global and not per visitor because behind Funnel the app may not see the real client address, so a per-visitor table could silently fail or be bypassed with a spoofed header. Known limit: one heavy user can use up the shared budget until they stop. Fixing that needs the real client address or a service in front, such as Cloudflare.
+3. **systemd resource limits** (the five lines in the unit file). If the app misbehaves, only the app should be hurt. A memory cap makes the kernel stop the *service*, not `sshd` or `tailscaled`. A swap cap stops a slow-disk spiral on a machine with 1/8 of a CPU. `CPUWeight` lets `sshd` and `tailscaled` win when the CPU is contended. `Restart=always` brings the site back in seconds, and the snapshot is on disk, so nothing is lost. The limits live on the server, not in the code, so a bigger machine only needs new numbers.
+
+### How the numbers were chosen
+
+A sizing method that works on any machine:
+
+1. Measure memory used by everything except the app (`free -m`, `ps`).
+2. Measure the app's idle size and its peak during one refresh: run `python -m stockboard_backend.refresh_scheduler --once` and read the child's maximum resident size (`/usr/bin/time -v`, or `resource.getrusage` in a small wrapper).
+3. Take the cap from several independent estimates and use their median: the free-memory budget, the app's peak × 1.3 to 1.5, how much the kernel needs left for `sshd` and `tailscaled`, and the platform's limits. Estimates that rest on the same evidence count once.
+4. Lean low when estimates disagree, and never exceed a ceiling that leaves room for SSH. If the refresh peak does not fit under the ceiling, reduce the refresh work instead of raising the cap.
+
+Rules of thumb: `MemoryMax` ≈ 40% of RAM, `MemoryHigh` ≈ 75% of `MemoryMax`, `MemorySwapMax` ≈ 6% of RAM, `TasksMax` about three times the usual thread count. On the 1 GB machine used here that gives 400 MB, 300 MB and 64 MB.
+
+If something breaks: `sudo systemctl restart stockboard`, then `journalctl -u stockboard -n 50`. If the whole machine hangs, reboot the instance from the Oracle console.
 
 ## Security notes
 

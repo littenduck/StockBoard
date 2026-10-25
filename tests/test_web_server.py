@@ -3,7 +3,7 @@ import json
 import pytest
 from fastapi import HTTPException
 
-from stockboard_backend import refresh_scheduler, web_server
+from stockboard_backend import refresh_scheduler, snapshot_storage, web_server
 
 STRATEGY_ID = web_server.application_settings.default_strategy_id
 
@@ -86,3 +86,18 @@ def test_strategy_list_is_bilingual_with_english_default():
 def test_schema_two_snapshot_counts_as_missing(snapshot_file_path):
     write_snapshot(snapshot_file_path, schema_version=2)
     assert web_server.web_server_get_dashboard_snapshot(STRATEGY_ID)["symbol_card_list"] == []
+
+
+def test_unchanged_snapshot_file_is_parsed_once(snapshot_file_path):
+    write_snapshot(snapshot_file_path)
+    assert web_server.web_server_load_snapshot_or_empty_snapshot() is web_server.web_server_load_snapshot_or_empty_snapshot()
+
+
+def test_replaced_snapshot_file_is_loaded_again(snapshot_file_path):
+    write_snapshot(snapshot_file_path)
+    assert web_server.web_server_load_snapshot_or_empty_snapshot()["failed_symbol_list"] == ["CCC"]
+    replacement = json.loads(snapshot_file_path.read_text())
+    replacement["failed_symbol_list"] = ["DDD"]
+    # The refresher replaces the file through a temporary file, which gives it a new identity.
+    snapshot_storage.snapshot_storage_save_snapshot_to_json_file(replacement, str(snapshot_file_path))
+    assert web_server.web_server_load_snapshot_or_empty_snapshot()["failed_symbol_list"] == ["DDD"]
