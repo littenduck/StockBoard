@@ -27,7 +27,7 @@ Branch `refactor/indicator-registry`, one PR, small commits. Not deployed by thi
 
 Twelve option requests per symbol: a fresh `Ticker` re-requests the expiration list, each `option_chain` asks for it again, and the covered call asks a second time.
 
-Targets, measured again with the same script after the work: next refresh right after at most 100 requests (from 218), cold start at most 250 (from 371), Yahoo `/v8/finance/chart` at most 2 outside the daily history load, `quoteSummary` at most 14 per hour (one per symbol), and zero requests for indicators that are not due.
+Targets (revised after the review, see the end): one intraday tick during market hours with options and the quote due, about 75 to 85 requests (from 218), 99 at the top of the hour when the 14 `quoteSummary` requests are due too; cold start about 200 (from 371); per trading day about 3,500 (from about 8,500 at 39 ticks of 218); zero requests for indicators that are not due. Measured with the clock faked to market hours, because a refresh straight after another with a cache makes almost no requests and says nothing.
 
 ## 1. Config layout and the strategy move
 
@@ -98,14 +98,33 @@ Validation (at startup and in tests): a rule's indicator exists; `status: built`
 
 `docs/indicator.md` explains the three levels and the new file; `docs/strategy.md`, `docs/api.md` (new fields), `docs/deployment.md` (new paths, `git pull` then restart; nothing else changes on the server), `README.md`, the strategy skill.
 
-## Order of commits
+## Order of commits (revised)
 
-1. Move strategies to `config/strategies/` and fix paths.
-2. Add `indicators.yaml`, the loader and validation; slim `rules.yaml`; API and rule catalog page unchanged except two new fields.
-3. Move the sidebar indicator fields from `settings.yaml`.
+1. Yahoo: one `Ticker` and one expiration list per symbol (independent, low risk, about 100 fewer requests, measured alone).
+2. Move strategies to `config/strategies/` and fix paths.
+3. Add `indicators.yaml`, the loader and validation; slim `rules.yaml`; move the sidebar fields from `settings.yaml`; API and rule catalog page get the new fields.
 4. `fetch_cache`, `observed_at`, stale gate, tick loop and after-hours schedule driven by the YAML fields.
-5. Yahoo: Ticker and expiration reuse, then the batched quote and daily history, then the single `quoteSummary`.
-6. Tidy `requirements.txt`, docs, measurement table, PR.
+5. Yahoo: batched quote and daily history, then the single `quoteSummary`.
+6. Tidy `requirements.txt` (pin `yfinance`), docs, measurement table, PR.
+
+## Revisions after the independent review (these override the text above)
+
+The reviewer (a separate agent that read the code and ran read-only experiments) confirmed the baseline explanation (12 option requests per symbol: a fresh `Ticker` re-requests the expiration list, 1 list + 2 per window x 4 + 3 for the covered call) and the 77 and 14 `quoteSummary` counts, and found only two rules that disagree on a field (both on `method`: `naaim_exposure_index`, `market_capitalization_billion_usd`). It asked for these changes, all accepted:
+
+1. **Targets and measurement** as in the paragraph above; `count_requests.py` gets a faked clock (`--market-open`, ticks 10 minutes apart) and prints per tick and per day.
+2. **Group split**: `yahoo_history` (1d) and `yahoo_quote` (10m) are separate groups. Validation: every indicator of a group agrees on `scope` and `market_hours_only`.
+3. **Cache key** is (group, symbol or none) with one lock per key and no lock held during a network call; the old module caches (`series_cache`, `company_cache`, `edgar_cache`, `fred_series_cache`, cache seconds in `live_indicators.py`) are replaced by `fetch_cache`, not kept next to it.
+4. **`max_age` and `observed_at`**: price indicators get `max_age: 4d` (weekends and holidays must not read unknown). `observed_at` is the bar date for values computed from prices, the date of the newest observation for series, the fetch time for company data, today for calendar values.
+5. **Anchored times**: a group may set `fetch_at` (New York time, for example `["16:20"]`) besides `fetch_every`; it is due when the last fetch is older than `fetch_every` or older than the latest `fetch_at`. Prices and history load once after the close, slow groups before the open.
+6. **Batched quote guards**: use only `regularMarket*` fields; choose replace or append by the exchange date of `regularMarketTime`; if `regularMarketPreviousClose` differs from the cached last close by more than 0.1% (a split or an ex-dividend day with adjusted history), reload the history.
+7. **`quoteSummary` shape**: flatten the modules into the `info` dictionary the code expects, drop empty `{}`, unwrap `{raw}` values, convert epoch dates in New York time, and fill quote-only fields (`sharesOutstanding` and `dividendYield` of funds) from the batched quote; call the endpoints through `YfData` (cookie and crumb); pin `yfinance` in `requirements.txt`.
+8. **Evidence about blocking**: the request count is a proxy. `YfData` retries a failed request once with a fresh cookie and crumb, so errors cost double and the script undercounts them; bursts (`yf.download` with threads) and the datacenter IP matter at least as much. Add counters for rate-limit errors, 4xx and crumb refreshes, logged hourly, and a global cap of 2 concurrent Yahoo requests; the PR says the effect on blocking is compared over a week of the counters, not claimed.
+9. **Producer map**: keep a map in code (fetch group, fetch function, the ids it makes) and a test that every `built` indicator in the YAML has a producer, so a typo is caught.
+10. **Missed places**: `history_series.py` reads `history_start` from `rules.yaml`; `static/rules.html` (`RECORD_FIELD_LIST`) and `static/language.js` get the two fields with en and zh labels; `tests/test_live_indicators.py` and `tests/test_history_series.py` use the old constants; `docs/indicator.md` is updated, not created; `docs/deployment.md` says to run `pip install -r requirements.txt` after pulling; `SNAPSHOT_SCHEMA_VERSION` goes up if `observed_at` or `prices_as_of` enter the snapshot.
+11. **After hours**: the snapshot gets `prices_as_of` so the status bar shows when prices were taken, not when the snapshot was rebuilt; option values from the last session are kept in the cache overnight, and a restart at night leaves option rules unknown until the open.
+12. **More cuts**: the expiration list is cached for a day; the 7-year chart request per symbol (EDGAR price median) is counted and cached for a day.
+
+Kept as asked: one branch and one PR (the reviewer suggested two); the commit order above keeps each step measurable.
 
 ## Out of scope
 
