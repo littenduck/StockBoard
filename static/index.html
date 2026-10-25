@@ -289,7 +289,7 @@ function calculateScoreText(ruleResultList) {
 function renderRuleRows(ruleResultList) {
   return ruleResultList.map(rule => `<div class="row" data-status="${rule.status}">
     <small><a href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="${escapeText(languageText('open_rule', { id:rule.rule_id }))}">${escapeText(rule.rule_id)}</a></small>${renderStatusBadge(rule.status)}
-    <span>${languageRenderText(rule.description)}</span><span>${formatMeasuredValue(rule.measured_value)}</span></div>`).join('');
+    <span>${languageRenderText(rule.name)}</span><span>${formatMeasuredValue(rule.measured_value)}</span></div>`).join('');
 }
 
 function renderStrategyTree(symbol, evaluation, shouldAnimate) {
