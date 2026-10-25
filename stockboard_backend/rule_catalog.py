@@ -27,7 +27,7 @@ HISTORY_START_PATTERN = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")  # a year, a mo
 
 @dataclass
 class RetiredRule:
-    rule_id: str
+    old_id: str
     legacy_id: List[str]
     reason: LocalizedText
 
@@ -66,6 +66,7 @@ class RuleCatalogEntry:
     history_start: Optional[str] = None
     legacy_id: List[str] = field(default_factory=list)
     note: Optional[LocalizedText] = None
+    unit: Optional[str] = None  # the unit of the indicator, shown after the number of a line
     indicator_description: Optional[LocalizedText] = None  # what the indicator measures, from config/indicators.yaml
     fetch_group: Optional[str] = None  # the three below come from the indicator
     fetch_every: Optional[str] = None
@@ -101,7 +102,7 @@ def rule_catalog_merge_indicator_fields(raw_rule: dict, registry: Optional[Indic
             raw_rule["rule_id"], ", ".join(repeated), indicator.indicator_name))
     return {**raw_rule, "indicator": indicator.indicator_name, "indicator_id": indicator.indicator_id,
             **{name: getattr(indicator, name) for name in INDICATOR_OWNED_FIELD_LIST},
-            "indicator_description": indicator.description, "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age}
+            "indicator_description": indicator.description, "unit": indicator.unit, "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age}
 
 
 LINE_SYMBOL_BY_OPERATOR = {"less_than": "<", "less_or_equal": "≤", "greater_than": ">", "greater_or_equal": "≥"}
@@ -111,9 +112,11 @@ def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> str:
     """The test of a rule in a few characters: '< 4.5', '15 to 20', 'yes'."""
     if entry.operator == "is_true":
         return "yes"
+    unit = "" if not entry.unit else entry.unit if entry.unit == "%" else " " + entry.unit
     if entry.operator == "between":
-        return "{} to {}".format(*entry.value)
-    return "{} {}".format(LINE_SYMBOL_BY_OPERATOR.get(entry.operator, "?"), entry.value)
+        return "{} to {}{}".format(*entry.value, unit)
+    value = format(entry.value, ",") if isinstance(entry.value, int) else entry.value
+    return "{} {}{}".format(LINE_SYMBOL_BY_OPERATOR.get(entry.operator, "?"), value, unit)
 
 
 def rule_catalog_find_rule_list_of_indicator(rule_catalog: "RuleCatalog", indicator_name: str) -> list:
@@ -142,8 +145,8 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, i
             raw_topic.get("display_name"), "topic {} name".format(raw_topic["topic_id"]))) for raw_topic in raw_group.get("topic_list") or []],
     ) for raw_group in raw["rule_group_list"]]
     retired_rule_list = [RetiredRule(
-        rule_id=raw_retired["rule_id"], legacy_id=raw_retired.get("legacy_id") or [],
-        reason=localized_text_build_from_raw_value(raw_retired.get("reason"), "retired rule {} reason".format(raw_retired["rule_id"])),
+        old_id=raw_retired["old_id"], legacy_id=raw_retired.get("legacy_id") or [],
+        reason=localized_text_build_from_raw_value(raw_retired.get("reason"), "retired rule {} reason".format(raw_retired["old_id"])),
     ) for raw_retired in raw.get("retired_rule_list") or []]
     return RuleCatalog(
         rule_group_list=group_list,
@@ -230,7 +233,32 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
     rule_name_list = [entry.rule_name for entry in rule_catalog.rule_entry_by_id.values()]
     for rule_name in sorted({name for name in rule_name_list if rule_name_list.count(name) > 1}):
         error_list.append("two rules share the rule_name {}".format(rule_name))
+    live_legacy_id_list = [legacy for entry in rule_catalog.rule_entry_by_id.values() for legacy in entry.legacy_id]
     for retired in rule_catalog.retired_rule_list:
-        if retired.rule_id in rule_catalog.rule_entry_by_id:
-            error_list.append("retired rule {} is back in the catalog; ids are never reused".format(retired.rule_id))
+        if retired.old_id in live_legacy_id_list or retired.old_id in rule_catalog.rule_entry_by_id:
+            error_list.append("retired rule {} is back in the catalog; ids are never reused".format(retired.old_id))
+    for legacy in sorted({legacy for legacy in live_legacy_id_list if live_legacy_id_list.count(legacy) > 1}):
+        error_list.append("the legacy id {} is on more than one rule".format(legacy))
+    error_list += rule_catalog_validate_tiers(rule_catalog)
+    return error_list
+
+
+def rule_catalog_validate_tiers(rule_catalog: RuleCatalog) -> List[str]:
+    """A band_of line measures the same indicator as its main rule, and the lines of one measure that share an operator run in one direction."""
+    error_list: List[str] = []
+    line_list_by_main_id: Dict[str, List[RuleCatalogEntry]] = {}
+    for entry in rule_catalog.rule_entry_by_id.values():
+        if not entry.band_of:
+            continue
+        main = rule_catalog.rule_entry_by_id.get(entry.band_of)
+        if main is None:
+            continue
+        if entry.indicator != main.indicator:
+            error_list.append("rule {} is a line of {} but measures another indicator".format(entry.rule_id, main.rule_id))
+        line_list_by_main_id.setdefault(main.rule_id, []).append(entry)
+    for main_id, band_list in line_list_by_main_id.items():
+        main = rule_catalog.rule_entry_by_id[main_id]
+        value_list = [entry.value for entry in [main] + band_list if entry.operator == main.operator and isinstance(entry.value, (int, float))]
+        if value_list != sorted(value_list) and value_list != sorted(value_list, reverse=True):
+            error_list.append("the lines of {} are not sorted in one direction".format(main_id))
     return error_list

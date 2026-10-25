@@ -172,7 +172,7 @@ PRODUCED_INDICATOR_NAME_SET = {
     "net_debt_to_ebitda", "no_cpi_or_pce_release_inside_option_life", "no_election_day_inside_option_life",
     "no_ex_dividend_date_inside_option_life", "no_fomc_meeting_inside_option_life", "no_jobs_report_within_one_day",
     "no_new_fifty_two_week_low_in_last_20_days", "no_quadruple_witching_in_next_five_trading_days",
-    "one_sigma_expected_move_thirty_day_percent", "operating_cash_flow_to_net_income_ratio", "peg_ratio",
+    "one_sigma_expected_move_to_expiration_percent", "operating_cash_flow_to_net_income_ratio", "peg_ratio",
     "put_call_ratio_total_five_day_average", "put_skew_ten_percent_otm_minus_atm_iv_points", "return_on_equity_percent",
     "return_on_invested_capital_percent", "return_one_hundred_twenty_six_day_minus_spy_percent",
     "revenue_three_year_cagr_percent", "revenue_year_over_year_percent", "rsp_to_spy_ratio_above_two_hundred_day_average",
@@ -351,7 +351,7 @@ def indicator_calculation_build_option_indicator_value_by_name(
         "selected_expiration_is_third_friday": contract.expiration_date.weekday() == 4 and 15 <= contract.expiration_date.day <= 21,
         "selected_strike_is_multiple_of_five": contract.strike_price % 5 == 0,
         "selected_put_probability_of_profit": round(1 - contract.absolute_delta, 3),
-        "one_sigma_expected_move_thirty_day_percent": round(
+        "one_sigma_expected_move_to_expiration_percent": round(
             contract.implied_volatility * math.sqrt(contract.days_to_expiration / 365) * 100, 2),
         "selected_put_monthly_premium_percent": round(contract.premium / contract.strike_price * 30 / contract.days_to_expiration * 100, 2),
     }

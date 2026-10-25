@@ -20,7 +20,7 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...) and
  "group_list": [{"group_id": "EVT", "display_name": {"en": "EVT · Events", "zh": "EVT · 事件"},
   "description": {"en": "...", "zh": "..."}, "aspect": {"en": "Events", "zh": "事件面"},
   "topic_list": [{"topic_id": "company_events", "display_name": {"en": "Company events", "zh": "公司事件"}}],
-  "rule_list": [{"rule_id": "R-EVT-01", "rule_name": "no_earnings", "topic": "company_events",
+  "rule_list": [{"rule_id": "R-EVT-01", "rule_name": "no_earnings_within_45_days", "topic": "company_events",
                  "description": {"en": "Passes when there is no earnings report before the option expires. ...", "zh": "..."},
                  "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "history_source": "edgar:submissions", "history_start": "2004", "status": "built", "indicator_id": "I-082", "indicator": "no_earnings_before_expiration",
                  "indicator_description": {"en": "True when the stock's next earnings date is later than ...", "zh": "..."},

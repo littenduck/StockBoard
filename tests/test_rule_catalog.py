@@ -108,7 +108,7 @@ def test_every_backtestable_rule_names_its_free_history():
 
 def test_the_project_catalog_has_no_retired_id_and_keeps_every_legacy_id():
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
-    assert {retired.rule_id for retired in catalog.retired_rule_list} == {"VAL-02", "LIQ-02", "EVT-09"}
+    assert {retired.old_id for retired in catalog.retired_rule_list} == {"VAL-02", "LIQ-02", "EVT-09"}
     older = re.compile(r"^[A-Z]{3}-\d\d$")  # the ids the rules had before the R-MAC-03 numbering
     kept = {legacy for entry in catalog.rule_entry_by_id.values() for legacy in entry.legacy_id if not older.match(legacy)}
     kept |= {legacy for retired in catalog.retired_rule_list for legacy in retired.legacy_id}
@@ -237,3 +237,72 @@ def test_the_project_catalog_numbers_every_category_from_01_in_its_topic_order()
         if entry.band_of:  # another line of a measure sits right after its main rule or after an earlier line of it
             ids = list(catalog.rule_entry_by_id)
             assert ids.index(entry.band_of) < ids.index(entry.rule_id) and entry.topic == catalog.rule_entry_by_id[entry.band_of].topic, entry.rule_id
+
+
+def test_a_line_of_a_measure_uses_the_same_indicator_and_runs_in_one_direction():
+    from stockboard_backend.rule_catalog import rule_catalog_validate_tiers
+    assert rule_catalog_validate_tiers(rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)) == []
+    catalog = build_catalog(build_entry("R-TST-01", value=10), build_entry("R-TST-02", value=30, band_of="R-TST-01"),
+                            build_entry("R-TST-03", value=20, band_of="R-TST-01"),
+                            build_entry("R-TST-04", indicator="y", band_of="R-TST-01"))
+    errors = rule_catalog_validate_tiers(catalog)
+    assert any("not sorted" in error and "R-TST-01" in error for error in errors)
+    assert any("R-TST-04" in error and "another indicator" in error for error in errors)
+
+
+def test_a_legacy_id_is_on_one_rule_only():
+    catalog = build_catalog(build_entry("R-TST-01", legacy_id=["A01"]), build_entry("R-TST-02", legacy_id=["A01"]))
+    assert any("A01" in error for error in rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"}))
+
+
+def test_every_rule_reads_as_one_pass_sentence_in_both_languages():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    for entry in catalog.rule_entry_by_id.values():
+        assert entry.description.en.startswith("Passes when "), entry.rule_id
+        assert "时通过" in entry.description.zh, entry.rule_id
+        assert "Source:" not in entry.description.en and "数据来源" not in entry.description.zh, entry.rule_id
+
+
+CHINESE_TERM_BANNED_LIST = ["小于", "大于", "超过", "至少", "不超过", "美债", "看跌期权", "看涨期权", "备兑", "平价", "股本回报率", "消费者物价", "初请", "过去十二个月", "10Y"]
+CHATTER_LIST = ["(measured)", "not verified here", "first guess", "ifficulty", "could be backtested later", "EDGAR_CONTACT", "Referer"]
+
+
+def test_the_chinese_text_follows_the_glossary_of_docs_language():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    for entry in catalog.rule_entry_by_id.values():
+        for term in CHINESE_TERM_BANNED_LIST:
+            assert term not in entry.description.zh, "{} uses {}".format(entry.rule_id, term)
+    for indicator in catalog.indicator_registry.indicator_by_name.values():
+        for term in ("美债", "看跌期权", "看涨期权", "备兑", "平价", "股本回报率", "消费者物价", "初请", "过去十二个月"):
+            assert term not in indicator.description.zh, "{} uses {}".format(indicator.indicator_id, term)
+
+
+def test_no_text_keeps_chatter_a_fact_is_written_once():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    text_list = [entry.description.en for entry in catalog.rule_entry_by_id.values()]
+    text_list += [indicator.description.en for indicator in catalog.indicator_registry.indicator_by_name.values()]
+    for text in text_list:
+        for chatter in CHATTER_LIST:
+            assert chatter not in text, "{!r} in {!r}".format(chatter, text[:60])
+    assert sum("closest to 0.25" in indicator.description.en for indicator in catalog.indicator_registry.indicator_by_name.values()) == 0
+
+
+def test_no_config_file_repeats_a_key():
+    import yaml
+
+    class StrictLoader(yaml.SafeLoader):
+        pass
+
+    def construct_mapping(loader, node, deep=False):
+        key_list = [loader.construct_object(key_node, deep=deep) for key_node, _ in node.value]
+        repeated = sorted({key for key in key_list if key_list.count(key) > 1}, key=str)
+        assert not repeated, "repeated key {}".format(repeated)
+        return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
+
+    StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+    config_directory = os.path.join(PROJECT_DIRECTORY, "config")
+    for directory, _, file_name_list in os.walk(config_directory):
+        for file_name in file_name_list:
+            if file_name.endswith(".yaml"):
+                with open(os.path.join(directory, file_name), encoding="utf8") as config_file:
+                    yaml.load(config_file, Loader=StrictLoader)

@@ -31,11 +31,11 @@ gates:
   - gate_id: gate_1_momentum
     display_name: {en: "GATE 1 Trend and momentum", zh: "GATE 1 趋势与动量"}
     rules:
-      - {rule_id: R-TRD-13, weight: 4}   # six_month_gain
+      - {rule_id: R-TRD-13, weight: 4}   # six_month_gain_above_10pct
       - {rule_id: R-TRD-07, weight: 4}   # golden_cross_state
   - gate_id: gate_2_breakout
     display_name: {en: "GATE 2 Breakout", zh: "GATE 2 突破确认"}
     rules:
       - {rule_id: R-TRD-09, weight: 5, veto: true}   # within_5pct_of_52_week_high
-      - {rule_id: R-TRD-15, weight: 3}   # volume_surge
+      - {rule_id: R-TRD-15, weight: 3}   # volume_at_least_1_5x
       - {rule_id: R-TRD-17, weight: 2}   # rsi_14_below_80

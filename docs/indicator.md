@@ -12,15 +12,19 @@ A rule refers to an indicator by its short id (`indicator: I-003`), and the load
 
 ### Ids and names
 
-An indicator has a short `indicator_id` (`I-001` to `I-122`) and a long `indicator_name` (`treasury_ten_year_yield`). The id is what people and the rule file write; the name is what the code keys on (the history builders, `PRODUCED_INDICATOR_NAME_SET`, the fetch functions). Ids follow the order of the rule catalog: the first indicator is the one the first rule uses, and so on, with the sidebar-only and internal ones at the end. An id is never reused.
+An indicator has a short `indicator_id` (`I-001` to `I-122`) and a long `indicator_name` (`treasury_ten_year_yield`). The id is what people and the rule file write; the name is what the code keys on (the history builders, `PRODUCED_INDICATOR_NAME_SET`, the fetch functions). Ids follow the order of the rule catalog: the first indicator is the one the first rule uses, and so on, with the two sidebar-only ones (`vxn_level`, `vvix_level`) right after `vix_level` and the internal ones at the end. An id is never reused.
 
 A rule has `rule_id` (`R-MAC-03`) and a short `rule_name` (`ten_year_below_4_5pct`) written the same way as an indicator name.
+
+### The selected put
+
+Option indicators describe the selected put of each expiration window: the out-of-the-money put whose absolute Delta is closest to `target_absolute_delta` in `config/settings.yaml`. The descriptions say "the selected put" and do not repeat the number, so changing the setting does not leave a stale text behind.
 
 ### The indicator file
 
 The meaning of every indicator, how it is read, where the live value and the history come from and what values are typical is the bilingual `description` of that indicator in `config/indicators.yaml`; the rule catalog page and the hover card show it under each rule, together with every line of the measure. This file does not repeat it. A new indicator needs a description in both languages (a test checks).
 
-Each indicator has `scope` (market, symbol, or window for one option expiration window), `method`, `status`, the backtest facts (`backtestable`, `history_source`, `history_start`) and the schedule:
+Each indicator has `scope` (market for the same value for every symbol, symbol, or window for one option expiration window), an optional `unit` (`%`, `bp`, `pp`, `USD` ... shown after the number of a rule line), `method`, `status`, the backtest facts (`backtestable`, `history_source`, `history_start`) and the schedule:
 
 - `fetch_group`: the family of requests it comes from. Indicators of one group are fetched together, so a group is asked as often as its most frequent indicator needs (the shortest `fetch_every`).
 - `fetch_every`: how often the source is asked again (`10m`, `1h`, `1d`). A value that is not due is not fetched again.

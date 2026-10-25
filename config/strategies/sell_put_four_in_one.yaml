@@ -43,11 +43,11 @@ gates:
       - {rule_id: R-SEN-02, weight: 1}   # vix_at_least_12
       - {rule_id: R-SEN-01, weight: 2}   # vix_at_least_15
       - {rule_id: R-TRD-01, weight: 4}   # market_above_200_day
-      - {rule_id: R-SEN-08, weight: 3}   # vix_term_structure
+      - {rule_id: R-SEN-08, weight: 3}   # vix_in_contango
   - gate_id: gate_1_underlying
     display_name: {en: "GATE 1 Stock screen", zh: "GATE 1 标的筛选"}
     rules:
-      - {rule_id: R-EVT-01, weight: 5, veto: true}   # no_earnings
+      - {rule_id: R-EVT-01, weight: 5, veto: true}   # no_earnings_within_45_days
       - {rule_id: R-TRD-12, weight: 1}   # range_position_at_most_50
       - {rule_id: R-TRD-11, weight: 2}   # range_position_at_most_25
       - {rule_id: R-TRD-05, weight: 3}   # stock_above_200_day
@@ -60,4 +60,4 @@ gates:
       - {rule_id: R-CTR-04, weight: 4}   # dte_30_to_45
       - {rule_id: R-RET-02, weight: 2}   # annualized_return_at_least_8pct
       - {rule_id: R-RET-01, weight: 1}   # annualized_return_at_least_20pct
-      - {rule_id: R-VOL-06, weight: 4}   # iv_vs_realized
+      - {rule_id: R-VOL-06, weight: 4}   # iv_above_rv30

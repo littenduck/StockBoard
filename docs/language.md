@@ -27,5 +27,12 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 | 高于 | above |
 | 不低于 | at least |
 | 介于 … 之间 | between |
+| 国债 | Treasury |
+| 消费者价格指数 | Consumer Price Index (CPI) |
+| 净资产收益率 | return on equity (ROE) |
+| 首次申请失业救济人数 | initial jobless claims |
+| 平值 | at the money (ATM) |
+| 最近 12 个月 | the last 12 months (TTM) |
+| Put、Call、Covered Call | put, call, covered call (stay in English) |
 | 规则 | rule |
 | 策略 | strategy |

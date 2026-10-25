@@ -46,6 +46,7 @@ class IndicatorDefinition:
     scope: str
     status: str
     description: Optional[LocalizedText] = None
+    unit: Optional[str] = None  # shown after the number of a line: %, bp, pp, USD ...
     method: Optional[str] = None
     quantifiable: Optional[str] = None
     backtestable: Optional[str] = None

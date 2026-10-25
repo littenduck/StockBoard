@@ -2,7 +2,9 @@
 # the line to test (operator and value); a strategy (config/strategies/*.yaml) weights rules. Several rules can share one indicator.
 #
 # Fields of every indicator:
-#   indicator_id    unique id, lower case words joined by underscores
+#   indicator_id    the short id people write, I-001 onward
+#   indicator_name  the long name the code uses, lower case words joined by underscores
+#   unit            optional: the unit shown after the number of a rule line (%, bp, pp, USD ...); left out when the number has no unit
 #   scope           market (same for every symbol), symbol (one value per stock) or window (one value per option expiration window)
 #   method          how the value is obtained, the hardest step wins: api_fetch (a stable API or CSV), scrape (an unofficial endpoint, page or file that
 #                   needs parsing), computed (worked out from fetched prices, series or option chains), ai_search (an AI reads pages or news)
@@ -21,14 +23,6 @@
 # group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
 # while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
 
-fetch_group_list: market_hours_only groups are fetched only while the US market is open; fetch_at lists New York times of day at which the
-# group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
-# while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
-
-fetch_group_list: market_hours_only groups are fetched only while the US market is open; fetch_at lists New York times of day at which the
-# group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
-# while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
-
 fetch_group_list:
   - {fetch_group_id: yahoo_history, market_hours_only: false, fetch_at: ["16:30"], fetch_every: "1d", note: "Daily price history of every symbol (an internal job, no indicator): loaded once a day and again after the close"}
   - {fetch_group_id: yahoo_quote, market_hours_only: true, fetch_at: ["16:20"], note: "Prices and everything computed from them; the latest price of every symbol comes from one batched request and replaces today's bar of the daily history"}
@@ -43,7 +37,7 @@ fetch_group_list:
   - {fetch_group_id: dolthub_iv, market_hours_only: false, fetch_at: ["06:00"], note: "DoltHub implied volatility history"}
   - {fetch_group_id: finra, market_hours_only: false, fetch_at: ["06:00"], note: "FINRA short interest"}
   - {fetch_group_id: spmo_holdings, market_hours_only: false, fetch_at: ["06:00"], note: "SPMO top holdings"}
-  - {fetch_group_id: edgar, market_hours_only: false, fetch_at: ["06:00"], note: "SEC EDGAR filings"}
+  - {fetch_group_id: edgar, market_hours_only: false, fetch_at: ["06:00"], note: "SEC EDGAR filings (needs the EDGAR_CONTACT setting)"}
 
 indicator_list:
   - indicator_id: I-001
@@ -62,6 +56,7 @@ indicator_list:
   - indicator_id: I-002
     indicator_name: "six_month_treasury_bill_yield_minus_federal_funds_rate"
     description: {en: "The 6-month Treasury bill yield minus the federal funds rate, a free stand-in for the CME FedWatch odds of a hike at the next FOMC (the Federal Open Market Committee that sets US interest rates). When bills yield more than the policy rate, the market expects a hike. Source: FRED series DGS6MO and DFF, updated daily.", zh: "6 个月期国库券收益率减联邦基金利率，是 CME FedWatch（下次 FOMC 会议加息概率）的免费替代。国库券收益率高于政策利率，说明市场预期加息。FOMC 是制定美国利率的联邦公开市场委员会。数据来源：FRED 的 DGS6MO 和 DFF 序列，每日更新。"}
+    unit: "pp"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -75,6 +70,7 @@ indicator_list:
   - indicator_id: I-003
     indicator_name: "treasury_ten_year_yield"
     description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10, updated daily with about one business day of delay. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb).", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列，每日更新，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。"}
+    unit: "%"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -90,6 +86,7 @@ indicator_list:
   - indicator_id: I-004
     indicator_name: "treasury_ten_year_yield_twenty_day_change_basis_points"
     description: {en: "How much the 10-year Treasury yield has risen over the last 20 trading days, in bp (basis points; 1bp = 0.01 percentage point). A fast rise hurts stocks more than a high level. Source: FRED series DGS10, updated daily. Typical values: ±25bp over 20 days is a clear move; a rise of 50bp or more in a month is fast (rule of thumb).", zh: "10 年期国债收益率在最近 20 个交易日里上升了多少，单位 bp（基点；1bp = 0.01 个百分点）。上升得快比水平高更伤股市。数据来源：FRED 的 DGS10 序列，每日更新。常见情形：20 天内 ±25bp 就算明显波动；一个月升 50bp 以上算快（经验）。"}
+    unit: "bp"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -103,6 +100,7 @@ indicator_list:
   - indicator_id: I-005
     indicator_name: "treasury_ten_year_minus_two_year_spread"
     description: {en: "The 10-year Treasury yield minus the 2-year yield. A negative value is an inverted curve (short rates above long rates), a common recession warning. Source: FRED series T10Y2Y, updated daily. Typical values: inversions have often come months to two years before recessions (rule of thumb).", zh: "10 年期国债收益率减 2 年期收益率。为负就是收益率曲线倒挂（短期利率高于长期），是常见的衰退预警。数据来源：FRED 的 T10Y2Y 序列，每日更新。常见情形：倒挂常出现在衰退前几个月到两年（经验）。"}
+    unit: "pp"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -116,6 +114,7 @@ indicator_list:
   - indicator_id: I-006
     indicator_name: "treasury_ten_year_minus_three_month_spread"
     description: {en: "The 10-year Treasury yield minus the 3-month yield, the curve slope the New York Fed uses in its recession-probability model. A negative value means the curve is inverted. Source: FRED series T10Y3M, updated daily.", zh: "10 年期国债收益率减 3 个月期收益率，是纽约联储衰退概率模型使用的曲线斜率。为负表示曲线倒挂。数据来源：FRED 的 T10Y3M 序列，每日更新。"}
+    unit: "pp"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -129,6 +128,7 @@ indicator_list:
   - indicator_id: I-007
     indicator_name: "high_yield_credit_spread_basis_points"
     description: {en: "The extra yield junk bonds (HY, high-yield bonds rated below investment grade) pay over Treasuries, measured as OAS (option-adjusted spread), in bp. A widening spread signals rising credit risk and usually leads stock stress. Source: FRED series BAMLH0A0HYM2 (ICE BofA US High Yield OAS), updated daily; FRED now keeps only about 3 years of history. Typical values: long-run average about 500bp; below 350bp is tight, above 500bp is stress, above 800bp is crisis (market convention).", zh: "垃圾债（HY，评级低于投资级的高收益债券）比国债多付的收益率，用 OAS（期权调整利差）衡量，单位 bp。利差走阔说明信用风险上升，通常领先股市压力。数据来源：FRED 的 BAMLH0A0HYM2 序列（ICE BofA 美国高收益债 OAS），每日更新；FRED 现在只保留约 3 年历史。常见情形：长期均值约 500bp；低于 350bp 偏紧，高于 500bp 是压力，高于 800bp 是危机（市场惯例）。"}
+    unit: "bp"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -144,6 +144,7 @@ indicator_list:
   - indicator_id: I-008
     indicator_name: "high_yield_credit_spread_twenty_day_change_basis_points"
     description: {en: "How much the HY credit spread has widened over the last 20 trading days, in bp. A quick widening is an early sign of credit stress. Source: FRED series BAMLH0A0HYM2, updated daily. Typical values: a rise of 50bp or more in 20 days is often read as credit stress (rule of thumb).", zh: "HY 信用利差在最近 20 个交易日里走阔了多少，单位 bp。快速走阔是信用压力的早期信号。数据来源：FRED 的 BAMLH0A0HYM2 序列，每日更新。常见情形：20 天内升 50bp 以上常被看作信用压力（经验）。"}
+    unit: "bp"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -156,7 +157,8 @@ indicator_list:
     max_age: 10d
   - indicator_id: I-009
     indicator_name: "moodys_baa_minus_ten_year_treasury_spread"
-    description: {en: "Moody's seasoned Baa corporate bond yield minus the 10-year Treasury yield, in percentage points. It is a long-history stand-in for the HY credit spread, which FRED only keeps for about 3 years; a wider gap means rising credit risk. Source: FRED series BAA10Y, updated daily. Typical values: 2.8 is the 80th percentile of the spread since 1986 (measured).", zh: "穆迪 Baa 级公司债收益率减 10 年期国债收益率，单位是百分点。它是 HY 信用利差的长历史替代（FRED 只保留 HY 利差约 3 年）；差距越大，信用风险越高。数据来源：FRED 的 BAA10Y 序列，每日更新。常见情形：2.8 是 1986 年以来该利差的第 80 百分位（实测）。"}
+    description: {en: "Moody's seasoned Baa corporate bond yield minus the 10-year Treasury yield, in percentage points. It is a long-history stand-in for the HY credit spread, which FRED only keeps for about 3 years; a wider gap means rising credit risk. Source: FRED series BAA10Y, updated daily. Typical values: since 1986, 2.8 is the 80th percentile of the spread and 3.3 the 95th.", zh: "穆迪 Baa 级公司债收益率减 10 年期国债收益率，单位是百分点。它是 HY 信用利差的长历史替代（FRED 只保留 HY 利差约 3 年）；差距越大，信用风险越高。数据来源：FRED 的 BAA10Y 序列，每日更新。常见情形：1986 年以来，2.8 是该利差的第 80 百分位，3.3 是第 95 百分位。"}
+    unit: "pp"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -170,6 +172,7 @@ indicator_list:
   - indicator_id: I-010
     indicator_name: "consumer_price_index_year_over_year_percent"
     description: {en: "CPI (Consumer Price Index) inflation, the change from a year earlier. High inflation forces the Fed to keep rates high, which holds valuations down. A backtest uses the value as first published at the time, so it sees only what was known then. Source: FRED series CPIAUCSL (first-published values from ALFRED, FRED's archive), updated monthly with a lag of 2 to 6 weeks. Typical values: the Fed targets 2% inflation (PCE); CPI above 3% is high.", zh: "CPI（消费者价格指数）通胀，即与一年前相比的涨幅。通胀高会迫使美联储把利率维持在高位，压低估值。回测使用当时首次公布的数值，只看到当时已知的信息。数据来源：FRED 的 CPIAUCSL 序列（首次公布值来自 ALFRED，即 FRED 的存档），每月更新，滞后 2 到 6 周。常见情形：美联储的目标是 2% 通胀（按 PCE）；CPI 高于 3% 算偏高。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -183,6 +186,7 @@ indicator_list:
   - indicator_id: I-011
     indicator_name: "core_pce_price_index_year_over_year_percent"
     description: {en: "Core PCE (Personal Consumption Expenditures price index excluding food and energy) inflation, the change from a year earlier, the inflation gauge the Fed watches most closely. Source: FRED series PCEPILFE (first-published values from ALFRED), updated monthly. Typical values: the Fed targets 2%; above 2.5% means inflation is still sticky.", zh: "核心 PCE（剔除食品和能源的个人消费支出价格指数）通胀，即与一年前相比的涨幅，是美联储最看重的通胀指标。数据来源：FRED 的 PCEPILFE 序列（首次公布值来自 ALFRED），每月更新。常见情形：美联储目标 2%；高于 2.5% 说明通胀仍有粘性。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -196,6 +200,7 @@ indicator_list:
   - indicator_id: I-012
     indicator_name: "sahm_rule_recession_indicator"
     description: {en: "The Sahm rule indicator: the 3-month average unemployment rate minus its lowest level of the last 12 months. A reading of 0.5 or more has marked the start of past recessions, and worsening jobs mean higher earnings risk. Source: FRED series SAHMREALTIME, updated monthly.", zh: "Sahm 规则指标：失业率的 3 个月均值减去过去 12 个月的最低值。读数达到 0.5 以上在过去标志着衰退开始，就业恶化意味着盈利风险上升。数据来源：FRED 的 SAHMREALTIME 序列，每月更新。"}
+    unit: "pp"
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -209,6 +214,7 @@ indicator_list:
   - indicator_id: I-013
     indicator_name: "initial_jobless_claims_four_week_average"
     description: {en: "The 4-week average of initial jobless claims, the number of people filing for unemployment benefits for the first time each week. It is the fastest-moving jobs data. Source: FRED series ICSA, updated weekly. Typical values: claims of 200,000 to 250,000 are stable and above 300,000 is worsening (rule of thumb).", zh: "首次申请失业救济人数的 4 周均值，即每周首次申请失业救济的人数，是变化最快的就业数据。数据来源：FRED 的 ICSA 序列，每周更新。常见情形：20 万到 25 万属于平稳，高于 30 万说明恶化（经验）。"}
+    unit: "claims"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -221,7 +227,7 @@ indicator_list:
     max_age: 16d
   - indicator_id: I-014
     indicator_name: "chicago_fed_national_activity_index_three_month_average"
-    description: {en: "The 3-month average of the CFNAI (Chicago Fed National Activity Index), a broad gauge of US economic activity built from 85 monthly series. The Chicago Fed links readings below -0.7 to recession risk (from its documentation, not verified here). Source: FRED series CFNAIMA3, updated monthly.", zh: "CFNAI（芝加哥联储全国活动指数）的 3 个月均值，由 85 个月度序列合成，衡量美国经济整体活动。芝加哥联储把低于 -0.7 的读数与衰退风险联系起来（来自其文档，这里没有验证）。数据来源：FRED 的 CFNAIMA3 序列，每月更新。"}
+    description: {en: "The 3-month average of the CFNAI (Chicago Fed National Activity Index), a broad gauge of US economic activity built from 85 monthly series. The Chicago Fed links readings below -0.7 to recession risk. Source: FRED series CFNAIMA3, updated monthly.", zh: "CFNAI（芝加哥联储全国活动指数）的 3 个月均值，由 85 个月度序列合成，衡量美国经济整体活动。芝加哥联储把低于 -0.7 的读数与衰退风险联系起来。数据来源：FRED 的 CFNAIMA3 序列，每月更新。"}
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -234,7 +240,8 @@ indicator_list:
     max_age: 100d
   - indicator_id: I-015
     indicator_name: "us_dollar_index_twenty_day_change_percent"
-    description: {en: "How much the US dollar index (DXY) has risen over the last 20 trading days, in percent. A stronger dollar tightens global financial conditions and hurts multinational earnings and risk assets. Source: Yahoo Finance DX-Y.NYB via yfinance, updated while the market trades. Typical values: DXY usually trades between 90 and 110; a 20-day move of ±2% is clear (rule of thumb).", zh: "美元指数（DXY）在最近 20 个交易日里上涨了多少，单位 %。美元走强会收紧全球金融环境，伤害跨国公司盈利和风险资产。数据来源：通过 yfinance 取 Yahoo Finance 的 DX-Y.NYB，交易时段内更新。常见情形：DXY 通常在 90 到 110 之间；20 天 ±2% 的波动算明显（经验）。"}
+    description: {en: "How much the US dollar index (DXY) has risen over the last 20 trading days, in percent. A stronger dollar tightens global financial conditions and hurts multinational earnings and risk assets. Source: Yahoo Finance DX-Y.NYB via yfinance. Typical values: DXY usually trades between 90 and 110; a 20-day move of ±2% is clear (rule of thumb).", zh: "美元指数（DXY）在最近 20 个交易日里上涨了多少，单位 %。美元走强会收紧全球金融环境，伤害跨国公司盈利和风险资产。数据来源：通过 yfinance 取 Yahoo Finance 的 DX-Y.NYB。常见情形：DXY 通常在 90 到 110 之间；20 天 ±2% 的波动算明显（经验）。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -247,7 +254,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-016
     indicator_name: "wti_crude_oil_price"
-    description: {en: "The price of WTI (West Texas Intermediate) crude oil, the US oil benchmark, in dollars a barrel. Very high or fast-rising oil lifts inflation, squeezes consumers and shakes markets. Source: Yahoo Finance CL=F futures via yfinance, updated while the market trades (history from FRED series DCOILWTICO). Typical values: over the last ten years WTI mostly traded between $40 and $120; $100 is a rule-of-thumb line.", zh: "WTI（西德克萨斯中质原油，美国原油基准）的价格，单位美元/桶。油价过高或涨得太快会推高通胀、挤压消费者、扰动市场。数据来源：通过 yfinance 取 Yahoo Finance 的 CL=F 期货，交易时段内更新（历史来自 FRED 的 DCOILWTICO 序列）。常见情形：过去十年 WTI 多在 40 到 120 美元之间；100 美元是经验线。"}
+    description: {en: "The price of WTI (West Texas Intermediate) crude oil, the US oil benchmark, in dollars a barrel. Very high or fast-rising oil lifts inflation, squeezes consumers and shakes markets. Source: Yahoo Finance CL=F futures via yfinance (history from FRED series DCOILWTICO). Typical values: over the last ten years WTI mostly traded between $40 and $120; $100 is a rule-of-thumb line.", zh: "WTI（西德克萨斯中质原油，美国原油基准）的价格，单位美元/桶。油价过高或涨得太快会推高通胀、挤压消费者、扰动市场。数据来源：通过 yfinance 取 Yahoo Finance 的 CL=F 期货（历史来自 FRED 的 DCOILWTICO 序列）。常见情形：过去十年 WTI 多在 40 到 120 美元之间；100 美元是经验线。"}
+    unit: "USD"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -260,7 +268,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-017
     indicator_name: "wti_crude_oil_one_month_change_percent"
-    description: {en: "How much WTI crude oil has risen over the last month (21 trading days), in percent. A fast rise squeezes consumers more than a high level does. Source: Yahoo Finance CL=F futures via yfinance, updated while the market trades (history from FRED series DCOILWTICO). Typical values: a rise of 15% or more in a month is fast (rule of thumb).", zh: "WTI 原油在最近一个月（21 个交易日）里上涨了多少，单位 %。上涨得快比价格高更挤压消费者。数据来源：通过 yfinance 取 Yahoo Finance 的 CL=F 期货，交易时段内更新（历史来自 FRED 的 DCOILWTICO 序列）。常见情形：一个月涨 15% 以上算快（经验）。"}
+    description: {en: "How much WTI crude oil has risen over the last month (21 trading days), in percent. A fast rise squeezes consumers more than a high level does. Source: Yahoo Finance CL=F futures via yfinance (history from FRED series DCOILWTICO). Typical values: a rise of 15% or more in a month is fast (rule of thumb).", zh: "WTI 原油在最近一个月（21 个交易日）里上涨了多少，单位 %。上涨得快比价格高更挤压消费者。数据来源：通过 yfinance 取 Yahoo Finance 的 CL=F 期货（历史来自 FRED 的 DCOILWTICO 序列）。常见情形：一个月涨 15% 以上算快（经验）。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -274,6 +283,7 @@ indicator_list:
   - indicator_id: I-018
     indicator_name: "m2_money_supply_year_over_year_percent"
     description: {en: "How much M2 (a broad measure of money in the economy) has grown over a year, in percent. Easy liquidity helps risk assets; shrinking money hurts them. Source: FRED series M2SL, updated monthly with a lag of about 1.5 months. Typical values: M2 growth above 5% a year is fairly loose (rule of thumb).", zh: "M2（衡量经济中货币量的广义指标）一年里增长了多少，单位 %。流动性宽松有利于风险资产，货币收缩则不利。数据来源：FRED 的 M2SL 序列，每月更新，滞后约 1.5 个月。常见情形：M2 年增速高于 5% 算比较宽松（经验）。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -287,6 +297,7 @@ indicator_list:
   - indicator_id: I-019
     indicator_name: "federal_reserve_total_assets_thirteen_week_change_percent"
     description: {en: "How much the Fed's total assets (its balance sheet) changed over the last 13 weeks, in percent. A shrinking balance sheet drains liquidity from markets. Source: FRED series WALCL, updated weekly.", zh: "美联储总资产（资产负债表）在最近 13 周里的变化，单位 %。资产负债表缩小会从市场抽走流动性。数据来源：FRED 的 WALCL 序列，每周更新。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -299,7 +310,7 @@ indicator_list:
     max_age: 16d
   - indicator_id: I-020
     indicator_name: "sector_etf_return_minus_spy_return_one_hundred_twenty_six_day"
-    description: {en: "The 126-day (about 6 months) return of the sector ETF of the stock's industry minus SPY's, in percentage points. A sector ETF is a fund that holds one industry, such as XLK for technology, and SPY is the fund tracking the S&P 500. A strong industry lifts its stocks. Source: Yahoo Finance via yfinance, updated while the market trades. Typical values: a sector ETF that beats SPY over 6 months is seen as strong.", zh: "股票所在行业的行业 ETF 在 126 个交易日（约 6 个月）里的涨幅减去 SPY 的涨幅，单位是百分点。行业 ETF 是只持有一个行业的基金，例如科技的 XLK；SPY 是跟踪标普 500 的基金。强势行业会带动其中的股票。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。常见情形：6 个月里跑赢 SPY 的行业 ETF 被视为强势。"}
+    description: {en: "The 126-day (about 6 months) return of the sector ETF of the stock's industry minus SPY's, in percentage points. A sector ETF is a fund that holds one industry, such as XLK for technology, and SPY is the fund tracking the S&P 500. A strong industry lifts its stocks. Source: Yahoo Finance via yfinance. Typical values: a sector ETF that beats SPY over 6 months is seen as strong.", zh: "股票所在行业的行业 ETF 在 126 个交易日（约 6 个月）里的涨幅减去 SPY 的涨幅，单位是百分点。行业 ETF 是只持有一个行业的基金，例如科技的 XLK；SPY 是跟踪标普 500 的基金。强势行业会带动其中的股票。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：6 个月里跑赢 SPY 的行业 ETF 被视为强势。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -312,7 +323,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-021
     indicator_name: "sector_next_year_eps_estimate_four_week_change_median_percent"
-    description: {en: "The median 4-week change of next-year EPS (earnings per share) estimates across the industry's stocks. Rising analyst estimates for a whole industry show its cycle is improving. Needs a point-in-time list of S&P 500 members and weekly estimate snapshots, so it is not built yet (difficulty 5). Source (planned): the community DoltHub earnings database.", zh: "行业内各只股票下一年 EPS（每股收益）预期在 4 周里的变化中位数。整个行业的分析师预期上调，说明行业周期在改善。需要“当时的”标普 500 成分股名单和每周预期快照，所以还没有实现（难度 5）。数据来源（计划）：社区 DoltHub 财报数据库。"}
+    description: {en: "The median 4-week change of next-year EPS (earnings per share) estimates across the industry's stocks. Rising analyst estimates for a whole industry show its cycle is improving. Needs a point-in-time list of S&P 500 members and weekly estimate snapshots, so it is not built yet. Source (planned): the community DoltHub earnings database.", zh: "行业内各只股票下一年 EPS（每股收益）预期在 4 周里的变化中位数。整个行业的分析师预期上调，说明行业周期在改善。需要“当时的”标普 500 成分股名单和每周预期快照，所以还没有实现。数据来源（计划）：社区 DoltHub 财报数据库。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -322,7 +334,8 @@ indicator_list:
     status: todo
   - indicator_id: I-022
     indicator_name: "trailing_twelve_month_eps"
-    description: {en: "EPS (earnings per share) over the last 12 months (TTM, trailing twelve months). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR company facts). Updated each quarter by the company.", zh: "最近 12 个月（TTM）的 EPS（每股收益）。亏损的公司波动更大，被行权接货的风险更高。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR 公司财务数据）。公司每季度更新一次。"}
+    description: {en: "EPS (earnings per share) over the last 12 months (TTM, trailing twelve months). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance (history from SEC EDGAR company facts). Updated each quarter by the company.", zh: "最近 12 个月（TTM）的 EPS（每股收益）。亏损的公司波动更大，被行权接货的风险更高。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 公司财务数据）。公司每季度更新一次。"}
+    unit: "USD"
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -335,7 +348,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-023
     indicator_name: "revenue_year_over_year_percent"
-    description: {en: "Revenue of the latest quarter compared with the same quarter a year earlier, in percent. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR). Updated each quarter by the company.", zh: "最近一个季度的营收与去年同期相比的变化，单位 %。营收不增长的公司很少能长期上涨。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR）。公司每季度更新一次。"}
+    description: {en: "Revenue of the latest quarter compared with the same quarter a year earlier, in percent. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance (history from SEC EDGAR). Updated each quarter by the company.", zh: "最近一个季度的营收与去年同期相比的变化，单位 %。营收不增长的公司很少能长期上涨。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。公司每季度更新一次。"}
+    unit: "%"
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -348,7 +362,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-024
     indicator_name: "revenue_three_year_cagr_percent"
-    description: {en: "The 3-year CAGR (compound annual growth rate) of revenue, in percent a year. Revenue growth that lasts is a sign of a quality business, not a one-off. Source: SEC EDGAR financial statements (needs EDGAR_CONTACT), checked daily. Typical values: a 3-year CAGR above 10% is typical of quality growth stocks (rule of thumb).", zh: "营收的 3 年 CAGR（复合年增长率），单位 % 每年。能持续的营收增长是优质公司的标志，而不是一次性的。数据来源：SEC EDGAR 财务报表（需要 EDGAR_CONTACT），每天检查。常见情形：3 年 CAGR 高于 10% 是优质成长股的典型水平（经验）。"}
+    description: {en: "The 3-year CAGR (compound annual growth rate) of revenue, in percent a year. Revenue growth that lasts is a sign of a quality business, not a one-off. Source: SEC EDGAR financial statements, checked daily. Typical values: a 3-year CAGR above 10% is typical of quality growth stocks (rule of thumb).", zh: "营收的 3 年 CAGR（复合年增长率），单位 % 每年。能持续的营收增长是优质公司的标志，而不是一次性的。数据来源：SEC EDGAR 财务报表，每天检查。常见情形：3 年 CAGR 高于 10% 是优质成长股的典型水平（经验）。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -361,7 +376,8 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-025
     indicator_name: "eps_three_year_cagr_percent"
-    description: {en: "The 3-year CAGR (compound annual growth rate) of EPS (earnings per share), in percent a year, the earnings side of revenue growth. Undefined when EPS is not positive at both ends. Source: SEC EDGAR financial statements (needs EDGAR_CONTACT), checked daily.", zh: "EPS（每股收益）的 3 年 CAGR（复合年增长率），单位 % 每年，是营收增长在盈利上的对应。期初或期末 EPS 不为正时无定义。数据来源：SEC EDGAR 财务报表（需要 EDGAR_CONTACT），每天检查。"}
+    description: {en: "The 3-year CAGR (compound annual growth rate) of EPS (earnings per share), in percent a year, the earnings side of revenue growth. Undefined when EPS is not positive at both ends. Source: SEC EDGAR financial statements, checked daily.", zh: "EPS（每股收益）的 3 年 CAGR（复合年增长率），单位 % 每年，是营收增长在盈利上的对应。期初或期末 EPS 不为正时无定义。数据来源：SEC EDGAR 财务报表，每天检查。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -374,7 +390,8 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-026
     indicator_name: "return_on_invested_capital_percent"
-    description: {en: "ROIC (return on invested capital): operating profit after a 21% tax, divided by debt plus equity minus cash, in percent. High and steady for 5 to 10 years is a common moat test, a sign of a lasting competitive advantage (Buffett-style rule of thumb). ROE is checked separately because buybacks can distort it. Source: SEC EDGAR financial statements (needs EDGAR_CONTACT), checked daily.", zh: "ROIC（投入资本回报率）：税后（按 21%）营业利润除以债务加权益再减现金，单位 %。长期 5 到 10 年又高又稳是常见的护城河检验，说明有持久的竞争优势（巴菲特式经验）。ROE 单独检查，因为回购会扭曲它。数据来源：SEC EDGAR 财务报表（需要 EDGAR_CONTACT），每天检查。"}
+    description: {en: "ROIC (return on invested capital): operating profit after a 21% tax, divided by debt plus equity minus cash, in percent. High and steady for 5 to 10 years is a common moat test, a sign of a lasting competitive advantage (Buffett-style rule of thumb). ROE is checked separately because buybacks can distort it. Source: SEC EDGAR financial statements, checked daily.", zh: "ROIC（投入资本回报率）：税后（按 21%）营业利润除以债务加权益再减现金，单位 %。长期 5 到 10 年又高又稳是常见的护城河检验，说明有持久的竞争优势（巴菲特式经验）。ROE 单独检查，因为回购会扭曲它。数据来源：SEC EDGAR 财务报表，每天检查。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -387,7 +404,8 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-027
     indicator_name: "return_on_equity_percent"
-    description: {en: "ROE (return on equity): net profit divided by shareholders' equity, in percent. It can be inflated by buybacks, so it is paired with ROIC. Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR). Updated each quarter by the company.", zh: "ROE（净资产收益率）：净利润除以股东权益，单位 %。回购会把它抬高，所以要和 ROIC 配合看。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR）。公司每季度更新一次。"}
+    description: {en: "ROE (return on equity): net profit divided by shareholders' equity, in percent. It can be inflated by buybacks, so it is paired with ROIC. Source: Yahoo Finance via yfinance (history from SEC EDGAR). Updated each quarter by the company.", zh: "ROE（净资产收益率）：净利润除以股东权益，单位 %。回购会把它抬高，所以要和 ROIC 配合看。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。公司每季度更新一次。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -400,7 +418,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-028
     indicator_name: "gross_margin_percent"
-    description: {en: "The share of each sales dollar left after the direct cost of goods (gross margin), in percent. A high and stable margin means pricing power. Banks report none, so it reads unknown for them. Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR). Typical values: above 40% is common for brands and software; retail below 30% is normal.", zh: "每一美元销售额在扣掉直接成本后剩下的比例（毛利率），单位 %。毛利率又高又稳说明有定价权。银行没有这一项，所以读“未知”。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR）。常见情形：品牌和软件公司常高于 40%；零售低于 30% 属于正常。"}
+    description: {en: "The share of each sales dollar left after the direct cost of goods (gross margin), in percent. A high and stable margin means pricing power. Banks report none, so it reads unknown for them. Source: Yahoo Finance via yfinance (history from SEC EDGAR). Typical values: above 40% is common for brands and software; retail below 30% is normal.", zh: "每一美元销售额在扣掉直接成本后剩下的比例（毛利率），单位 %。毛利率又高又稳说明有定价权。银行没有这一项，所以读“未知”。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。常见情形：品牌和软件公司常高于 40%；零售低于 30% 属于正常。"}
+    unit: "%"
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -413,7 +432,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-029
     indicator_name: "trailing_twelve_month_free_cash_flow"
-    description: {en: "TTM (trailing twelve months) FCF (free cash flow, the cash left after capital spending), in dollars. It is harder to fake than accounting profit and is central to value investing. Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR cash flow statements). Updated each quarter by the company.", zh: "TTM（最近 12 个月）FCF（自由现金流，扣掉资本开支后剩下的现金），单位美元。它比会计利润更难造假，是价值投资的核心。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR 现金流量表）。公司每季度更新一次。"}
+    description: {en: "TTM (trailing twelve months) FCF (free cash flow, the cash left after capital spending), in dollars. It is harder to fake than accounting profit and is central to value investing. Source: Yahoo Finance via yfinance (history from SEC EDGAR cash flow statements). Updated each quarter by the company.", zh: "TTM（最近 12 个月）FCF（自由现金流，扣掉资本开支后剩下的现金），单位美元。它比会计利润更难造假，是价值投资的核心。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 现金流量表）。公司每季度更新一次。"}
+    unit: "USD"
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -426,7 +446,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-030
     indicator_name: "free_cash_flow_year_over_year_change"
-    description: {en: "TTM free cash flow (the cash left after capital spending) minus the same figure a year earlier, in dollars. Growing cash flow is the healthy direction. Source: SEC EDGAR cash flow statements (needs EDGAR_CONTACT), checked daily.", zh: "TTM 自由现金流（扣掉资本开支后剩下的现金）减去一年前同一数字，单位美元。现金流增长是健康的方向。数据来源：SEC EDGAR 现金流量表（需要 EDGAR_CONTACT），每天检查。"}
+    description: {en: "TTM free cash flow (the cash left after capital spending) minus the same figure a year earlier, in dollars. Growing cash flow is the healthy direction. Source: SEC EDGAR cash flow statements, checked daily.", zh: "TTM 自由现金流（扣掉资本开支后剩下的现金）减去一年前同一数字，单位美元。现金流增长是健康的方向。数据来源：SEC EDGAR 现金流量表，每天检查。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -439,7 +459,7 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-031
     indicator_name: "operating_cash_flow_to_net_income_ratio"
-    description: {en: "TTM operating cash flow divided by net income: how much of reported profit turned into real cash. A big gap suggests profit may be inflated by accruals (non-cash accounting items). Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR). Typical values: 1 or more is good; 0.8 to 1.2 is common.", zh: "TTM 经营现金流除以净利润：报表利润有多少变成了真正的现金。差距很大说明利润可能被应计项目（不涉及现金的会计项目）抬高。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR）。常见情形：1 以上为好；0.8 到 1.2 常见。"}
+    description: {en: "TTM operating cash flow divided by net income: how much of reported profit turned into real cash. A big gap suggests profit may be inflated by accruals (non-cash accounting items). Source: Yahoo Finance via yfinance (history from SEC EDGAR). Typical values: 1 or more is good; 0.8 to 1.2 is common.", zh: "TTM 经营现金流除以净利润：报表利润有多少变成了真正的现金。差距很大说明利润可能被应计项目（不涉及现金的会计项目）抬高。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。常见情形：1 以上为好；0.8 到 1.2 常见。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -452,7 +472,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-032
     indicator_name: "net_debt_to_ebitda"
-    description: {en: "Net debt (debt minus cash) divided by EBITDA (earnings before interest, taxes, depreciation and amortization): how many years of earnings it would take to repay the debt. Heavily indebted companies get into trouble in recessions or when rates rise. Source: Yahoo Finance via yfinance, updated hourly (history from SEC EDGAR). Typical values: below 2 is sound and above 4 is high (rule of thumb).", zh: "净债务（债务减现金）除以 EBITDA（息税折旧摊销前利润）：用几年的盈利才能还清债务。负债重的公司在衰退或利率上升时容易出问题。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新（历史来自 SEC EDGAR）。常见情形：低于 2 稳健，高于 4 偏高（经验）。"}
+    description: {en: "Net debt (debt minus cash) divided by EBITDA (earnings before interest, taxes, depreciation and amortization): how many years of earnings it would take to repay the debt. Heavily indebted companies get into trouble in recessions or when rates rise. Source: Yahoo Finance via yfinance (history from SEC EDGAR). Typical values: below 2 is sound and above 4 is high (rule of thumb).", zh: "净债务（债务减现金）除以 EBITDA（息税折旧摊销前利润）：用几年的盈利才能还清债务。负债重的公司在衰退或利率上升时容易出问题。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。常见情形：低于 2 稳健，高于 4 偏高（经验）。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -465,7 +485,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-033
     indicator_name: "interest_coverage_ratio"
-    description: {en: "How many times operating profit covers the interest payments (operating profit divided by interest expense). Source: SEC EDGAR financial statements (needs EDGAR_CONTACT), checked daily. Typical values: above 5 is comfortable (rule of thumb).", zh: "营业利润能覆盖利息支出多少倍（营业利润除以利息费用）。数据来源：SEC EDGAR 财务报表（需要 EDGAR_CONTACT），每天检查。常见情形：高于 5 比较从容（经验）。"}
+    description: {en: "How many times operating profit covers the interest payments (operating profit divided by interest expense). Source: SEC EDGAR financial statements, checked daily. Typical values: above 5 is comfortable (rule of thumb).", zh: "营业利润能覆盖利息支出多少倍（营业利润除以利息费用）。数据来源：SEC EDGAR 财务报表，每天检查。常见情形：高于 5 比较从容（经验）。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -478,7 +498,8 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-034
     indicator_name: "eps_estimate_next_year_four_week_change_percent"
-    description: {en: "How much the consensus next-year EPS (earnings per share) estimate has changed over the last four weeks, in percent. Upgrades usually go with price support. Source: Yahoo Finance eps_trend (now against 30 days ago) via yfinance, updated hourly; history from weekly snapshots in the community DoltHub earnings database. Typical values: upgrades outnumbering downgrades is positive.", zh: "一致预期的下一年 EPS（每股收益）在最近四周里变化了多少，单位 %。上调通常伴随股价支撑。数据来源：通过 yfinance 取 Yahoo Finance 的 eps_trend（现在对比 30 天前），每小时更新；历史来自社区 DoltHub 财报数据库的每周快照。常见情形：上调多于下调是正面信号。"}
+    description: {en: "How much the consensus next-year EPS (earnings per share) estimate has changed over the last four weeks, in percent. Upgrades usually go with price support. Source: Yahoo Finance eps_trend (now against 30 days ago) via yfinance; history from weekly snapshots in the community DoltHub earnings database. Typical values: upgrades outnumbering downgrades is positive.", zh: "一致预期的下一年 EPS（每股收益）在最近四周里变化了多少，单位 %。上调通常伴随股价支撑。数据来源：通过 yfinance 取 Yahoo Finance 的 eps_trend（现在对比 30 天前）；历史来自社区 DoltHub 财报数据库的每周快照。常见情形：上调多于下调是正面信号。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -491,7 +512,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-035
     indicator_name: "buy_rating_share_percent"
-    description: {en: "The share of Strong Buy and Buy among the analyst ratings Yahoo counts for the stock now, in percent. It shows market consensus, but a very one-sided view is also a warning. History is rebuilt from the Yahoo rating-change record over 12 months, so it differs a little from the live figure. Source: Yahoo Finance recommendation trend via yfinance, updated hourly.", zh: "Yahoo 目前统计的分析师评级里，强力买入和买入所占的比例，单位 %。它反映市场共识，但过于一边倒也是一种警告。历史按 Yahoo 12 个月的评级变动记录重建，所以和实时数字略有差别。数据来源：通过 yfinance 取 Yahoo Finance 的评级趋势，每小时更新。"}
+    description: {en: "The share of Strong Buy and Buy among the analyst ratings Yahoo counts for the stock now, in percent. It shows market consensus, but a very one-sided view is also a warning. History is rebuilt from the Yahoo rating-change record over 12 months, so it differs a little from the live figure. Source: Yahoo Finance recommendation trend via yfinance.", zh: "Yahoo 目前统计的分析师评级里，强力买入和买入所占的比例，单位 %。它反映市场共识，但过于一边倒也是一种警告。历史按 Yahoo 12 个月的评级变动记录重建，所以和实时数字略有差别。数据来源：通过 yfinance 取 Yahoo Finance 的评级趋势。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -504,7 +526,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-036
     indicator_name: "insider_net_open_market_selling_percent_of_shares_180_days"
-    description: {en: "Net open-market selling by insiders over the last 180 days (shares sold, transaction code S, minus shares bought, code P), as a percent of the shares outstanding. Selling is often just stock compensation, so lines on it are loose. Source: Yahoo Finance insider transactions via yfinance, where sales and purchases are told apart by their text, updated hourly (history from SEC Form 3, 4 and 5 data sets, filed within 2 business days).", zh: "内部人最近 180 天在公开市场上的净卖出（卖出股数，交易代码 S，减去买入股数，代码 P），占总股数的百分比。卖出常常只是股权激励，所以这类线定得比较宽松。数据来源：通过 yfinance 取 Yahoo Finance 的内部人交易，按文字区分卖出和买入，每小时更新（历史来自 SEC Form 3、4、5 数据集，须在 2 个工作日内披露）。"}
+    description: {en: "Net open-market selling by insiders over the last 180 days (shares sold, transaction code S, minus shares bought, code P), as a percent of the shares outstanding. Selling is often just stock compensation, so lines on it are loose. Source: Yahoo Finance insider transactions via yfinance, where sales and purchases are told apart by their text (history from SEC Form 3, 4 and 5 data sets, filed within 2 business days).", zh: "内部人最近 180 天在公开市场上的净卖出（卖出股数，交易代码 S，减去买入股数，代码 P），占总股数的百分比。卖出常常只是股权激励，所以这类线定得比较宽松。数据来源：通过 yfinance 取 Yahoo Finance 的内部人交易，按文字区分卖出和买入（历史来自 SEC Form 3、4、5 数据集，须在 2 个工作日内披露）。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -517,7 +539,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-037
     indicator_name: "insider_open_market_purchase_count_90_days"
-    description: {en: "The number of open-market purchases (transaction code P) by insiders in the last 90 days. Buying with their own money is a stronger positive signal than selling. Source: Yahoo Finance insider transactions via yfinance, updated hourly (history from SEC Form 3, 4 and 5 data sets).", zh: "内部人最近 90 天在公开市场上买入的笔数（交易代码 P）。用自己的钱买入是比卖出更强的正面信号。数据来源：通过 yfinance 取 Yahoo Finance 的内部人交易，每小时更新（历史来自 SEC Form 3、4、5 数据集）。"}
+    description: {en: "The number of open-market purchases (transaction code P) by insiders in the last 90 days. Buying with their own money is a stronger positive signal than selling. Source: Yahoo Finance insider transactions via yfinance (history from SEC Form 3, 4 and 5 data sets).", zh: "内部人最近 90 天在公开市场上买入的笔数（交易代码 P）。用自己的钱买入是比卖出更强的正面信号。数据来源：通过 yfinance 取 Yahoo Finance 的内部人交易（历史来自 SEC Form 3、4、5 数据集）。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -530,7 +552,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-038
     indicator_name: "shares_outstanding_year_over_year_percent"
-    description: {en: "How much the company's share count has changed from a year earlier, in percent: falling means buybacks, rising means shareholders are diluted. Source: SEC EDGAR cover-page share counts (needs EDGAR_CONTACT), checked daily. Typical values: a steady fall of 1% to 3% a year is typical of regular buybacks; a rise above 2% a year is dilution.", zh: "公司股数与一年前相比的变化，单位 %：下降说明在回购，上升说明股东被稀释。数据来源：SEC EDGAR 披露文件封面上的股数（需要 EDGAR_CONTACT），每天检查。常见情形：每年稳定下降 1% 到 3% 是持续回购的典型；每年上升超过 2% 就是稀释。"}
+    description: {en: "How much the company's share count has changed from a year earlier, in percent: falling means buybacks, rising means shareholders are diluted. Source: SEC EDGAR cover-page share counts, checked daily. Typical values: a steady fall of 1% to 3% a year is typical of regular buybacks; a rise above 2% a year is dilution.", zh: "公司股数与一年前相比的变化，单位 %：下降说明在回购，上升说明股东被稀释。数据来源：SEC EDGAR 披露文件封面上的股数，每天检查。常见情形：每年稳定下降 1% 到 3% 是持续回购的典型；每年上升超过 2% 就是稀释。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -543,7 +566,7 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-039
     indicator_name: "dividend_to_free_cash_flow_ratio"
-    description: {en: "Dividends paid divided by TTM free cash flow; 0 when the company pays no dividend, and unknown when it pays one while free cash flow is not positive. A dividend that the cash flow covers is sustainable. Source: Yahoo Finance via yfinance (dividend rate times shares, over free cash flow), updated hourly (history from SEC EDGAR cash flow statements).", zh: "分红除以 TTM 自由现金流；公司不分红时为 0，分红但自由现金流不为正时为未知。现金流能覆盖的分红才可持续。数据来源：通过 yfinance 取 Yahoo Finance（每股分红乘以股数，再除以自由现金流），每小时更新（历史来自 SEC EDGAR 现金流量表）。"}
+    description: {en: "Dividends paid divided by TTM free cash flow; 0 when the company pays no dividend, and unknown when it pays one while free cash flow is not positive. A dividend that the cash flow covers is sustainable. Source: Yahoo Finance via yfinance (dividend rate times shares, over free cash flow) (history from SEC EDGAR cash flow statements).", zh: "分红除以 TTM 自由现金流；公司不分红时为 0，分红但自由现金流不为正时为未知。现金流能覆盖的分红才可持续。数据来源：通过 yfinance 取 Yahoo Finance（每股分红乘以股数，再除以自由现金流）（历史来自 SEC EDGAR 现金流量表）。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -556,7 +579,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-040
     indicator_name: "no_audit_or_late_filing_problem_in_last_365_days"
-    description: {en: "True when, in the last 365 days, the company has had no auditor change (8-K Item 4.01), no statement that past financials can no longer be relied on (8-K Item 4.02) and no late-filing notice (NT 10-K or NT 10-Q). These usually hit the share price hard once exposed. Source: SEC EDGAR submissions (needs EDGAR_CONTACT), checked daily.", zh: "最近 365 天里，公司既没有更换审计师（8-K 第 4.01 项）、也没有声明过去财报不能再依赖（8-K 第 4.02 项）、也没有延迟申报通知（NT 10-K 或 NT 10-Q）时为真。这类事情一旦曝光，股价通常受重创。数据来源：SEC EDGAR 申报记录（需要 EDGAR_CONTACT），每天检查。"}
+    description: {en: "True when, in the last 365 days, the company has had no auditor change (8-K Item 4.01), no statement that past financials can no longer be relied on (8-K Item 4.02) and no late-filing notice (NT 10-K or NT 10-Q). These usually hit the share price hard once exposed. Source: SEC EDGAR submissions, checked daily.", zh: "最近 365 天里，公司既没有更换审计师（8-K 第 4.01 项）、也没有声明过去财报不能再依赖（8-K 第 4.02 项）、也没有延迟申报通知（NT 10-K 或 NT 10-Q）时为真。这类事情一旦曝光，股价通常受重创。数据来源：SEC EDGAR 申报记录，每天检查。"}
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -569,8 +592,8 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-041
     indicator_name: "sp500_forward_pe"
-    description: {en: "The forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. Not built yet (difficulty 5): the only free source is the weekly FactSet Earnings Insight PDF, read by hand or by an AI. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb, not verified).", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。还没有实现（难度 5）：唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，只能人工或用 AI 读取。常见情形：长期均值约 16–17；高于 22 偏贵（经验，未核实）。"}
-    scope: symbol
+    description: {en: "The forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. Not built yet: the only free source is the weekly FactSet Earnings Insight PDF, read by hand or by an AI. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb, not verified).", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。还没有实现：唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，只能人工或用 AI 读取。常见情形：长期均值约 16–17；高于 22 偏贵（经验，未核实）。"}
+    scope: market
     method: "ai_search"
     quantifiable: "yes"
     backtestable: "yes"
@@ -579,7 +602,8 @@ indicator_list:
     status: todo
   - indicator_id: I-042
     indicator_name: "equity_risk_premium_simple_percent"
-    description: {en: "ERP (equity risk premium) in its simple form, in percentage points: the earnings yield of the S&P 500 (1 divided by the PE, taken from SPY's trailing PE) minus the 10-year Treasury yield. If it is negative, stocks pay less than Treasuries. Source: Yahoo Finance SPY via yfinance and FRED series DGS10, updated while the market trades (history from Robert Shiller's data). Typical values: a negative result means stocks look expensive against Treasuries (simplified Fed model).", zh: "ERP（股权风险溢价）的简化形式，单位是百分点：标普 500 的盈利收益率（1 除以市盈率，用 SPY 的 TTM 市盈率）减去 10 年期国债收益率。为负就是股票给的回报比国债还少。数据来源：通过 yfinance 取 Yahoo Finance 的 SPY，加 FRED 的 DGS10 序列，交易时段内更新（历史来自 Robert Shiller 的数据）。常见情形：结果为负说明股票相对国债偏贵（简化的 Fed 模型）。"}
+    description: {en: "ERP (equity risk premium) in its simple form, in percentage points: the earnings yield of the S&P 500 (1 divided by the PE, taken from SPY's trailing PE) minus the 10-year Treasury yield. If it is negative, stocks pay less than Treasuries. Source: Yahoo Finance SPY via yfinance and FRED series DGS10 (history from Robert Shiller's data). Typical values: a negative result means stocks look expensive against Treasuries (simplified Fed model).", zh: "ERP（股权风险溢价）的简化形式，单位是百分点：标普 500 的盈利收益率（1 除以市盈率，用 SPY 的 TTM 市盈率）减去 10 年期国债收益率。为负就是股票给的回报比国债还少。数据来源：通过 yfinance 取 Yahoo Finance 的 SPY，加 FRED 的 DGS10 序列（历史来自 Robert Shiller 的数据）。常见情形：结果为负说明股票相对国债偏贵（简化的 Fed 模型）。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -592,7 +616,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-043
     indicator_name: "shiller_cape"
-    description: {en: "The Shiller CAPE (cyclically adjusted PE): the S&P 500 price divided by its 10-year average of inflation-adjusted earnings. A long-history valuation gauge. Source: the multpl.com table, a copy of Robert Shiller's series with the newest month filled in daily (the Yale file stopped in 2023), history since 1871. Typical values: the long-run median is about 16 and the average 17; the peak was 44 in December 1999.", zh: "Shiller CAPE（周期调整市盈率）：标普 500 价格除以其 10 年通胀调整后盈利均值。一个长历史的估值指标。数据来源：multpl.com 的表格，是 Robert Shiller 序列的副本，最新一个月每天补上（耶鲁的文件 2023 年就停更了），历史自 1871 年起。常见情形：长期中位数约 16、均值 17；最高是 1999 年 12 月的 44。"}
+    description: {en: "The Shiller CAPE (cyclically adjusted PE): the S&P 500 price divided by its 10-year average of inflation-adjusted earnings. A long-history valuation gauge. Source: the multpl.com table, a copy of Robert Shiller's series with the newest month filled in daily (the Yale file stopped in 2023), history since 1881 (ten years of earnings are needed). Typical values: the long-run median is about 16 and the average 17; the peak was 44 in December 1999.", zh: "Shiller CAPE（周期调整市盈率）：标普 500 价格除以其 10 年通胀调整后盈利均值。一个长历史的估值指标。数据来源：multpl.com 的表格，是 Robert Shiller 序列的副本，最新一个月每天补上（耶鲁的文件 2023 年就停更了），历史自 1881 年起（需要十年盈利数据）。常见情形：长期中位数约 16、均值 17；最高是 1999 年 12 月的 44。"}
     scope: market
     method: "scrape"
     quantifiable: "yes"
@@ -606,6 +630,7 @@ indicator_list:
   - indicator_id: I-044
     indicator_name: "damodaran_implied_equity_risk_premium_percent"
     description: {en: "Aswath Damodaran's implied ERP (equity risk premium) for the S&P 500, in percent: the extra return the market is pricing for holding stocks instead of Treasuries, worked out from the index level and expected cash flows. A higher premium means stocks are cheaper against bonds. Source: Damodaran's monthly file ERPbymonth.xlsx (column ERP T12m), updated monthly. Typical values: since 2008 it has mostly stayed between 4.2% and 6.4% (the 10th to 90th percentile), with a low of 3.7%.", zh: "Aswath Damodaran 算出的标普 500 隐含 ERP（股权风险溢价），单位 %：根据指数点位和预期现金流推算，市场为持有股票而不是国债所要的额外回报。溢价越高，股票相对债券越便宜。数据来源：Damodaran 的月度文件 ERPbymonth.xlsx（ERP T12m 一列），每月更新。常见情形：2008 年以来多数在 4.2% 到 6.4% 之间（第 10 到第 90 百分位），最低 3.7%。"}
+    unit: "%"
     scope: market
     method: "scrape"
     quantifiable: "yes"
@@ -619,6 +644,7 @@ indicator_list:
   - indicator_id: I-045
     indicator_name: "market_value_to_gdp_percent"
     description: {en: "Total stock market value divided by GDP (gross domestic product), the Buffett indicator, used to judge whether the market as a whole is overheated. Here a non-standard version is used: US non-financial corporate equities from the Fed's Z.1 flow of funds report divided by GDP, so its numbers differ from the headline version. Source: FRED series NCBEILQ027S and GDP, updated quarterly with a lag of 2 to 3 months. Typical values: the standard version above 150% is often called expensive (rule of thumb).", zh: "股市总市值除以 GDP（国内生产总值），即巴菲特指标，用来判断整个市场是否过热。这里用的是非标准版本：美联储 Z.1 资金流量报告里的美国非金融企业股权，除以 GDP，所以数字和常见版本不同。数据来源：FRED 的 NCBEILQ027S 和 GDP 序列，每季度更新，滞后 2 到 3 个月。常见情形：标准版本高于 150% 常被说成偏贵（经验）。"}
+    unit: "%"
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -631,7 +657,7 @@ indicator_list:
     max_age: 270d
   - indicator_id: I-046
     indicator_name: "price_earnings_ttm_to_five_year_median_ratio"
-    description: {en: "The stock's PE (price divided by earnings per share) on TTM (trailing twelve months) actual earnings, divided by the median of that PE over the last 5 years: below 1.0 means cheaper than its own history. Long-run S&P 500 average PE is roughly 16 to 17, and growth stocks at 25 to 35 are common. Source: SEC EDGAR EPS (needs EDGAR_CONTACT) with six years of Yahoo Finance prices, checked daily.", zh: "这只股票按 TTM（最近 12 个月）实际盈利算的 PE（股价除以每股收益），除以它过去 5 年该 PE 的中位数：低于 1.0 说明比自己的历史便宜。标普 500 的长期平均 PE 约 16–17，成长股在 25 到 35 很常见。数据来源：SEC EDGAR 的 EPS（需要 EDGAR_CONTACT），加 6 年的 Yahoo Finance 股价，每天检查。"}
+    description: {en: "The stock's PE (price divided by earnings per share) on TTM (trailing twelve months) actual earnings, divided by the median of that PE over the last 5 years: below 1.0 means cheaper than its own history. Long-run S&P 500 average PE is roughly 16 to 17, and growth stocks at 25 to 35 are common. Source: SEC EDGAR EPS with six years of Yahoo Finance prices, checked daily.", zh: "这只股票按 TTM（最近 12 个月）实际盈利算的 PE（股价除以每股收益），除以它过去 5 年该 PE 的中位数：低于 1.0 说明比自己的历史便宜。标普 500 的长期平均 PE 约 16–17，成长股在 25 到 35 很常见。数据来源：SEC EDGAR 的 EPS，加 6 年的 Yahoo Finance 股价，每天检查。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -644,7 +670,7 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-047
     indicator_name: "forward_pe_to_trailing_pe_ratio"
-    description: {en: "Forward PE (price divided by analysts' expected earnings for the next 12 months) divided by the TTM PE. Below 1 means the market expects earnings to grow. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "Forward PE（股价除以分析师预期的未来 12 个月盈利）除以 TTM 市盈率。低于 1 说明市场预期盈利增长。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "Forward PE (price divided by analysts' expected earnings for the next 12 months) divided by the TTM PE. Below 1 means the market expects earnings to grow. Source: Yahoo Finance via yfinance.", zh: "Forward PE（股价除以分析师预期的未来 12 个月盈利）除以 TTM 市盈率。低于 1 说明市场预期盈利增长。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -657,7 +683,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-048
     indicator_name: "enterprise_value_to_ebitda"
-    description: {en: "EV (enterprise value, market cap plus net debt) divided by EBITDA (earnings before interest, taxes, depreciation and amortization). Source: Yahoo Finance via yfinance, updated hourly with the live market cap (history from SEC EDGAR plus the share price). Typical values: 8 to 15 is common. The growth-adjusted version is the PEG ratio.", zh: "EV（企业价值，市值加净债务）除以 EBITDA（息税折旧摊销前利润）。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新并用实时市值（历史来自 SEC EDGAR 加股价）。常见情形：8 到 15 比较常见。考虑增长的版本是 PEG。"}
+    description: {en: "EV (enterprise value, market cap plus net debt) divided by EBITDA (earnings before interest, taxes, depreciation and amortization). Source: Yahoo Finance via yfinance, using the live market cap (history from SEC EDGAR plus the share price). Typical values: 8 to 15 is common. The growth-adjusted version is the PEG ratio.", zh: "EV（企业价值，市值加净债务）除以 EBITDA（息税折旧摊销前利润）。数据来源：通过 yfinance 取 Yahoo Finance，用实时市值（历史来自 SEC EDGAR 加股价）。常见情形：8 到 15 比较常见。考虑增长的版本是 PEG。"}
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -670,7 +696,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-049
     indicator_name: "peg_ratio"
-    description: {en: "The PEG: forward PE divided by the expected earnings growth rate in percent, taken from the consensus next-year over this-year EPS. About 1 is often seen as fair (Peter Lynch's rule of thumb). It is unknown when next-year EPS is not above this year's. Source: Yahoo Finance estimates via yfinance, updated hourly (history from the community DoltHub earnings database).", zh: "PEG：Forward PE 除以预期盈利增速（%），增速取一致预期的下一年 EPS 对本年 EPS 的增幅。1 左右常被视为合理（Peter Lynch 的经验）。下一年 EPS 不高于本年时为未知。数据来源：通过 yfinance 取 Yahoo Finance 的预期，每小时更新（历史来自社区 DoltHub 财报数据库）。"}
+    description: {en: "The PEG: forward PE divided by the expected earnings growth rate in percent, taken from the consensus next-year over this-year EPS. About 1 is often seen as fair (Peter Lynch's rule of thumb). It is unknown when next-year EPS is not above this year's. Source: Yahoo Finance estimates via yfinance (history from the community DoltHub earnings database).", zh: "PEG：Forward PE 除以预期盈利增速（%），增速取一致预期的下一年 EPS 对本年 EPS 的增幅。1 左右常被视为合理（Peter Lynch 的经验）。下一年 EPS 不高于本年时为未知。数据来源：通过 yfinance 取 Yahoo Finance 的预期（历史来自社区 DoltHub 财报数据库）。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -683,7 +709,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-050
     indicator_name: "free_cash_flow_yield_percent"
-    description: {en: "FCF (free cash flow) divided by market value, in percent: roughly how much cash you get back each year for buying the whole company. Above 5% is often seen as cheap, below 3% as expensive. Source: Yahoo Finance via yfinance, updated hourly with the live market cap (history from SEC EDGAR plus the share price).", zh: "FCF（自由现金流）除以市值，单位 %：买下整家公司，每年大约能拿回多少现金。高于 5% 常被视为便宜，低于 3% 视为偏贵。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新并用实时市值（历史来自 SEC EDGAR 加股价）。"}
+    description: {en: "FCF (free cash flow) divided by market value, in percent: roughly how much cash you get back each year for buying the whole company. Above 5% is often seen as cheap, below 3% as expensive. Source: Yahoo Finance via yfinance, using the live market cap (history from SEC EDGAR plus the share price).", zh: "FCF（自由现金流）除以市值，单位 %：买下整家公司，每年大约能拿回多少现金。高于 5% 常被视为便宜，低于 3% 视为偏贵。数据来源：通过 yfinance 取 Yahoo Finance，用实时市值（历史来自 SEC EDGAR 加股价）。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -759,7 +786,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-056
     indicator_name: "fear_greed_index"
-    description: {en: "CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (needs Referer and Origin headers; it may change at any time), history from 2021-01-04.", zh: "CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（需要 Referer 和 Origin 请求头，随时可能变化），历史自 2021-01-04。"}
+    description: {en: "CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (it may change at any time), history from 2021-01-04.", zh: "CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（随时可能变化），历史自 2021-01-04。"}
     scope: market
     method: "scrape"
     quantifiable: "yes"
@@ -772,7 +799,8 @@ indicator_list:
     max_age: 5d
   - indicator_id: I-057
     indicator_name: "aaii_bullish_minus_bearish_percent"
-    description: {en: "The weekly AAII (American Association of Individual Investors) survey: the share of members who are bullish minus the share who are bearish, in percentage points. Retail pessimism is often used as a contrarian signal. Source: aaii.com sentiment.xls, which blocks scripts, so the newest Internet Archive copy is read (it can be a few days behind), updated every Thursday. Typical values: long-run averages are about 37.5% bullish, 31% bearish and 31.5% neutral.", zh: "AAII（美国个人投资者协会）每周调查：看多的会员占比减去看空的占比，单位是百分点。散户悲观常被用作反向信号。数据来源：aaii.com 的 sentiment.xls，它拦截脚本，所以读取的是 Internet Archive 里最新的副本（可能晚几天），每周四更新。常见情形：长期均值约 37.5% 看多、31% 看空、31.5% 中立。"}
+    description: {en: "The weekly AAII (American Association of Individual Investors) survey: the share of members who are bullish minus the share who are bearish, in percentage points. Retail pessimism is often used as a contrarian signal. Source: aaii.com sentiment.xls, read from its newest Internet Archive copy (it can be a few days behind), updated every Thursday. Typical values: long-run averages are about 37.5% bullish, 31% bearish and 31.5% neutral.", zh: "AAII（美国个人投资者协会）每周调查：看多的会员占比减去看空的占比，单位是百分点。散户悲观常被用作反向信号。数据来源：aaii.com 的 sentiment.xls，读取的是 Internet Archive 里最新的副本（可能晚几天），每周四更新。常见情形：长期均值约 37.5% 看多、31% 看空、31.5% 中立。"}
+    unit: "%"
     scope: market
     method: "scrape"
     quantifiable: "yes"
@@ -786,6 +814,7 @@ indicator_list:
   - indicator_id: I-058
     indicator_name: "aaii_bullish_percent"
     description: {en: "The share of members who are bullish in the weekly AAII (American Association of Individual Investors) survey, in percent. Source: aaii.com sentiment.xls through the newest Internet Archive copy (it can be a few days behind), updated every Thursday. Typical values: the long-run average is about 37.5%.", zh: "AAII（美国个人投资者协会）每周调查里看多的会员占比，单位 %。数据来源：aaii.com 的 sentiment.xls，读取 Internet Archive 里最新的副本（可能晚几天），每周四更新。常见情形：长期均值约 37.5%。"}
+    unit: "%"
     scope: market
     method: "scrape"
     quantifiable: "yes"
@@ -799,7 +828,7 @@ indicator_list:
   - indicator_id: I-059
     indicator_name: "naaim_exposure_index"
     description: {en: "The NAAIM (National Association of Active Investment Managers) Exposure Index: the average stock exposure reported weekly by active fund managers. It typically ranges from 0 to 100 (it can go below 0 or above 100); very high means everyone is bullish and the trade is crowded. Not live yet: the only copy the app can read is an Internet Archive file that is months old. Source (history): naaim.org Excel files kept by the Wayback Machine, updated every Thursday.", zh: "NAAIM（美国积极投资经理人协会）曝险指数：积极型基金经理每周上报的平均股票仓位。通常在 0 到 100 之间（也可能低于 0 或高于 100）；很高说明大家都看多、交易拥挤。还没有实时数据：程序能读到的只有 Internet Archive 里已经过时数月的文件。数据来源（历史）：Wayback 保存的 naaim.org Excel 文件，每周四更新。"}
-    scope: symbol
+    scope: market
     method: "scrape"
     quantifiable: "yes"
     backtestable: "yes"
@@ -808,7 +837,7 @@ indicator_list:
     status: todo
   - indicator_id: I-060
     indicator_name: "put_call_ratio_total_five_day_average"
-    description: {en: "The 5-day average of the total put/call ratio: put option volume divided by call option volume across the Cboe exchanges. A high ratio means fear, a low one means complacency. Source: Cboe free data files (an old CSV for 2006 to 2019 and one daily statistics file per trading day from 2019), checked daily. Typical values: 0.7 to 1.0 is common; above 1.1 is fear and below 0.6 complacency (rule of thumb).", zh: "总看跌/看涨比率的 5 日均值：Cboe 各交易所看跌期权成交量除以看涨期权成交量。比率高说明恐惧，低说明自满。数据来源：Cboe 免费数据文件（2006 到 2019 年用一份旧 CSV，2019 年起每个交易日一份统计文件），每天检查。常见情形：0.7 到 1.0 常见；高于 1.1 是恐惧，低于 0.6 是自满（经验）。"}
+    description: {en: "The 5-day average of the total put/call ratio: put option volume divided by call option volume across the Cboe exchanges. A high ratio means fear, a low one means complacency. Source: Cboe free data files (an old CSV for 2006 to 2019 and one daily statistics file per trading day from 2019), checked daily. Typical values: 0.7 to 1.0 is common; above 1.1 is fear and below 0.6 complacency (rule of thumb).", zh: "总看跌/看涨比率的 5 日均值：Cboe 各交易所 Put 成交量除以 Call 成交量。比率高说明恐惧，低说明自满。数据来源：Cboe 免费数据文件（2006 到 2019 年用一份旧 CSV，2019 年起每个交易日一份统计文件），每天检查。常见情形：0.7 到 1.0 常见；高于 1.1 是恐惧，低于 0.6 是自满（经验）。"}
     scope: market
     method: "api_fetch"
     quantifiable: "yes"
@@ -835,7 +864,7 @@ indicator_list:
   - indicator_id: I-062
     indicator_name: "no_mega_ipo_in_last_30_trading_days"
     description: {en: "True when no mega IPO (initial public offering, a company's first stock sale, of $10 billion or more) happened in the last 30 trading days. Huge new issues soak up cash and often appear near market peaks. Not built yet: it needs a hand-kept list of such IPOs (from Jay Ritter's IPO data and SEC 424B4 filings).", zh: "最近 30 个交易日内没有超大型 IPO（首次公开募股，公司第一次卖股票，规模 100 亿美元以上）时为真。巨额新股会吸走资金，也常出现在市场顶部附近。还没有实现：需要一份手工维护的此类 IPO 名单（来自 Jay Ritter 的 IPO 数据和 SEC 的 424B4 文件）。"}
-    scope: symbol
+    scope: market
     method: "ai_search"
     quantifiable: "yes"
     backtestable: "yes"
@@ -844,7 +873,7 @@ indicator_list:
     status: todo
   - indicator_id: I-063
     indicator_name: "spx_above_two_hundred_day_average"
-    description: {en: "True when the S&P 500 closes above its 200-day moving average (the average close of the last 200 trading days), the most common line between an uptrend and a downtrend for the whole market. Source: Yahoo Finance ^GSPC via yfinance, updated while the market trades (history from 1927-12-30).", zh: "标普 500 收盘价在它的 200 日均线（最近 200 个交易日收盘价的平均）之上时为真，这是判断整个市场处于上升还是下降趋势最常用的分界线。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC，交易时段内更新（历史自 1927-12-30）。"}
+    description: {en: "True when the S&P 500 closes above its 200-day moving average (the average close of the last 200 trading days), the most common line between an uptrend and a downtrend for the whole market. Source: Yahoo Finance ^GSPC via yfinance (history from 1927-12-30).", zh: "标普 500 收盘价在它的 200 日均线（最近 200 个交易日收盘价的平均）之上时为真，这是判断整个市场处于上升还是下降趋势最常用的分界线。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC（历史自 1927-12-30）。"}
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -857,8 +886,9 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-064
     indicator_name: "sp500_share_above_two_hundred_day_average_percent"
-    description: {en: "The share of S&P 500 stocks that are above their own 200-day average, in percent. If the index rises while fewer stocks join, the rally is narrow. Not built yet (difficulty 5): it needs the daily closes of all 500 members and their list. Typical values: more than 60% of stocks above their 200-day average is strong, less than 40% weak (rule of thumb).", zh: "标普 500 成分股里站上自己 200 日均线的股票占比，单位 %。指数上涨但参与的股票变少，说明上涨很窄。还没有实现（难度 5）：需要 500 只成分股的每日收盘价和成分股名单。常见情形：超过 60% 的股票在 200 日均线上方算强，低于 40% 算弱（经验）。"}
-    scope: symbol
+    description: {en: "The share of S&P 500 stocks that are above their own 200-day average, in percent. If the index rises while fewer stocks join, the rally is narrow. Not built yet: it needs the daily closes of all 500 members and their list. Typical values: more than 60% of stocks above their 200-day average is strong, less than 40% weak (rule of thumb).", zh: "标普 500 成分股里站上自己 200 日均线的股票占比，单位 %。指数上涨但参与的股票变少，说明上涨很窄。还没有实现：需要 500 只成分股的每日收盘价和成分股名单。常见情形：超过 60% 的股票在 200 日均线上方算强，低于 40% 算弱（经验）。"}
+    unit: "%"
+    scope: market
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
@@ -867,7 +897,7 @@ indicator_list:
     status: todo
   - indicator_id: I-065
     indicator_name: "rsp_to_spy_ratio_above_two_hundred_day_average"
-    description: {en: "True when the ratio of RSP (the equal-weight S&P 500 fund) to SPY (the market-weight fund) is above its own 200-day average. When the average stock keeps up with the biggest stocks, the rally is broad; this is a cheap stand-in for breadth. Source: Yahoo Finance RSP and SPY via yfinance, updated while the market trades (RSP since 2003).", zh: "RSP（标普 500 等权重基金）与 SPY（市值加权基金）的比值站上它自己的 200 日均线时为真。普通股票能跟上最大的几只，说明上涨面很广；这是市场广度的廉价替代。数据来源：通过 yfinance 取 Yahoo Finance 的 RSP 和 SPY，交易时段内更新（RSP 自 2003 年起）。"}
+    description: {en: "True when the ratio of RSP (the equal-weight S&P 500 fund) to SPY (the market-weight fund) is above its own 200-day average. When the average stock keeps up with the biggest stocks, the rally is broad; this is a cheap stand-in for breadth. Source: Yahoo Finance RSP and SPY via yfinance (RSP since 2003).", zh: "RSP（标普 500 等权重基金）与 SPY（市值加权基金）的比值站上它自己的 200 日均线时为真。普通股票能跟上最大的几只，说明上涨面很广；这是市场广度的廉价替代。数据来源：通过 yfinance 取 Yahoo Finance 的 RSP 和 SPY（RSP 自 2003 年起）。"}
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -880,7 +910,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-066
     indicator_name: "price_above_two_hundred_day_average"
-    description: {en: "True when the stock closes above its own 200-day average. Selling puts on stocks in a downtrend means catching a falling knife. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "这只股票收盘价在自己的 200 日均线之上时为真。去给下跌趋势里的股票卖 Put，等于接下坠的飞刀。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "True when the stock closes above its own 200-day average. Selling puts on stocks in a downtrend means catching a falling knife. Source: Yahoo Finance via yfinance.", zh: "这只股票收盘价在自己的 200 日均线之上时为真。去给下跌趋势里的股票卖 Put，等于接下坠的飞刀。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -893,7 +923,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-067
     indicator_name: "no_new_fifty_two_week_low_in_last_20_days"
-    description: {en: "True when none of the last 20 closes was lower than every close of the year before it. A stock that keeps making lows is still falling. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "最近 20 个收盘价里，没有任何一个比此前一年的所有收盘价都低时为真。不断创新低的股票还在下跌。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "True when none of the last 20 closes was lower than every close of the year before it. A stock that keeps making lows is still falling. Source: Yahoo Finance via yfinance, calculated.", zh: "最近 20 个收盘价里，没有任何一个比此前一年的所有收盘价都低时为真。不断创新低的股票还在下跌。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -906,7 +936,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-068
     indicator_name: "fifty_day_average_above_two_hundred_day_average"
-    description: {en: "True when the 50-day moving average is above the 200-day moving average, the state called the golden cross, the most common trend confirmation. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "50 日均线在 200 日均线之上时为真，这种状态叫金叉，是最常用的趋势确认。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "True when the 50-day moving average is above the 200-day moving average, the state called the golden cross, the most common trend confirmation. Source: Yahoo Finance via yfinance.", zh: "50 日均线在 200 日均线之上时为真，这种状态叫金叉，是最常用的趋势确认。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -919,7 +949,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-069
     indicator_name: "price_above_fifty_day_average"
-    description: {en: "True when the close is above the 50-day average, showing the medium-term trend is healthy. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "收盘价在 50 日均线之上时为真，说明中期趋势健康。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "True when the close is above the 50-day average, showing the medium-term trend is healthy. Source: Yahoo Finance via yfinance.", zh: "收盘价在 50 日均线之上时为真，说明中期趋势健康。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -932,7 +962,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-070
     indicator_name: "distance_from_fifty_two_week_high_percent"
-    description: {en: "How far the price is below its 52-week high, in percent. The closer it is, the stronger the stock, and a stock breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, updated while the market trades. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio).", zh: "价格比 52 周最高价低多少，单位 %。越近，股票越强；创新高的股票上方没有被套的卖盘。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。常见情形：5% 以内算接近新高，15% 以内仍算强（经验；George 和 Hwang 2004 年用过 52 周高点比值）。"}
+    description: {en: "How far the price is below its 52-week high, in percent. The closer it is, the stronger the stock, and a stock breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio).", zh: "价格比 52 周最高价低多少，单位 %。越近，股票越强；创新高的股票上方没有被套的卖盘。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：5% 以内算接近新高，15% 以内仍算强（经验；George 和 Hwang 2004 年用过 52 周高点比值）。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -945,7 +976,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-071
     indicator_name: "fifty_two_week_range_percentile"
-    description: {en: "Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). A low position suits the Wheel strategy (sell puts, get assigned, then sell covered calls); a high one suits momentum strategies. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "价格在它 52 周最低到最高区间里的位置，从 0（在最低点）到 100（在最高点）。位置低适合 Wheel 策略（卖 Put、被行权、再卖 Covered Call）；位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). A low position suits the Wheel strategy (sell puts, get assigned, then sell covered calls); a high one suits momentum strategies. Source: Yahoo Finance via yfinance.", zh: "价格在它 52 周最低到最高区间里的位置，从 0（在最低点）到 100（在最高点）。位置低适合 Wheel 策略（卖 Put、被行权、再卖 Covered Call）；位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -958,7 +989,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-072
     indicator_name: "return_six_month_percent"
-    description: {en: "The price change over the last 126 trading days (about 6 months), in percent. Winners tend to keep winning for a while (momentum effect). Source: Yahoo Finance via yfinance, updated while the market trades. Typical values: above 10% is a common line; academic momentum uses 3 to 12 months (Jegadeesh and Titman 1993).", zh: "最近 126 个交易日（约 6 个月）的价格涨跌幅，单位 %。强者往往在一段时间内继续走强（动量效应）。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。常见情形：高于 10% 是常见的线；学术上的动量用 3 到 12 个月（Jegadeesh 和 Titman 1993）。"}
+    description: {en: "The price change over the last 126 trading days (about 6 months), in percent. Winners tend to keep winning for a while (momentum effect). Source: Yahoo Finance via yfinance. Typical values: above 10% is a common line; academic momentum uses 3 to 12 months (Jegadeesh and Titman 1993).", zh: "最近 126 个交易日（约 6 个月）的价格涨跌幅，单位 %。强者往往在一段时间内继续走强（动量效应）。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：高于 10% 是常见的线；学术上的动量用 3 到 12 个月（Jegadeesh 和 Titman 1993）。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -971,7 +1003,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-073
     indicator_name: "return_one_hundred_twenty_six_day_minus_spy_percent"
-    description: {en: "The stock's 126-day return minus SPY's (SPY is the fund tracking the S&P 500), in percentage points: whether the stock has beaten or lagged the market over recent months. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "这只股票 126 日涨幅减去 SPY（跟踪标普 500 的基金）的涨幅，单位是百分点：最近几个月它是跑赢还是跑输大盘。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "The stock's 126-day return minus SPY's (SPY is the fund tracking the S&P 500), in percentage points: whether the stock has beaten or lagged the market over recent months. Source: Yahoo Finance via yfinance, calculated.", zh: "这只股票 126 日涨幅减去 SPY（跟踪标普 500 的基金）的涨幅，单位是百分点：最近几个月它是跑赢还是跑输大盘。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -984,7 +1017,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-074
     indicator_name: "volume_ratio_to_twenty_day_average"
-    description: {en: "The latest day's volume divided by the average volume of the 20 days before it. A breakout on heavy volume is more believable than one on thin volume. Source: Yahoo Finance via yfinance, updated while the market trades. Typical values: 1.5 or more is a volume surge.", zh: "最近一天的成交量除以此前 20 天的平均成交量。放量突破比缩量突破更可信。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。常见情形：1.5 倍以上算放量。"}
+    description: {en: "The latest day's volume divided by the average volume of the 20 days before it. A breakout on heavy volume is more believable than one on thin volume. Source: Yahoo Finance via yfinance. Typical values: 1.5 or more is a volume surge.", zh: "最近一天的成交量除以此前 20 天的平均成交量。放量突破比缩量突破更可信。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：1.5 倍以上算放量。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -997,7 +1030,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-075
     indicator_name: "relative_strength_index_fourteen_day"
-    description: {en: "RSI (Relative Strength Index) over 14 days: the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "14 日 RSI（相对强弱指数）：最近涨幅相对跌幅的强弱，范围 0 到 100。按惯例高于 70 超买，低于 30 超卖；40 到 70 说明趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "RSI (Relative Strength Index) over 14 days: the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated.", zh: "14 日 RSI（相对强弱指数）：最近涨幅相对跌幅的强弱，范围 0 到 100。按惯例高于 70 超买，低于 30 超卖；40 到 70 说明趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1010,7 +1043,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-076
     indicator_name: "relative_strength_index_two_day"
-    description: {en: "RSI over just 2 days (the Larry Connors method), which is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "只看 2 天的 RSI（Larry Connors 的方法），非常敏感。低于 10 说明股票跌得太多太快，是短线均值回归（价格会弹回来的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "RSI over just 2 days (the Larry Connors method), which is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated.", zh: "只看 2 天的 RSI（Larry Connors 的方法），非常敏感。低于 10 说明股票跌得太多太快，是短线均值回归（价格会弹回来的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1023,7 +1056,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-077
     indicator_name: "price_below_five_day_average"
-    description: {en: "True when the close is below the 5-day average, confirming a short-term pullback is under way. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "收盘价在 5 日均线之下时为真，说明短线回调正在进行。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "True when the close is below the 5-day average, confirming a short-term pullback is under way. Source: Yahoo Finance via yfinance.", zh: "收盘价在 5 日均线之下时为真，说明短线回调正在进行。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1036,7 +1069,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-078
     indicator_name: "distance_above_sixty_day_low_close_percent"
-    description: {en: "How far the price is above its lowest close of the last 60 trading days, in percent. Near a recent low the downside is more limited. A recent low is used because a support level is hard to define. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "价格比最近 60 个交易日的最低收盘价高多少，单位 %。靠近近期低点时，下跌空间更有限。支撑位很难定义，所以用近期低点代替。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "How far the price is above its lowest close of the last 60 trading days, in percent. Near a recent low the downside is more limited. A recent low is used because a support level is hard to define. Source: Yahoo Finance via yfinance, calculated.", zh: "价格比最近 60 个交易日的最低收盘价高多少，单位 %。靠近近期低点时，下跌空间更有限。支撑位很难定义，所以用近期低点代替。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1049,7 +1083,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-079
     indicator_name: "absolute_distance_from_two_hundred_day_average_percent"
-    description: {en: "How far the price is from its 200-day average, in percent, whether above or below. Near the 200-day average is another common support level. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "价格离它的 200 日均线有多远，单位 %，不分在上还是在下。靠近 200 日均线是另一个常见的支撑位。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "How far the price is from its 200-day average, in percent, whether above or below. Near the 200-day average is another common support level. Source: Yahoo Finance via yfinance, calculated.", zh: "价格离它的 200 日均线有多远，单位 %，不分在上还是在下。靠近 200 日均线是另一个常见的支撑位。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1062,7 +1097,8 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-080
     indicator_name: "average_true_range_fourteen_day_percent"
-    description: {en: "The 14-day ATR (Average True Range) as a share of the price, in percent: how much the stock normally moves in a day. Used to set stop distance and judge risk. Source: Yahoo Finance via yfinance, calculated, updated while the market trades. Typical values: large blue chips are usually about 1% to 3%.", zh: "14 日 ATR（平均真实波幅）占价格的比例，单位 %：这只股票平时一天大概波动多少。用来设置止损距离、判断风险。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。常见情形：大型蓝筹股通常在 1% 到 3%。"}
+    description: {en: "The 14-day ATR (Average True Range) as a share of the price, in percent: how much the stock normally moves in a day. Used to set stop distance and judge risk. Source: Yahoo Finance via yfinance, calculated. Typical values: large blue chips are usually about 1% to 3%.", zh: "14 日 ATR（平均真实波幅）占价格的比例，单位 %：这只股票平时一天大概波动多少。用来设置止损距离、判断风险。数据来源：通过 yfinance 取 Yahoo Finance 后计算。常见情形：大型蓝筹股通常在 1% 到 3%。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1088,7 +1124,7 @@ indicator_list:
     max_age: 7d
   - indicator_id: I-082
     indicator_name: "no_earnings_before_expiration"
-    description: {en: "True when the stock's next earnings date is later than the end of the standard option window (45 days from today). Earnings make the stock gap up or down, the most common veto for option sellers. Source: the Yahoo Finance calendar via yfinance, updated hourly; the date is an estimate until the company confirms it (history from SEC EDGAR 8-K Item 2.02 filing dates).", zh: "股票下一次财报日晚于标准期权窗口的最后一天（从今天起 45 天）时为真。财报会让股价向上或向下跳空，是期权卖方最常用的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的日历，每小时更新；在公司确认之前，日期只是估计（历史来自 SEC EDGAR 8-K 第 2.02 项的披露日期）。"}
+    description: {en: "True when the stock's next earnings date is later than the end of the standard option window (45 days from today). Earnings make the stock gap up or down, the most common veto for option sellers. Source: the Yahoo Finance calendar via yfinance; the date is an estimate until the company confirms it (history from SEC EDGAR 8-K Item 2.02 filing dates).", zh: "股票下一次财报日晚于标准期权窗口的最后一天（从今天起 45 天）时为真。财报会让股价向上或向下跳空，是期权卖方最常用的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的日历；在公司确认之前，日期只是估计（历史来自 SEC EDGAR 8-K 第 2.02 项的披露日期）。"}
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -1101,7 +1137,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-083
     indicator_name: "no_ex_dividend_date_inside_option_life"
-    description: {en: "True when no ex-dividend date (the first day the stock trades without its next dividend) falls between today and the option's expiration. A company that pays no dividend is always true; for a payer the next dates are projected every 91 days from the last known one. When selling covered calls, there is a risk of early assignment just before the date. Source: Yahoo Finance via yfinance, updated hourly.", zh: "从今天到期权到期之间，没有除息日（股票不再含有下一次分红的第一天）时为真。不分红的公司永远为真；分红的公司按最近一次已知除息日每隔 91 天往后推算。卖 Covered Call 时，除息日前有被提前行权的风险。数据来源：通过 yfinance 取 Yahoo Finance，每小时更新。"}
+    description: {en: "True when no ex-dividend date (the first day the stock trades without its next dividend) falls between today and the option's expiration. A company that pays no dividend is always true; for a payer the next dates are projected every 91 days from the last known one. When selling covered calls, there is a risk of early assignment just before the date. Source: Yahoo Finance via yfinance.", zh: "从今天到期权到期之间，没有除息日（股票不再含有下一次分红的第一天）时为真。不分红的公司永远为真；分红的公司按最近一次已知除息日每隔 91 天往后推算。卖 Covered Call 时，除息日前有被提前行权的风险。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: window
     method: "api_fetch"
     quantifiable: "yes"
@@ -1252,6 +1288,7 @@ indicator_list:
   - indicator_id: I-095
     indicator_name: "market_capitalization_billion_usd"
     description: {en: "Market capitalization (share price times shares outstanding), in billions of dollars. Big companies trade freely and are less likely to be hit by extreme moves. Source: Yahoo Finance via yfinance, with the live quote's market cap each refresh (history from SEC EDGAR share counts times the price).", zh: "市值（股价乘以总股数），单位十亿美元。大公司交易顺畅，也不太容易遭遇极端行情。数据来源：通过 yfinance 取 Yahoo Finance，每次刷新用实时报价里的市值（历史来自 SEC EDGAR 的股数乘以股价）。"}
+    unit: "USD billion"
     scope: symbol
     method: "api_fetch"
     quantifiable: "yes"
@@ -1264,7 +1301,8 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-096
     indicator_name: "average_daily_trading_value_twenty_day_usd"
-    description: {en: "The 20-day average of price times volume, in dollars a day: the money traded in the stock each day. The more active it is, the easier it is to get in and out. Source: Yahoo Finance via yfinance, updated while the market trades. Typical values: above about $50 million to $100 million a day is enough for an option seller.", zh: "价格乘以成交量的 20 日平均，单位美元/天：这只股票每天成交的金额。越活跃，进出越容易。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。常见情形：每天约 5000 万到 1 亿美元以上，对期权卖方就够了。"}
+    description: {en: "The 20-day average of price times volume, in dollars a day: the money traded in the stock each day. The more active it is, the easier it is to get in and out. Source: Yahoo Finance via yfinance. Typical values: above about $50 million to $100 million a day is enough for an option seller.", zh: "价格乘以成交量的 20 日平均，单位美元/天：这只股票每天成交的金额。越活跃，进出越容易。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：每天约 5000 万到 1 亿美元以上，对期权卖方就够了。"}
+    unit: "USD"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1277,7 +1315,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-097
     indicator_name: "selected_put_bid_ask_spread_percent_of_mid"
-    description: {en: "The bid-ask spread (the gap between the best buy and sell quotes) of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) as a percent of its mid price (the average of the two). A wide spread means a high real trading cost; for cheap options also check the dollar gap. Source: Yahoo Finance option chain via yfinance, updated while the market trades; it needs a live bid and ask, which are often 0 when the market is closed.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的买卖价差（最优买价与卖价的差距）占中间价（两者的平均）的百分比。价差越大，实际成交成本越高；便宜的期权还要看绝对金额的差距。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，交易时段内更新；需要有效的买价和卖价，休市时它们常为 0。"}
+    description: {en: "The bid-ask spread (the gap between the best buy and sell quotes) of the selected put (the out-of-the-money put whose Delta is closest to the target Delta of config/settings.yaml, in each expiration window) as a percent of its mid price (the average of the two). A wide spread means a high real trading cost; for cheap options also check the dollar gap. Source: Yahoo Finance option chain via yfinance; it needs a live bid and ask, which are often 0 when the market is closed.", zh: "所选的 Put（每个到期窗口里 Delta 最接近 config/settings.yaml 目标 Delta 的虚值 Put）的买卖价差（最优买价与卖价的差距）占中间价（两者的平均）的百分比。价差越大，实际成交成本越高；便宜的期权还要看绝对金额的差距。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；需要有效的买价和卖价，休市时它们常为 0。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1290,7 +1328,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-098
     indicator_name: "selected_put_open_interest"
-    description: {en: "The open interest (contracts still open) of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window). Thinly traded contracts are hard to open and close. Source: Yahoo Finance option chain via yfinance; open interest updates once a day.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的未平仓合约数（还没有了结的合约）。成交清淡的合约很难开仓和平仓。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；未平仓量每天更新一次。"}
+    description: {en: "The open interest (contracts still open) of the selected put. Thinly traded contracts are hard to open and close. Source: Yahoo Finance option chain via yfinance; open interest updates once a day.", zh: "所选的 Put 的未平仓合约数（还没有了结的合约）。成交清淡的合约很难开仓和平仓。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；未平仓量每天更新一次。"}
     scope: window
     method: "api_fetch"
     quantifiable: "yes"
@@ -1301,7 +1339,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-099
     indicator_name: "selected_put_volume"
-    description: {en: "The volume of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) for the day, in contracts. Thinly traded contracts are hard to open and close. Source: Yahoo Finance option chain via yfinance; volume builds up during trading.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）当天的成交量，单位是张。成交清淡的合约很难开仓和平仓。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；成交量在交易过程中不断累积。"}
+    description: {en: "The volume of the selected put for the day, in contracts. Thinly traded contracts are hard to open and close. Source: Yahoo Finance option chain via yfinance; volume builds up during trading.", zh: "所选的 Put 当天的成交量，单位是张。成交清淡的合约很难开仓和平仓。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；成交量在交易过程中不断累积。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1330,7 +1368,7 @@ indicator_list:
     method: "computed"
     quantifiable: "yes"
     backtestable: "yes"
-    history_source: "dolthub:options"
+    history_source: "dolthub:volatility_history"
     history_start: "2019-02-09"
     status: built
     fetch_group: dolthub_iv
@@ -1338,7 +1376,7 @@ indicator_list:
     max_age: 7d
   - indicator_id: I-102
     indicator_name: "vix_to_twenty_day_average_ratio"
-    description: {en: "The VIX divided by its own 20-day average. Above 1 means volatility is on the rise. Source: Yahoo Finance ^VIX via yfinance, updated while the market trades (history from Cboe VIX_History).", zh: "VIX 除以它自己的 20 日均值。高于 1 说明波动率在上升。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，交易时段内更新（历史来自 Cboe 的 VIX_History）。"}
+    description: {en: "The VIX divided by its own 20-day average. Above 1 means volatility is on the rise. Source: Yahoo Finance ^VIX via yfinance (history from Cboe VIX_History).", zh: "VIX 除以它自己的 20 日均值。高于 1 说明波动率在上升。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX（历史来自 Cboe 的 VIX_History）。"}
     scope: market
     method: "computed"
     quantifiable: "yes"
@@ -1351,7 +1389,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-103
     indicator_name: "selected_put_implied_volatility_exceeds_realized"
-    description: {en: "True when the IV (implied volatility, solved from the mid price with the Black-Scholes model) of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) is above the stock's RV30 (the annualized volatility of the last 30 daily returns). The gap is the volatility risk premium, the extra the seller is paid. Source: Yahoo Finance option chain and prices via yfinance, updated while the market trades. Typical values: IV above RV is the normal state.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的 IV（隐含波动率，用中间价按 Black-Scholes 模型反推）高于这只股票的 RV30（最近 30 个日收益的年化波动率）时为真。两者的差距是波动率风险溢价，也就是卖方多拿到的报酬。数据来源：通过 yfinance 取 Yahoo Finance 的期权链和价格，交易时段内更新。常见情形：IV 高于 RV 是常态。"}
+    description: {en: "True when the IV (implied volatility, solved from the mid price with the Black-Scholes model) of the selected put is above the stock's RV30 (the annualized volatility of the last 30 daily returns). The gap is the volatility risk premium, the extra the seller is paid. Source: Yahoo Finance option chain and prices via yfinance. Typical values: IV above RV is the normal state.", zh: "所选的 Put 的 IV（隐含波动率，用中间价按 Black-Scholes 模型反推）高于这只股票的 RV30（最近 30 个日收益的年化波动率）时为真。两者的差距是波动率风险溢价，也就是卖方多拿到的报酬。数据来源：通过 yfinance 取 Yahoo Finance 的期权链和价格。常见情形：IV 高于 RV 是常态。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1363,8 +1401,9 @@ indicator_list:
     fetch_every: 10m
     max_age: 1d
   - indicator_id: I-104
-    indicator_name: "one_sigma_expected_move_thirty_day_percent"
-    description: {en: "The 1-sigma expected move implied by the options, in percent of the price: the IV of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) times the square root of its days to expiration over 365. A smaller expected move means calmer options. Source: Yahoo Finance option chain via yfinance, updated while the market trades.", zh: "期权隐含的 1σ 预期波动幅度，占价格的百分比：所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的 IV 乘以到期天数除以 365 的平方根。预期波动越小，期权越平静。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，交易时段内更新。"}
+    indicator_name: "one_sigma_expected_move_to_expiration_percent"
+    description: {en: "The 1-sigma expected move implied by the options, in percent of the price: the IV of the selected put times the square root of its days to expiration over 365. A smaller expected move means calmer options. Source: Yahoo Finance option chain via yfinance.", zh: "期权隐含的 1σ 预期波动幅度，占价格的百分比：所选的 Put 的 IV 乘以到期天数除以 365 的平方根。预期波动越小，期权越平静。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。"}
+    unit: "%"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1377,7 +1416,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-105
     indicator_name: "put_skew_ten_percent_otm_minus_atm_iv_points"
-    description: {en: "Put skew: the IV of the put struck about 10% below the price minus the IV of the at-the-money put, in volatility points, each solved from the mid of a live bid and ask. A larger gap means the market fears a fall. Source: Yahoo Finance option chain via yfinance, updated while the market trades. Typical values: put skew is usually positive.", zh: "Put skew：行权价约比现价低 10% 的 Put 的 IV，减去平价 Put 的 IV，单位是波动率点，各自用有效买卖价的中间价反推。差距越大，说明市场越担心下跌。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，交易时段内更新。常见情形：put skew 通常为正。"}
+    description: {en: "Put skew: the IV of the put struck about 10% below the price minus the IV of the at-the-money put, in volatility points, each solved from the mid of a live bid and ask. A larger gap means the market fears a fall. Source: Yahoo Finance option chain via yfinance. Typical values: put skew is usually positive.", zh: "Put skew：行权价约比现价低 10% 的 Put 的 IV，减去平值 Put 的 IV，单位是波动率点，各自用有效买卖价的中间价反推。差距越大，说明市场越担心下跌。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：put skew 通常为正。"}
+    unit: "points"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1390,7 +1430,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-106
     indicator_name: "selected_put_absolute_delta"
-    description: {en: "The absolute Delta of the selected put: in each expiration window, the out-of-the-money put whose Delta is closest to the target 0.25 among contracts with a live bid and ask. Delta of the option you sell is roughly the chance it ends up in the money (gets assigned); a smaller value is safer but collects less premium. It is calculated with the Black-Scholes model, with the IV solved from the mid price. Source: Yahoo Finance option chain via yfinance, updated while the market trades. Typical values: sellers often use 0.15 to 0.30.", zh: "所选看跌期权的 Delta 绝对值：在每个到期窗口里，从有有效买卖价的合约中，选出 Delta 最接近目标 0.25 的虚值 Put。你卖出的期权的 Delta，大致就是它最终变成实值（被行权）的概率；越小越安全，但收的权利金也越少。用 Black-Scholes 模型计算，IV 由中间价反推。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，交易时段内更新。常见情形：卖方常用 0.15 到 0.30。"}
+    description: {en: "The absolute Delta of the selected put: in each expiration window, the out-of-the-money put whose Delta is closest to the target 0.25 among contracts with a live bid and ask. Delta of the option you sell is roughly the chance it ends up in the money (gets assigned); a smaller value is safer but collects less premium. It is calculated with the Black-Scholes model, with the IV solved from the mid price. Source: Yahoo Finance option chain via yfinance. Typical values: sellers often use 0.15 to 0.30.", zh: "所选 Put 的 Delta 绝对值：在每个到期窗口里，从有有效买卖价的合约中，选出 Delta 最接近目标 0.25 的虚值 Put。你卖出的期权的 Delta，大致就是它最终变成实值（被行权）的概率；越小越安全，但收的权利金也越少。用 Black-Scholes 模型计算，IV 由中间价反推。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：卖方常用 0.15 到 0.30。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1403,7 +1443,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-107
     indicator_name: "selected_put_days_to_expiration"
-    description: {en: "The days to expiration (DTE) of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window): in each window the monthly expiration closest to the middle of the window, or any expiration if there is no monthly one. 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, updated while the market trades. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard).", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的到期天数（DTE）：每个窗口里选最接近窗口中间的月度到期日，没有月度的就选任意到期日。30 到 45 天是常见的甜蜜区，时间价值衰减快，期权又不会太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，交易时段内更新。常见情形：45 DTE 是期权卖方常见的选择（tastytrade 的标准）。"}
+    description: {en: "The days to expiration (DTE) of the selected put: in each window the monthly expiration closest to the middle of the window, or any expiration if there is no monthly one. 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard).", zh: "所选的 Put 的到期天数（DTE）：每个窗口里选最接近窗口中间的月度到期日，没有月度的就选任意到期日。30 到 45 天是常见的甜蜜区，时间价值衰减快，期权又不会太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。常见情形：45 DTE 是期权卖方常见的选择（tastytrade 的标准）。"}
+    unit: "days"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1429,7 +1470,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-109
     indicator_name: "selected_put_strike_discount_percent"
-    description: {en: "How far the strike of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) is below the current price, in percent. The Wheel strategy often picks a strike 10% to 15% (or up to 20%) below the price, where it is happy to be assigned. Source: Yahoo Finance option chain via yfinance, calculated, updated while the market trades.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的行权价比现价低多少，单位 %。Wheel 策略常把行权价选在现价下方 10% 到 15%（最多 20%），也就是愿意接货的价位。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算，交易时段内更新。"}
+    description: {en: "How far the strike of the selected put is below the current price, in percent. The Wheel strategy often picks a strike 10% to 15% (or up to 20%) below the price, where it is happy to be assigned. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "所选的 Put 的行权价比现价低多少，单位 %。Wheel 策略常把行权价选在现价下方 10% 到 15%（最多 20%），也就是愿意接货的价位。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    unit: "%"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1442,7 +1484,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-110
     indicator_name: "selected_put_strike_below_support"
-    description: {en: "True when the strike of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) is below the lowest close of the last 60 trading days, which stands in for the support level, so a drop must break support before the put is in the money. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的行权价低于最近 60 个交易日的最低收盘价（用它代替支撑位）时为真，也就是价格必须先跌破支撑，这张 Put 才会变成实值。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "True when the strike of the selected put is below the lowest close of the last 60 trading days, which stands in for the support level, so a drop must break support before the put is in the money. Source: Yahoo Finance via yfinance, calculated.", zh: "所选的 Put 的行权价低于最近 60 个交易日的最低收盘价（用它代替支撑位）时为真，也就是价格必须先跌破支撑，这张 Put 才会变成实值。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1455,7 +1497,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-111
     indicator_name: "selected_put_strike_outside_one_sigma_move"
-    description: {en: "True when the strike of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) is below the price minus the 1-sigma expected move implied by its own IV, so the stock must fall further than the market expects before the put is assigned. Source: Yahoo Finance option chain via yfinance, calculated, updated while the market trades.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的行权价低于现价减去它自身 IV 隐含的 1σ 预期波动幅度时为真，也就是股价要跌得比市场预期还多，这张 Put 才会被行权。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算，交易时段内更新。"}
+    description: {en: "True when the strike of the selected put is below the price minus the 1-sigma expected move implied by its own IV, so the stock must fall further than the market expects before the put is assigned. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "所选的 Put 的行权价低于现价减去它自身 IV 隐含的 1σ 预期波动幅度时为真，也就是股价要跌得比市场预期还多，这张 Put 才会被行权。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1468,7 +1510,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-112
     indicator_name: "selected_strike_is_multiple_of_five"
-    description: {en: "True when the strike of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) is a multiple of 5, a round number. Round strikes are easier to trade. Source: Yahoo Finance option chain via yfinance, updated while the market trades.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的行权价是 5 的整数倍，也就是整数价位时为真。整数行权价更容易成交。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，交易时段内更新。"}
+    description: {en: "True when the strike of the selected put is a multiple of 5, a round number. Round strikes are easier to trade. Source: Yahoo Finance option chain via yfinance.", zh: "所选的 Put 的行权价是 5 的整数倍，也就是整数价位时为真。整数行权价更容易成交。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1481,7 +1523,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-113
     indicator_name: "selected_call_strike_premium_percent"
-    description: {en: "How far above the current price the covered call strike is, in percent: the listed strike closest to 10% above the price, in the expiration 25 to 35 days out. A covered call is a call sold against shares you own. Source: Yahoo Finance option chain via yfinance, calculated; the strike needs no live quote, so it is known after hours too.", zh: "Covered Call 的行权价比现价高多少，单位 %：在 25 到 35 天后到期的合约里，选最接近现价上方 10% 的已上市行权价。Covered Call 是对自己持有的股票卖出的看涨期权。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算；行权价不需要实时报价，所以休市后也有值。"}
+    description: {en: "How far above the current price the covered call strike is, in percent: the listed strike closest to 10% above the price, in the expiration 25 to 35 days out. A covered call is a call sold against shares you own. Source: Yahoo Finance option chain via yfinance, calculated; the strike needs no live quote, so it is known after hours too.", zh: "Covered Call 的行权价比现价高多少，单位 %：在 25 到 35 天后到期的合约里，选最接近现价上方 10% 的已上市行权价。Covered Call 是对自己持有的股票卖出的 Call。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算；行权价不需要实时报价，所以休市后也有值。"}
+    unit: "%"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1494,7 +1537,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-114
     indicator_name: "selected_call_days_to_expiration"
-    description: {en: "The days to expiration of the covered call, usually about 30: the monthly expiration closest to the middle of the 25 to 35 day window, or any expiration if there is no monthly one. A covered call is a call sold against shares you own. Source: option expiration dates from Yahoo Finance via yfinance, updated while the market trades.", zh: "Covered Call 的到期天数，通常约 30 天：在 25 到 35 天的窗口里，选最接近中间的月度到期日，没有月度的就选任意到期日。Covered Call 是对自己持有的股票卖出的看涨期权。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，交易时段内更新。"}
+    description: {en: "The days to expiration of the covered call, usually about 30: the monthly expiration closest to the middle of the 25 to 35 day window, or any expiration if there is no monthly one. A covered call is a call sold against shares you own. Source: option expiration dates from Yahoo Finance via yfinance.", zh: "Covered Call 的到期天数，通常约 30 天：在 25 到 35 天的窗口里，选最接近中间的月度到期日，没有月度的就选任意到期日。Covered Call 是对自己持有的股票卖出的 Call。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。"}
+    unit: "days"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1507,7 +1551,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-115
     indicator_name: "selected_option_days_to_expiration"
-    description: {en: "The days to expiration of the option you buy. Buyers prefer 60 to 90 days so time decay does not eat the premium too fast. Today it takes the same value as the selected put's days to expiration, so it is read against the buyer's range. Source: option expiration dates from Yahoo Finance via yfinance, updated while the market trades.", zh: "你买入的期权的到期天数。买方偏好 60 到 90 天，这样时间衰减不会太快吃掉权利金。目前它取所选看跌期权到期天数的同一个值，再对照买方的范围来判断。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，交易时段内更新。"}
+    description: {en: "The days to expiration of the option you buy. Buyers prefer 60 to 90 days so time decay does not eat the premium too fast. Today it takes the same value as the selected put's days to expiration, so it is read against the buyer's range. Source: option expiration dates from Yahoo Finance via yfinance.", zh: "你买入的期权的到期天数。买方偏好 60 到 90 天，这样时间衰减不会太快吃掉权利金。目前它取所选 Put 到期天数的同一个值，再对照买方的范围来判断。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。"}
+    unit: "days"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1520,7 +1565,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-116
     indicator_name: "selected_put_annualized_return_percent"
-    description: {en: "The premium of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) (the mid of its bid and ask) divided by the strike, scaled to 365 days, in percent a year. Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, updated while the market trades; it needs a live bid and ask. Typical values: 8% to 20% a year is the range used here for put sellers.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的权利金（买价和卖价的中间价）除以行权价，折算成 365 天，单位 % 每年。太低不值得冒这个险；太高通常意味着风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，交易时段内更新；需要有效的买价和卖价。常见情形：这里给卖 Put 的人用的是每年 8% 到 20%。"}
+    description: {en: "The premium of the selected put (the mid of its bid and ask) divided by the strike, scaled to 365 days, in percent a year. Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance; it needs a live bid and ask. Typical values: 8% to 20% a year is the range used here for put sellers.", zh: "所选的 Put 的权利金（买价和卖价的中间价）除以行权价，折算成 365 天，单位 % 每年。太低不值得冒这个险；太高通常意味着风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；需要有效的买价和卖价。常见情形：这里给卖 Put 的人用的是每年 8% 到 20%。"}
+    unit: "%"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1533,7 +1579,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-117
     indicator_name: "selected_put_monthly_premium_percent"
-    description: {en: "The premium of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) as a share of the strike, scaled to one month (30 days), in percent. Source: Yahoo Finance option chain via yfinance, calculated, updated while the market trades. Typical values: monthly 2% to 4% is common for put sellers.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的权利金占行权价的比例，折算成一个月（30 天），单位 %。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算，交易时段内更新。常见情形：每月 2% 到 4% 对卖 Put 的人很常见。"}
+    description: {en: "The premium of the selected put as a share of the strike, scaled to one month (30 days), in percent. Source: Yahoo Finance option chain via yfinance, calculated. Typical values: monthly 2% to 4% is common for put sellers.", zh: "所选的 Put 的权利金占行权价的比例，折算成一个月（30 天），单位 %。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。常见情形：每月 2% 到 4% 对卖 Put 的人很常见。"}
+    unit: "%"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1546,7 +1593,8 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-118
     indicator_name: "selected_put_breakeven_discount_percent"
-    description: {en: "How far the breakeven price (the strike minus the premium, for a put) of the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) is below the current price, in percent. Know the worst case before opening: the maximum loss is (strike minus premium) times 100 per contract. Source: Yahoo Finance option chain via yfinance, calculated, updated while the market trades.", zh: "所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）的盈亏平衡价（Put 是行权价减权利金）比现价低多少，单位 %。开仓前要知道最坏情况：每张合约的最大亏损是（行权价减权利金）乘以 100。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算，交易时段内更新。"}
+    description: {en: "How far the breakeven price (the strike minus the premium, for a put) of the selected put is below the current price, in percent. Know the worst case before opening: the maximum loss is (strike minus premium) times 100 per contract. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "所选的 Put 的盈亏平衡价（Put 是行权价减权利金）比现价低多少，单位 %。开仓前要知道最坏情况：每张合约的最大亏损是（行权价减权利金）乘以 100。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    unit: "%"
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1559,7 +1607,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-119
     indicator_name: "selected_put_probability_of_profit"
-    description: {en: "POP (probability of profit), roughly the chance that selling the selected put (the out-of-the-money put whose Delta is closest to 0.25 in each expiration window) makes money, approximated as 1 minus its absolute Delta. Source: Yahoo Finance option chain via yfinance, calculated, updated while the market trades.", zh: "POP（盈利概率），卖出所选的看跌期权（每个到期窗口里 Delta 最接近 0.25 的虚值 Put）大致能赚钱的概率，用 1 减去它的 Delta 绝对值近似。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算，交易时段内更新。"}
+    description: {en: "POP (probability of profit), roughly the chance that selling the selected put makes money, approximated as 1 minus its absolute Delta. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "POP（盈利概率），卖出所选的 Put 大致能赚钱的概率，用 1 减去它的 Delta 绝对值近似。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
     scope: window
     method: "computed"
     quantifiable: "yes"
@@ -1573,6 +1621,7 @@ indicator_list:
   - indicator_id: I-120
     indicator_name: "selected_option_implied_leverage"
     description: {en: "The implied leverage of the option you buy: its Delta times the stock price divided by the premium, meaning how much stock exposure each dollar buys. Not built yet: which option counts as the one you buy is not settled. Source (planned): the community DoltHub options database.", zh: "你买入的期权的隐含杠杆：Delta 乘以股价再除以权利金，也就是每一美元能买到多少股票敞口。还没有实现：“你买入的是哪张期权”还没有定下来。数据来源（计划）：社区 DoltHub 期权数据库。"}
+    unit: "x"
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -1582,7 +1631,7 @@ indicator_list:
     status: todo
   - indicator_id: I-121
     indicator_name: "last_price"
-    description: {en: "The latest price of the stock in dollars, with the change from the previous close; the row of each symbol on the sidebar shows it. Source: Yahoo Finance via yfinance, updated while the market trades.", zh: "股票的最新价，单位美元，并带有相对前一个收盘价的涨跌；侧栏里每只股票那一行显示它。数据来源：通过 yfinance 取 Yahoo Finance，交易时段内更新。"}
+    description: {en: "The latest price of the stock in dollars, with the change from the previous close; the row of each symbol on the sidebar shows it. Source: Yahoo Finance via yfinance.", zh: "股票的最新价，单位美元，并带有相对前一个收盘价的涨跌；侧栏里每只股票那一行显示它。数据来源：通过 yfinance 取 Yahoo Finance。"}
     scope: symbol
     method: "computed"
     status: built
@@ -1591,7 +1640,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-122
     indicator_name: "realized_volatility_thirty_day"
-    description: {en: "The stock's realized volatility over the last 30 trading days: the standard deviation of the daily returns, annualized, in percent. It is the yardstick the implied volatility of an option is compared with. Source: Yahoo Finance via yfinance, calculated, updated while the market trades.", zh: "这只股票最近 30 个交易日的已实现波动率：日收益的标准差，折成年化，单位 %。它是用来和期权隐含波动率比较的尺子。数据来源：通过 yfinance 取 Yahoo Finance 后计算，交易时段内更新。"}
+    description: {en: "The stock's realized volatility over the last 30 trading days: the standard deviation of the daily returns, annualized, in percent. It is the yardstick the implied volatility of an option is compared with. Source: Yahoo Finance via yfinance, calculated.", zh: "这只股票最近 30 个交易日的已实现波动率：日收益的标准差，折成年化，单位 %。它是用来和期权隐含波动率比较的尺子。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
     scope: symbol
     method: "computed"
     status: built
