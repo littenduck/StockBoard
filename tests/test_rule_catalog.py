@@ -309,7 +309,7 @@ def test_no_config_file_repeats_a_key():
                     yaml.load(config_file, Loader=StrictLoader)
 
 
-def test_english_and_chinese_pass_lines_carry_the_same_numbers():
+def test_english_and_chinese_texts_carry_the_same_numbers():
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
 
     def number_list(text):
@@ -323,6 +323,8 @@ def test_english_and_chinese_pass_lines_carry_the_same_numbers():
 
     for entry in catalog.rule_entry_by_id.values():
         assert number_list(entry.description.en) == number_list(entry.description.zh), entry.rule_id
+    for indicator in catalog.indicator_registry.indicator_by_name.values():
+        assert number_list(indicator.description.en) == number_list(indicator.description.zh), indicator.indicator_id
 
 
 def test_every_indicator_a_rule_tests_with_a_number_names_its_unit():
@@ -346,3 +348,24 @@ def test_indicator_ids_follow_the_first_rule_that_uses_them():
     sidebar_list = [indicator.indicator_id for indicator in catalog.indicator_registry.indicator_by_name.values() if indicator.display_name and indicator.indicator_id not in first_use_list]
     assert [number for number in number_list if number > max(number_list[:1])] == sorted(number_list)[1:]  # ids rise along the rule order
     assert len(skipped) == len(sidebar_list), (skipped, sidebar_list)  # the gaps are the sidebar-only indicators
+
+
+def test_every_description_is_made_of_clean_sentences():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    text_list = [(entry.rule_id, entry.description) for entry in catalog.rule_entry_by_id.values()]
+    text_list += [(indicator.indicator_id, indicator.description) for indicator in catalog.indicator_registry.indicator_by_name.values()]
+    for name, text in text_list:
+        assert not re.search(r"\. [a-z]|,\.|\),\.| \.|。。|，。", text.en + text.zh), "{}: broken sentence".format(name)
+        sentence_list = [sentence.strip() for sentence in re.split(r"[.。]", text.en) if sentence.strip()]
+        assert len(sentence_list) == len(set(sentence_list)), "{}: repeated sentence".format(name)
+        assert re.sub(r"\s", "", text.en).endswith((".", ")")) and text.zh.endswith(("。", "）")), "{}: no full stop".format(name)
+
+
+def test_the_line_of_a_rule_is_written_in_both_languages():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    from stockboard_backend.rule_catalog import rule_catalog_describe_line
+    for entry in catalog.rule_entry_by_id.values():
+        if entry.operator:
+            line = rule_catalog_describe_line(entry)
+            assert not CHINESE_CHARACTER_PATTERN.search(line["en"]), entry.rule_id
+            assert " to " not in line["zh"] and "billion" not in line["zh"] and "claims" not in line["zh"], entry.rule_id

@@ -108,15 +108,33 @@ def rule_catalog_merge_indicator_fields(raw_rule: dict, registry: Optional[Indic
 LINE_SYMBOL_BY_OPERATOR = {"less_than": "<", "less_or_equal": "≤", "greater_than": ">", "greater_or_equal": "≥"}
 
 
-def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> str:
-    """The test of a rule in a few characters: '< 4.5', '15 to 20', 'yes'."""
+ZH_UNIT_BY_UNIT = {"claims": "次申请", "purchases": "笔买入", "contracts": "张", "days": "天", "USD": "美元", "points": "点"}
+
+
+def rule_catalog_describe_line(entry: "RuleCatalogEntry") -> dict:
+    """The test of a rule in a few characters, in both languages: '< 4.5%' / '< 4.5%', '15 to 20' / '15 到 20', 'yes' / '是'."""
     if entry.operator == "is_true":
-        return "yes"
-    unit = "" if not entry.unit else entry.unit if entry.unit == "%" else " " + entry.unit
+        return {"en": "yes", "zh": "是"}
+    unit = entry.unit or ""
+
+    def number(value):
+        return format(value, ",") if isinstance(value, int) else str(value)
+
+    def amount(value):  # one number with its unit; money reads as $200 billion and 2000 亿美元
+        if unit == "USD billion":
+            return {"en": "${:,} billion".format(value), "zh": "{:,} 亿美元".format(value * 10)}
+        if unit == "USD":
+            return {"en": "${}".format(number(value)), "zh": "{} 美元".format(number(value))}
+        if unit == "%":
+            return {"en": number(value) + "%", "zh": number(value) + "%"}
+        return {"en": " ".join(filter(None, [number(value), unit])), "zh": " ".join(filter(None, [number(value), ZH_UNIT_BY_UNIT.get(unit, unit)]))}
+
     if entry.operator == "between":
-        return "{} to {}{}".format(*entry.value, unit)
-    value = format(entry.value, ",") if isinstance(entry.value, int) else entry.value
-    return "{} {}{}".format(LINE_SYMBOL_BY_OPERATOR.get(entry.operator, "?"), value, unit)
+        low, high = amount(entry.value[0]), amount(entry.value[1])
+        return {"en": "{} to {}".format(low["en"], high["en"]), "zh": "{} 到 {}".format(low["zh"], high["zh"])}
+    value = amount(entry.value)
+    symbol = LINE_SYMBOL_BY_OPERATOR.get(entry.operator, "?")
+    return {"en": "{} {}".format(symbol, value["en"]), "zh": "{} {}".format(symbol, value["zh"])}
 
 
 def rule_catalog_find_rule_list_of_indicator(rule_catalog: "RuleCatalog", indicator_name: str) -> list:

@@ -123,5 +123,5 @@ def test_the_rule_list_carries_the_indicator_text_and_the_lines_of_the_measure()
     rule = rule_by_id["R-MAC-03"]
     assert rule["indicator_description"]["en"].startswith("Yield on the 10-year")
     assert [item["rule_id"] for item in rule["indicator_line_list"]] == ["R-MAC-03", "R-MAC-04"]
-    assert [item["line"] for item in rule["indicator_line_list"]] == ["< 4.5%", "< 5.0%"]
+    assert [item["line"]["en"] for item in rule["indicator_line_list"]] == ["< 4.5%", "< 5.0%"]
     assert rule_by_id["R-POS-01"]["indicator_description"] is None and rule_by_id["R-POS-01"]["indicator_line_list"] == []

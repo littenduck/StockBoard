@@ -69,7 +69,7 @@ indicator_list:
     max_age: 10d
   - indicator_id: I-003
     indicator_name: "treasury_ten_year_yield"
-    description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10, published with a lag of about one business day. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb).", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。"}
+    description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10, published with a lag of about 1 business day. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb).", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。"}
     unit: "%"
     scope: market
     method: "api_fetch"
@@ -325,7 +325,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-021
     indicator_name: "sector_next_year_eps_estimate_four_week_change_median_percent"
-    description: {en: "The median 4-week change of next-year EPS (earnings per share) estimates across the industry's stocks. Rising analyst estimates for a whole industry show its cycle is improving. Needs a point-in-time list of S&P 500 members and weekly estimate snapshots, so it is not built yet. Source (planned): the community DoltHub earnings database.", zh: "行业内各只股票下一年 EPS（每股收益）预期在 4 周里的变化中位数。整个行业的分析师预期上调，说明行业周期在改善。需要“当时的”标普 500 成分股名单和每周预期快照。数据来源（计划）：社区 DoltHub 财报数据库。"}
+    description: {en: "The median 4-week change of next-year EPS (earnings per share) estimates across the industry's stocks. Rising analyst estimates for a whole industry show its cycle is improving. Needs a point-in-time list of S&P 500 members and weekly estimate snapshots. Source (planned): the community DoltHub earnings database.", zh: "行业内各只股票下一年 EPS（每股收益）预期在 4 周里的变化中位数。整个行业的分析师预期上调，说明行业周期在改善。需要“当时的”标普 500 成分股名单和每周预期快照。数据来源（计划）：社区 DoltHub 财报数据库。"}
     unit: "%"
     scope: symbol
     method: "computed"
@@ -336,7 +336,7 @@ indicator_list:
     status: todo
   - indicator_id: I-022
     indicator_name: "trailing_twelve_month_eps"
-    description: {en: "EPS (earnings per share) over the last 12 months (TTM, trailing twelve months). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance (history from SEC EDGAR company facts). Updated each quarter by the company.", zh: "最近 12 个月（TTM）的 EPS（每股收益）。亏损的公司波动更大，被行权接货的风险更高。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 公司财务数据）。公司每季度更新一次。"}
+    description: {en: "EPS (earnings per share) over the last 12 months (TTM, trailing twelve months). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance (history from SEC EDGAR company facts).", zh: "最近 12 个月（TTM）的 EPS（每股收益）。亏损的公司波动更大，被行权接货的风险更高。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 公司财务数据）。"}
     unit: "USD"
     scope: symbol
     method: "api_fetch"
@@ -350,7 +350,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-023
     indicator_name: "revenue_year_over_year_percent"
-    description: {en: "Revenue of the latest quarter compared with the same quarter a year earlier, in percent. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance (history from SEC EDGAR). Updated each quarter by the company.", zh: "最近一个季度的营收与去年同期相比的变化，单位 %。营收不增长的公司很少能长期上涨。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。公司每季度更新一次。"}
+    description: {en: "Revenue of the latest quarter compared with the same quarter a year earlier, in percent. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance (history from SEC EDGAR).", zh: "最近一个季度的营收与去年同期相比的变化，单位 %。营收不增长的公司很少能长期上涨。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。"}
     unit: "%"
     scope: symbol
     method: "api_fetch"
@@ -406,7 +406,7 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-027
     indicator_name: "return_on_equity_percent"
-    description: {en: "ROE (return on equity): net profit divided by shareholders' equity, in percent. It can be inflated by buybacks, so it is paired with ROIC. Source: Yahoo Finance via yfinance (history from SEC EDGAR). Updated each quarter by the company.", zh: "ROE（净资产收益率）：净利润除以股东权益，单位 %。回购会把它抬高，所以要和 ROIC 配合看。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。公司每季度更新一次。"}
+    description: {en: "ROE (return on equity): net profit divided by shareholders' equity, in percent. It can be inflated by buybacks, so it is paired with ROIC. Source: Yahoo Finance via yfinance (history from SEC EDGAR).", zh: "ROE（净资产收益率）：净利润除以股东权益，单位 %。回购会把它抬高，所以要和 ROIC 配合看。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。"}
     unit: "%"
     scope: symbol
     method: "computed"
@@ -434,7 +434,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-029
     indicator_name: "trailing_twelve_month_free_cash_flow"
-    description: {en: "TTM (trailing twelve months) FCF (free cash flow, the cash left after capital spending), in dollars. It is harder to fake than accounting profit and is central to value investing. Source: Yahoo Finance via yfinance (history from SEC EDGAR cash flow statements). Updated each quarter by the company.", zh: "TTM（最近 12 个月）FCF（自由现金流，扣掉资本开支后剩下的现金），单位美元。它比会计利润更难造假，是价值投资的核心。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 现金流量表）。公司每季度更新一次。"}
+    description: {en: "TTM (trailing twelve months) FCF (free cash flow, the cash left after capital spending), in dollars. It is harder to fake than accounting profit and is central to value investing. Source: Yahoo Finance via yfinance (history from SEC EDGAR cash flow statements).", zh: "TTM（最近 12 个月）FCF（自由现金流，扣掉资本开支后剩下的现金），单位美元。它比会计利润更难造假，是价值投资的核心。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 现金流量表）。"}
     unit: "USD"
     scope: symbol
     method: "api_fetch"
@@ -547,7 +547,7 @@ indicator_list:
   - indicator_id: I-037
     indicator_name: "insider_open_market_purchase_count_90_days"
     description: {en: "The number of open-market purchases (transaction code P) by insiders in the last 90 days. Buying with their own money is a stronger positive signal than selling. Source: Yahoo Finance insider transactions via yfinance (history from SEC Form 3, 4 and 5 data sets).", zh: "内部人最近 90 天在公开市场上买入的笔数（交易代码 P）。用自己的钱买入是比卖出更强的正面信号。数据来源：通过 yfinance 取 Yahoo Finance 的内部人交易（历史来自 SEC Form 3、4、5 数据集）。"}
-    unit: "purchases"
+    unit: ""
     scope: symbol
     method: "computed"
     quantifiable: "yes"
@@ -601,7 +601,7 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-041
     indicator_name: "sp500_forward_pe"
-    description: {en: "The forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. the only free source is the weekly FactSet Earnings Insight PDF, read by hand or by an AI. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb).", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，只能人工或用 AI 读取。常见情形：长期均值约 16–17；高于 22 偏贵（经验）。"}
+    description: {en: "The forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. The only free source is the weekly FactSet Earnings Insight PDF, read by hand or by an AI. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb).", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，只能人工或用 AI 读取。常见情形：长期均值约 16–17；高于 22 偏贵（经验）。"}
     unit: ""
     scope: market
     method: "ai_search"
@@ -668,7 +668,7 @@ indicator_list:
     max_age: 270d
   - indicator_id: I-046
     indicator_name: "price_earnings_ttm_to_five_year_median_ratio"
-    description: {en: "The stock's PE (price divided by earnings per share) on TTM (trailing twelve months) actual earnings, divided by the median of that PE over the last 5 years: below 1.0 means cheaper than its own history. Typical values: below 1.0 means cheaper than its own 5-year history. Source: SEC EDGAR EPS with six years of Yahoo Finance prices.", zh: "这只股票按 TTM（最近 12 个月）实际盈利算的 PE（股价除以每股收益），除以它过去 5 年该 PE 的中位数：低于 1.0 说明比自己的历史便宜。常见情形：低于 1.0 说明比自己过去 5 年便宜。数据来源：SEC EDGAR 的 EPS，加 6 年的 Yahoo Finance 股价。"}
+    description: {en: "The stock's PE (price divided by earnings per share) on TTM (trailing twelve months) actual earnings, divided by the median of that PE over the last 5 years: below 1.0 means cheaper than its own history. Source: SEC EDGAR EPS with 6 years of Yahoo Finance prices.", zh: "这只股票按 TTM（最近 12 个月）实际盈利算的 PE（股价除以每股收益），除以它过去 5 年该 PE 的中位数：低于 1.0 说明比自己的历史便宜。数据来源：SEC EDGAR 的 EPS，加 6 年的 Yahoo Finance 股价。"}
     unit: ""
     scope: symbol
     method: "computed"
@@ -845,7 +845,7 @@ indicator_list:
     max_age: 16d
   - indicator_id: I-059
     indicator_name: "naaim_exposure_index"
-    description: {en: "The NAAIM (National Association of Active Investment Managers) Exposure Index: the average stock exposure reported weekly by active fund managers. It typically ranges from 0 to 100 (it can go below 0 or above 100); very high means everyone is bullish and the trade is crowded. the only copy the app can read is an Internet Archive file that is months old. Source (history): naaim.org Excel files kept by the Wayback Machine.", zh: "NAAIM（美国积极投资经理人协会）曝险指数：积极型基金经理每周上报的平均股票仓位。通常在 0 到 100 之间（也可能低于 0 或高于 100）；很高说明大家都看多、交易拥挤。程序能读到的只有 Internet Archive 里已经过时数月的文件。数据来源（历史）：Wayback 保存的 naaim.org Excel 文件。"}
+    description: {en: "The NAAIM (National Association of Active Investment Managers) Exposure Index: the average stock exposure reported weekly by active fund managers. It typically ranges from 0 to 100 (it can go below 0 or above 100); very high means everyone is bullish and the trade is crowded. The only copy the app can read is an Internet Archive file that is months old. Source (history): naaim.org Excel files kept by the Wayback Machine.", zh: "NAAIM（美国积极投资经理人协会）曝险指数：积极型基金经理每周上报的平均股票仓位。通常在 0 到 100 之间（也可能低于 0 或高于 100）；很高说明大家都看多、交易拥挤。程序能读到的只有 Internet Archive 里已经过时数月的文件。数据来源（历史）：Wayback 保存的 naaim.org Excel 文件。"}
     unit: ""
     scope: market
     method: "scrape"
@@ -1136,7 +1136,7 @@ indicator_list:
     max_age: 4d
   - indicator_id: I-081
     indicator_name: "spmo_holding_rank"
-    description: {en: "The stock's rank among the ten largest holdings of SPMO (the Invesco S&P 500 Momentum ETF), where 1 is the largest. SPMO picks momentum stocks and rebalances every March and September, so its holdings work as a momentum list. A stock outside the ten has no rank here, so its rules read unknown. Source: SPMO's top 10 holdings from Yahoo Finance via yfinance (history from the fund's SEC N-PORT quarterly reports, published about 60 days after quarter end).", zh: "这只股票在 SPMO（景顺标普 500 动量 ETF）十大持仓中的名次，1 为最大。SPMO 按动量选股，每年 3 月和 9 月换仓，所以它的持仓可以当作一份动量名单。不在前十的股票在这里没有名次，相关规则读“未知”。数据来源：通过 yfinance 取 Yahoo Finance 的 SPMO 前十大持仓（历史来自该基金的 SEC N-PORT 季度报告，季末约 60 天后公布）。"}
+    description: {en: "The stock's rank among the ten largest holdings of SPMO (the Invesco S&P 500 Momentum ETF), where 1 is the largest. SPMO picks momentum stocks and rebalances every March and September, so its holdings work as a momentum list. A stock outside the ten has no rank here, so its rules read unknown. Source: SPMO's ten largest holdings from Yahoo Finance via yfinance (history from the fund's SEC N-PORT quarterly reports, published about 60 days after quarter end).", zh: "这只股票在 SPMO（景顺标普 500 动量 ETF）十大持仓中的名次，1 为最大。SPMO 按动量选股，每年 3 月和 9 月换仓，所以它的持仓可以当作一份动量名单。不在前十的股票在这里没有名次，相关规则读“未知”。数据来源：通过 yfinance 取 Yahoo Finance 的 SPMO 前十大持仓（历史来自该基金的 SEC N-PORT 季度报告，季末约 60 天后公布）。"}
     unit: ""
     scope: symbol
     method: "scrape"
@@ -1302,7 +1302,7 @@ indicator_list:
     max_age: 10d
   - indicator_id: I-094
     indicator_name: "geopolitical_risk_index_thirty_day_average_percentile_five_year"
-    description: {en: "Where the 30-day average of the GPR (Geopolitical Risk Index by Caldara and Iacoviello, built from newspaper coverage) sits within the last 5 years, as a percentile from 0 to 100. A stand-in for escalating conflict. Source: the GPR daily data file (Excel).", zh: "GPR（Caldara 和 Iacoviello 的地缘政治风险指数，由报纸报道合成）的 30 日均值在最近 5 年中的位置，用 0 到 100 的百分位表示。是冲突升级的替代指标。数据来源：GPR 的每日数据文件（Excel），大约每周更新。"}
+    description: {en: "Where the 30-day average of the GPR (Geopolitical Risk Index by Caldara and Iacoviello, built from newspaper coverage) sits within the last 5 years, as a percentile from 0 to 100. A stand-in for escalating conflict. Source: the GPR daily data file (Excel).", zh: "GPR（Caldara 和 Iacoviello 的地缘政治风险指数，由报纸报道合成）的 30 日均值在最近 5 年中的位置，用 0 到 100 的百分位表示。是冲突升级的替代指标。数据来源：GPR 的每日数据文件（Excel）。"}
     unit: ""
     scope: market
     method: "computed"
@@ -1382,7 +1382,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-100
     indicator_name: "implied_volatility_percentile"
-    description: {en: "Where the stock's IV (implied volatility, the volatility priced into options) sits within the past year, as the percent of days with a lower IV. A high reading means options are expensive, which favors sellers. Source: the community DoltHub database (volatility_history, the 30-day IV of the whole option chain, a day or two behind the market),.", zh: "这只股票的 IV（隐含波动率，期权价格里隐含的波动率）在过去一年中的位置，即 IV 更低的天数所占的百分比。读数高说明期权贵，对卖方有利。数据来源：社区 DoltHub 数据库（volatility_history，整条期权链的 30 天 IV，比市场晚一两天）。"}
+    description: {en: "Where the stock's IV (implied volatility, the volatility priced into options) sits within the past year, as the percent of days with a lower IV. A high reading means options are expensive, which favors sellers. Source: the community DoltHub database (volatility_history, the 30-day IV of the whole option chain, a day or two behind the market).", zh: "这只股票的 IV（隐含波动率，期权价格里隐含的波动率）在过去一年中的位置，即 IV 更低的天数所占的百分比。读数高说明期权贵，对卖方有利。数据来源：社区 DoltHub 数据库（volatility_history，整条期权链的 30 天 IV，比市场晚一两天）。"}
     unit: ""
     scope: symbol
     method: "computed"
@@ -1396,7 +1396,7 @@ indicator_list:
     max_age: 7d
   - indicator_id: I-101
     indicator_name: "implied_volatility_to_one_month_ago_ratio"
-    description: {en: "The stock's IV (implied volatility, the volatility priced into options) today divided by its IV a month ago. Above 1 means options have become more expensive. It is the single-stock version of the VIX against its average. Source: the community DoltHub database (volatility_history, a day or two behind the market),.", zh: "这只股票今天的 IV（隐含波动率，期权价格里隐含的波动率）除以一个月前的 IV。高于 1 说明期权变贵了。它是 VIX 对比自身均值在个股上的版本。数据来源：社区 DoltHub 数据库（volatility_history，比市场晚一两天）。"}
+    description: {en: "The stock's IV (implied volatility, the volatility priced into options) today divided by its IV a month ago. Above 1 means options have become more expensive. It is the single-stock version of the VIX against its average. Source: the community DoltHub database (volatility_history, a day or two behind the market).", zh: "这只股票今天的 IV（隐含波动率，期权价格里隐含的波动率）除以一个月前的 IV。高于 1 说明期权变贵了。它是 VIX 对比自身均值在个股上的版本。数据来源：社区 DoltHub 数据库（volatility_history，比市场晚一两天）。"}
     unit: ""
     scope: symbol
     method: "computed"
@@ -1657,7 +1657,7 @@ indicator_list:
     max_age: 1d
   - indicator_id: I-120
     indicator_name: "selected_option_implied_leverage"
-    description: {en: "The implied leverage of the option you buy: its Delta times the stock price divided by the premium, meaning how much stock exposure each dollar buys. which option counts as the one you buy is not settled. Source (planned): the community DoltHub options database.", zh: "你买入的期权的隐含杠杆：Delta 乘以股价再除以权利金，也就是每一美元能买到多少股票敞口。“你买入的是哪张期权”还没有定下来。数据来源（计划）：社区 DoltHub 期权数据库。"}
+    description: {en: "The implied leverage of the option you buy: its Delta times the stock price divided by the premium, meaning how much stock exposure each dollar buys. Which option counts as the one you buy is not settled yet. Source (planned): the community DoltHub options database.", zh: "你买入的期权的隐含杠杆：Delta 乘以股价再除以权利金，也就是每一美元能买到多少股票敞口。“你买入的是哪张期权”还没有定下来。数据来源（计划）：社区 DoltHub 期权数据库。"}
     unit: "x"
     scope: symbol
     method: "computed"

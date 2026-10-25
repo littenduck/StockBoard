@@ -24,7 +24,7 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...) and
                  "description": {"en": "Passes when there is no earnings report before the option expires. ...", "zh": "..."},
                  "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "history_source": "edgar:submissions", "history_start": "2004", "status": "built", "indicator_id": "I-082", "indicator": "no_earnings_before_expiration",
                  "indicator_description": {"en": "True when the stock's next earnings date is later than ...", "zh": "..."},
-                 "indicator_line_list": [{"rule_id": "R-EVT-01", "line": "yes"}], "fetch_group": "yahoo_company", "fetch_every": "1h", "max_age": "3d",
+                 "indicator_line_list": [{"rule_id": "R-EVT-01", "line": {"en": "yes", "zh": "是"}}], "fetch_group": "yahoo_company", "fetch_every": "1h", "max_age": "3d",
                  "operator": "is_true", "value": null, "band_of": null, "legacy_id": ["A22", "F05"], "note": null,
                  "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5, "veto": true}]}]}]}
 ```
