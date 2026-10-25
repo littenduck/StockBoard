@@ -1,7 +1,7 @@
 # Rule catalog, regrouped by theme (first draft of the redesign; strategies/*.yaml still use the old ids).
 # Rule id = category code + two digits, for example TRD-03. Categories run from macro down to detail.
 # legacy_id lists the old ids (A01 to Z20, plus T, R, M) that each rule replaces; old alias rules are merged away.
-# default_weight is the importance score 1 to 5 from the redesign review (5 = core or veto). Strategies may override it.
+# weight is the importance score 1 to 5 from the redesign review (5 = core or veto). Strategies may override it.
 # A rule with bands gives partial credit: the first matching band wins, no match means credit 0. Credits are a first draft.
 #
 # availability:
@@ -20,8 +20,6 @@
 #   manual      your own input, your trade plan, or your brokerage account
 #
 # Every text a person reads is {en, zh}; see docs/language.md.
-
-# review: working notes in Chinese from the data check on 2026-10-25. latest_value is a snapshot of data pulled on 2026-10-23 (stock rules use AAPL as the sample), not live data. free_python says whether free Python can fetch it simply.
 #
 # kind: where a rule's value comes from
 #   script   the app gets the value with code (acquisition: api_fetch, scrape, computed or ai_search)
@@ -31,18 +29,18 @@
 #
 # Fields of every rule:
 #   rule_id          unique id, category code plus two digits (ids are never reused)
-#   description      {en, zh} the rule as a person reads it
-#   explanation      zh only: what the rule looks at and why it matters, in plain words
-#   default_weight   importance 1 to 5 (5 = core or veto); a strategy may override it
+#   name             {en, zh} short name
+#   description      {en, zh} what the rule looks at, why it matters, typical values, update frequency; abbreviations are spelled out and the data source is named
+#   weight           importance 1 to 5 (5 = core or veto); a strategy may override it
 #   kind             script or manual (see above)
 #   acquisition      api_fetch, scrape, computed, ai_search or manual
+#   quantifiable     yes, part or no: whether the rule can be turned into a number or a yes/no test (English only)
 #   availability     automatic, not_implemented, missing_data_source, account_data, user_answer or trade_plan
 #   indicator        optional: id of the indicator that gives the value
 #   operator, value  optional: single threshold (less_than, less_or_equal, greater_than, greater_or_equal, between, is_true)
 #   bands            optional: graded credit, first matching band wins, no match means credit 0
 #   legacy_id        old ids this rule replaces
 #   note             optional {en, zh} remark
-#   review           zh working notes: quantifiable, typical_range, latest_value, source, free_python, freshness
 
 rule_group_list:
   - {group_id: "MAC", aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "MAC · Macro", zh: "MAC · 宏观"}, description: {en: "Policy, rates, credit, inflation, growth, dollar, oil and liquidity.", zh: "政策、利率、信用、通胀、增长、美元、油价和流动性。"}}
@@ -61,2031 +59,1234 @@ rule_group_list:
   - {group_id: "THS", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}}
   - {group_id: "EXT", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}}
 
+
 rule_list:
   # MAC · Macro
   - rule_id: MAC-01
-    description: {en: "No Fed hike and no new hiking guidance in the last 6 months", zh: "近 6 个月 Fed 未加息且无新加息指引"}
-    explanation: "美联储最近半年有没有加息或暗示要加息。加息周期里估值承压，卖 Put 的风险更大。"
-    default_weight: 3
+    name: {en: "Fed hike watch", zh: "美联储加息观察"}
+    description: {en: "Passes when the Fed (the US central bank) has not raised interest rates, or signalled that it will, in the last 6 months. Rising rates push stock valuations down and make selling puts riskier. Source: FRED (Federal Reserve Economic Data, run by the St. Louis Fed), series DFF (effective federal funds rate). Guidance wording has no free structured feed. Typical values: a hiking cycle is a run of increases of 25bp or more. Updated daily.", zh: "近 6 个月美联储（美国央行）没有加息，也没有暗示要加息时通过。利率上升会压低股票估值，让卖 Put 更危险。数据来源：FRED（圣路易斯联储的经济数据库）的 DFF 序列，即有效联邦基金利率；指引措辞没有免费的结构化数据。常见情形：加息周期指连续上调 25bp 或以上。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "part"
     availability: "not_implemented"
     legacy_id: ["A01"]
-    review:
-      quantifiable: "部分"
-      typical_range: "加息周期＝连续上调 ≥ 25bp；指引措辞无法量化"
-      latest_value: "有效联邦基金利率 3.88%；6 个月前的值同源可取，本次未算"
-      source: "FRED DFF（公开 CSV，免费）"
-      free_python: "部分"
-      freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-02
-    description: {en: "Odds of a hike at the next FOMC < 50%", zh: "下次 FOMC 加息概率 < 50%"}
-    explanation: "市场押注下次议息会议加息的概率。概率高说明利率还会往上，股市容易受压。"
-    default_weight: 2
+    name: {en: "FOMC hike odds", zh: "FOMC 加息概率"}
+    description: {en: "Passes when the market-implied chance of a rate hike at the next FOMC (Federal Open Market Committee, the Fed committee that sets US interest rates; about 8 meetings a year) is below 50%. Higher odds mean rates may keep rising and stocks come under pressure. Source: CME FedWatch, built from fed funds futures; there is no free API, so an AI reads the page. Typical values: below 50% is the usual comfort line. Updated intraday.", zh: "下次 FOMC（联邦公开市场委员会，美联储负责定利率的委员会，每年约 8 次会议）加息的市场隐含概率低于 50% 时通过。概率越高，说明利率可能继续上行，股市容易承压。数据来源：CME FedWatch（根据联邦基金期货推算）；没有免费 API，需要 AI 读网页。常见情形：低于 50% 是常用的安心线。盘中更新。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "yes"
     availability: "missing_data_source"
     legacy_id: ["A06"]
-    review:
-      quantifiable: "是"
-      typical_range: "CME FedWatch 概率；< 50% 为常用阈值"
-      latest_value: "无免费概率接口；联邦基金期货 ZQ=F 96.10 → 隐含 3.90%，对比有效利率 3.88%，无明显加息定价"
-      source: "yfinance ZQ=F 只能近似，不是概率"
-      free_python: "部分"
-      freshness: "日更，盘中约 15 分钟延迟"
   - rule_id: MAC-03
-    description: {en: "10Y yield level (< 4.5% full credit, < 5.0% half)", zh: "10Y 收益率水平（< 4.5% 满分，< 5.0% 半分）"}
-    explanation: "10 年期美债收益率，是整个市场的折现率。越高，股票估值越难撑住。"
-    default_weight: 4
+    name: {en: "10Y yield", zh: "10Y 收益率"}
+    description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10 (10-year Treasury constant maturity rate), updated daily with about one business day of delay. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb).", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列（10 年期国债固定期限收益率），每日更新，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "treasury_ten_year_yield"
     bands: [{operator: "less_than", value: 4.5, credit: 1.0}, {operator: "less_than", value: 5.0, credit: 0.5}]
     legacy_id: ["A02", "A07"]
-    review:
-      quantifiable: "是"
-      typical_range: "过去 20 年大致 0.5%–5.0%；> 4.5% 常被视为股市承压区（经验）"
-      latest_value: "4.96%（2026-10-22）→ 落在 < 5.0 档，半分"
-      source: "FRED DGS10（已接入）"
-      free_python: "是"
-      freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-04
-    description: {en: "10Y up < 25bp over 20 days", zh: "10Y 20 日升幅 < 25bp"}
-    explanation: "10Y 收益率最近 20 天涨了多少。涨得太快，比绝对水平更容易引发股市下跌。"
-    default_weight: 3
+    name: {en: "10Y yield, 20-day change", zh: "10Y 收益率 20 日变动"}
+    description: {en: "How much the 10-year Treasury yield has risen over the last 20 trading days, in bp (basis points; 1bp = 0.01 percentage point). Passes when the rise is under 25bp. A fast rise hurts stocks more than a high level. Source: FRED series DGS10. Typical values: ±25bp over 20 days is a clear move; a rise of 50bp or more in a month is fast (rule of thumb). Updated daily.", zh: "10 年期国债收益率最近 20 个交易日涨了多少，单位 bp（基点，1bp = 0.01 个百分点）。升幅小于 25bp 时通过。快速上行比高水平更容易让股市受伤。数据来源：FRED 的 DGS10 序列。常见情形：20 日 ±25bp 算明显波动，一个月升 50bp 以上算快速上行（经验）。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "treasury_ten_year_yield_twenty_day_change_basis_points"
     operator: "less_than"
     value: 25
     legacy_id: ["A03"]
-    review:
-      quantifiable: "是"
-      typical_range: "20 日 ±25bp 算明显波动，一月升 50bp 以上算快速上行（经验）"
-      latest_value: "−15bp（2026-10-22）→ 通过"
-      source: "FRED DGS10（已接入）"
-      free_python: "是"
-      freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-05
-    description: {en: "HY credit spread < 400bp", zh: "HY 信用利差 < 400bp"}
-    explanation: "高收益债（垃圾债）比国债多付的利息。利差变大代表信用风险上升，通常领先于股市压力。"
-    default_weight: 4
+    name: {en: "High-yield credit spread", zh: "高收益债信用利差"}
+    description: {en: "The extra yield junk bonds (HY, high-yield bonds rated below investment grade) pay over Treasuries, measured as OAS (option-adjusted spread). Passes when it is under 400bp. A widening spread signals rising credit risk and usually leads stock stress. Source: FRED series BAMLH0A0HYM2 (ICE BofA US High Yield OAS); FRED now keeps only about 3 years of history. Typical values: long-run average about 500bp; below 350bp is tight, above 500bp is stress, above 800bp is crisis (market convention). Updated daily.", zh: "高收益债（HY，评级低于投资级的债券，俗称垃圾债）比国债多付的利息，用 OAS（期权调整利差）衡量。低于 400bp 时通过。利差走阔代表信用风险上升，通常领先于股市压力。数据来源：FRED 的 BAMLH0A0HYM2 序列（ICE BofA 美国高收益债 OAS）；FRED 现在只保留约 3 年历史。常见情形：长期均值约 500bp；低于 350bp 偏紧，高于 500bp 是压力，高于 800bp 是危机（业界惯例）。每日更新。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "high_yield_credit_spread_basis_points"
     operator: "less_than"
     value: 400
     legacy_id: ["A04"]
-    review:
-      quantifiable: "是"
-      typical_range: "长期均值约 500bp；< 350bp 偏紧，> 500bp 压力，> 800bp 危机（业界惯例）"
-      latest_value: "340bp（2026-10-22）→ 通过"
-      source: "FRED BAMLH0A0HYM2（已接入）；注意 FRED 现在只给约 3 年历史，做历史分位受限"
-      free_python: "是"
-      freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-06
-    description: {en: "HY credit spread up < 50bp over 20 days", zh: "HY 信用利差 20 日升幅 < 50bp"}
-    explanation: "HY 利差最近 20 天的升幅。短期快速走阔是信用压力的早期信号。"
-    default_weight: 3
+    name: {en: "Credit spread, 20-day change", zh: "信用利差 20 日变动"}
+    description: {en: "How much the HY credit spread (see MAC-05) has widened over the last 20 trading days. Passes when the rise is under 50bp. A quick widening is an early sign of credit stress. Source: FRED series BAMLH0A0HYM2. Typical values: a rise of 50bp or more in 20 days is often read as credit stress (rule of thumb). Updated daily.", zh: "HY 信用利差（见 MAC-05）最近 20 个交易日走阔了多少。升幅小于 50bp 时通过。短期快速走阔是信用压力的早期信号。数据来源：FRED 的 BAMLH0A0HYM2 序列。常见情形：20 日升幅 50bp 以上常被当作信用压力信号（经验）。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["A04"]
     note: {en: "Split from the old A04, where this half was never built", zh: "从旧 A04 拆出，这一半此前未实现"}
-    review:
-      quantifiable: "是"
-      typical_range: "20 日升幅 ≥ 50bp 常被当作信用压力信号（经验）"
-      latest_value: "20 日 +60bp（2026-10-22）→ 不通过"
-      source: "FRED BAMLH0A0HYM2（同 MAC-05，补一个指标即可）"
-      free_python: "是"
-      freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-07
-    description: {en: "Yield curve not inverted (10Y minus 2Y or 3M above 0)", zh: "收益率曲线未倒挂（10Y 减 2Y 或 3M 大于 0）"}
-    explanation: "短期利率是否高过长期利率（倒挂）。倒挂常被当作衰退预警。"
-    default_weight: 4
+    name: {en: "Yield curve", zh: "收益率曲线"}
+    description: {en: "Whether the yield curve is inverted, meaning short-term Treasury yields are above long-term ones. Passes when 10Y minus 2Y, or 10Y minus 3M, is above 0. An inverted curve is a common recession warning. Source: FRED series T10Y2Y and T10Y3M, updated daily. Typical values: below 0 means inverted; inversions have often come months to two years before recessions (rule of thumb).", zh: "收益率曲线是否倒挂，即短期国债收益率是否高于长期。10Y 减 2Y，或 10Y 减 3M 大于 0 时通过。倒挂常被当作衰退预警。数据来源：FRED 的 T10Y2Y 和 T10Y3M 序列，每日更新。常见情形：小于 0 即倒挂；倒挂常领先衰退数月到两年（经验）。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "10Y−2Y 或 10Y−3M < 0 即倒挂；倒挂常领先衰退数月到两年（经验）"
-      latest_value: "10Y−2Y +0.31，10Y−3M +0.78（2026-10-23）→ 未倒挂"
-      source: "FRED T10Y2Y、T10Y3M"
-      free_python: "是"
-      freshness: "日更，滞后约 1 个工作日"
   - rule_id: MAC-08
-    description: {en: "Inflation (CPI, core PCE) level and trend", zh: "通胀（CPI、核心 PCE）的水平与趋势"}
-    explanation: "物价涨得多快。通胀高会逼央行维持高利率，压制估值。"
-    default_weight: 3
+    name: {en: "Inflation", zh: "通胀"}
+    description: {en: "How fast prices are rising. High inflation forces the Fed to keep rates high, which holds valuations down. Measured by CPI (Consumer Price Index) and core PCE (Personal Consumption Expenditures price index, excluding food and energy, the Fed's preferred gauge), year over year. Source: FRED series CPIAUCSL and PCEPILFE, updated monthly with a lag of 2 to 6 weeks. Typical values: the Fed targets 2% inflation (PCE); CPI above 3% is high.", zh: "物价涨得多快。通胀高会迫使美联储维持高利率，压住估值。用 CPI（消费者物价指数）和核心 PCE（个人消费支出物价指数，剔除食品和能源，是美联储偏好的指标）的同比来衡量。数据来源：FRED 的 CPIAUCSL 和 PCEPILFE 序列，月更，滞后 2–6 周。常见情形：美联储的目标是 2% 通胀（PCE）；CPI 高于 3% 算偏高。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "美联储目标 2%（PCE）；CPI 同比 > 3% 偏高"
-      latest_value: "CPI 同比 4.02%（2026-09），核心 PCE 同比 3.01%（2026-08）"
-      source: "FRED CPIAUCSL、PCEPILFE"
-      free_python: "是"
-      freshness: "月更；CPI 约次月中旬，PCE 约月底，滞后 2–6 周"
   - rule_id: MAC-09
-    description: {en: "Growth and jobs (PMI, unemployment, jobless claims)", zh: "增长与就业（PMI、失业率、初请）"}
-    explanation: "经济增长和就业状况。就业恶化意味着企业盈利风险上升。"
-    default_weight: 3
+    name: {en: "Growth and jobs", zh: "增长与就业"}
+    description: {en: "State of growth and the job market; worsening jobs mean higher earnings risk. Uses the unemployment rate, initial jobless claims (weekly new unemployment filings) and ideally PMI (Purchasing Managers' Index, a business survey). Source: FRED series UNRATE and ICSA; ISM PMI is no longer on FRED, so PMI is missing. Typical values: unemployment of 4% to 5% is common; weekly claims of 200,000 to 250,000 are stable and above 300,000 is worsening; the Sahm rule flags a recession when the 3-month average unemployment rate rises 0.5 point above its 12-month low (rule of thumb). Claims update weekly, unemployment monthly.", zh: "经济增长和就业状况；就业恶化意味着企业盈利风险上升。用失业率、初请失业金人数（每周新增失业申请）和 PMI（采购经理人指数，一种企业调查）。数据来源：FRED 的 UNRATE 和 ICSA 序列；ISM PMI 已从 FRED 下架，所以 PMI 缺失。常见情形：失业率 4%–5% 常见；每周初请 20–25 万稳定，高于 30 万算恶化；Sahm 规则：失业率 3 个月均值比 12 个月低点升高 0.5 个点即提示衰退（经验）。初请周更，失业率月更。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "part"
     availability: "not_implemented"
-    review:
-      quantifiable: "部分"
-      typical_range: "失业率 4%–5% 常见；初请 20–25 万稳定，> 30 万恶化；Sahm 规则：失业率 3 月均值较 12 月低点升 ≥ 0.5 点（经验）"
-      latest_value: "失业率 4.2%（3 个月前 4.2%）；初请 4 周均值 197,750"
-      source: "FRED UNRATE、ICSA；ISM PMI 在 FRED 已下架（NAPM 返回 404）"
-      free_python: "是"
-      freshness: "初请周更，失业率月更"
   - rule_id: MAC-10
-    description: {en: "US dollar index trend", zh: "美元指数趋势"}
-    explanation: "美元走强通常收紧全球金融环境，对跨国公司盈利和风险资产不利。"
-    default_weight: 2
+    name: {en: "US dollar", zh: "美元"}
+    description: {en: "Trend of the US dollar. A stronger dollar tightens global financial conditions and hurts multinational earnings and risk assets. Source: FRED series DTWEXBGS (broad dollar index, about one week behind) or Yahoo Finance DX-Y.NYB (the DXY dollar index) via yfinance. Typical values: DXY usually trades between 90 and 110; a 20-day move of ±2% is clear (rule of thumb).", zh: "美元走势。美元走强通常收紧全球金融环境，对跨国公司盈利和风险资产不利。数据来源：FRED 的 DTWEXBGS 序列（广义美元指数，约滞后一周），或通过 yfinance 取 Yahoo Finance 的 DX-Y.NYB（DXY 美元指数）。常见情形：DXY 通常在 90–110 之间；20 日变动 ±2% 算明显（经验）。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "美元指数 DXY 常见区间 90–110；20 日变动 ±2% 算明显（经验）"
-      latest_value: "FRED 广义美元指数 121.40（20 日 +1.72%）；Yahoo DXY 101.81"
-      source: "FRED DTWEXBGS；yfinance DX-Y.NYB"
-      free_python: "是"
-      freshness: "FRED 约滞后一周；Yahoo 日更"
   - rule_id: MAC-11
-    description: {en: "WTI < $100 and up < 15% this month", zh: "WTI < $100 且月涨幅 < 15%"}
-    explanation: "油价过高或涨得太快，会推高通胀、压缩消费，也容易引发市场波动。"
-    default_weight: 2
+    name: {en: "Oil price", zh: "油价"}
+    description: {en: "Passes when WTI crude oil (West Texas Intermediate, the US oil benchmark) is below $100 a barrel and up less than 15% over the month. Very high or fast-rising oil lifts inflation, squeezes consumers and shakes markets. Source: FRED series DCOILWTICO (a few days behind) or Yahoo Finance CL=F futures via yfinance. Typical values: over the last ten years WTI mostly traded between $40 and $120; $100 is a rule-of-thumb line.", zh: "WTI 原油（西德州中质原油，美国原油基准）低于每桶 $100，且月涨幅低于 15% 时通过。油价过高或涨得太快会推高通胀、挤压消费、扰动市场。数据来源：FRED 的 DCOILWTICO 序列（滞后几天），或通过 yfinance 取 Yahoo Finance 的 CL=F 期货。常见情形：近十年 WTI 多在 $40–$120；$100 是经验线。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["Z12"]
-    review:
-      quantifiable: "是"
-      typical_range: "近十年 WTI 多在 $40–$120；$100 是经验线"
-      latest_value: "FRED 107.89（2026-10-20），月涨 +11.3%；期货 CL=F 103.27 → 当前高于 $100，不通过"
-      source: "FRED DCOILWTICO；yfinance CL=F"
-      free_python: "是"
-      freshness: "日更，FRED 滞后 3–5 天"
   - rule_id: MAC-12
-    description: {en: "Global liquidity trend (Fed balance sheet, M2)", zh: "全球流动性趋势（Fed 资产负债表、M2）"}
-    explanation: "央行资产负债表和货币供应的变化。资金宽松对风险资产有利，收紧则相反。"
-    default_weight: 2
+    name: {en: "Global liquidity", zh: "全球流动性"}
+    description: {en: "Direction of money supply and the central bank balance sheet. Easy liquidity helps risk assets; tightening hurts them. Uses the Fed's total assets and M2 (a broad measure of money in the economy). Source: FRED series WALCL (weekly) and M2SL (monthly, about 1.5 months behind). Typical values: M2 growth above 5% a year is fairly loose (rule of thumb).", zh: "货币供应和央行资产负债表的变化方向。流动性宽松对风险资产有利，收紧则不利。用美联储总资产和 M2（广义货币供应）。数据来源：FRED 的 WALCL（周更）和 M2SL（月更，滞后约 1.5 个月）序列。常见情形：M2 年增速高于 5% 算偏宽松（经验）。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "Fed 资产负债表增减代表扩表或缩表；M2 同比 > 5% 算偏宽松（经验）"
-      latest_value: "Fed 资产负债表 6.75 万亿美元，3 个月 +0.09%；M2 同比 +5.66%"
-      source: "FRED WALCL、M2SL"
-      free_python: "是"
-      freshness: "WALCL 周更；M2 月更，滞后约 1.5 个月"
   # IND · Industry
   - rule_id: IND-01
-    description: {en: "Industry relative strength (sector ETF against SPY)", zh: "行业相对强弱（行业 ETF 对 SPY）"}
-    explanation: "这只股票所在的行业最近比大盘强还是弱。行业走强时，个股更容易跟着走强。"
-    default_weight: 3
+    name: {en: "Industry strength", zh: "行业强弱"}
+    description: {en: "Whether the stock's industry has recently beaten or lagged the market. A strong industry lifts its stocks. Compares the sector ETF (a fund that holds one industry, such as XLK for technology) with SPY (the fund tracking the S&P 500) over 6 months. Source: Yahoo Finance via yfinance. Typical values: a sector ETF that beats SPY over 6 months is seen as strong. Updated daily.", zh: "这只股票所在的行业最近跑赢还是跑输大盘。行业走强会带动个股。用行业 ETF（持有某个行业的基金，比如科技的 XLK）与 SPY（跟踪标普 500 的基金）比较 6 个月的涨幅。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：行业 ETF 的 6 个月收益跑赢 SPY 算强。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "行业 ETF 6 个月收益减 SPY > 0 为强"
-      latest_value: "科技 XLK 比 SPY 6 个月多 +7.6 个点"
-      source: "yfinance 行业 ETF（XL 系列）＋个股的 sector 字段"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: IND-02
-    description: {en: "Industry cycle and earnings revisions", zh: "行业景气周期与盈利修正"}
-    explanation: "行业盈利预期是在上调还是下调，反映行业景气处在周期的哪个位置。"
-    default_weight: 2
+    name: {en: "Industry cycle", zh: "行业景气"}
+    description: {en: "Whether analysts are raising or cutting earnings forecasts for the industry, which shows where it sits in its cycle. No free aggregated feed exists; an AI reads industry reports and news, or individual stock revisions are summed by industry. Typical values: more upgrades than downgrades means a healthy cycle. Updated daily at stock level.", zh: "分析师是在上调还是下调整个行业的盈利预期，反映行业处在周期的什么位置。没有免费的行业汇总数据；由 AI 读行业报告和新闻，或把个股的预期修正按行业汇总。常见情形：上调多于下调说明景气健康。个股层面每日更新。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "part"
     availability: "missing_data_source"
-    review:
-      quantifiable: "部分"
-      typical_range: "行业盈利上修多于下修为景气"
-      latest_value: "无"
-      source: "只能把个股 eps_revisions 按行业自行汇总；没有免费现成的行业汇总"
-      free_python: "部分"
-      freshness: "日更（个股层）"
   # QUA · Company quality
   - rule_id: QUA-01
-    description: {en: "Earnings are positive (EPS TTM > 0)", zh: "盈利为正（EPS TTM > 0）"}
-    explanation: "公司最近 12 个月是否赚钱。亏损公司股价波动更大，卖 Put 接盘的风险更高。"
-    default_weight: 4
+    name: {en: "Profitable", zh: "盈利为正"}
+    description: {en: "Passes when the company made a profit over the last 12 months (EPS, earnings per share, TTM, trailing twelve months, above 0). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance; SEC EDGAR company facts are a steadier alternative. Updated each quarter.", zh: "公司最近 12 个月赚钱（EPS，每股收益，TTM 即过去十二个月，大于 0）时通过。亏损公司波动更大，被行权接盘的风险更高。数据来源：通过 yfinance 取 Yahoo Finance；更稳定的替代是 SEC EDGAR（美国证监会披露系统）的公司数据。按季更新。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["F01"]
-    review:
-      quantifiable: "是"
-      typical_range: "TTM EPS 为正"
-      latest_value: "AAPL PE(TTM) 39.88 → 盈利为正"
-      source: "yfinance info；更稳的是 SEC companyfacts（免费，需 User-Agent）"
-      free_python: "是"
-      freshness: "季更，财报后 1–2 天"
   - rule_id: QUA-02
-    description: {en: "Revenue growth year over year > 0", zh: "营收同比增长 > 0"}
-    explanation: "营收是否比去年同期增长。没有增长的公司很难长期上涨。"
-    default_weight: 3
+    name: {en: "Revenue growth", zh: "营收增长"}
+    description: {en: "Passes when revenue is higher than a year earlier. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance (latest quarter, year over year); SEC EDGAR as a backup. Updated each quarter.", zh: "营收比去年同期增长时通过。没有销售增长的公司很难长期上涨。数据来源：通过 yfinance 取 Yahoo Finance（最近一季同比）；备选是 SEC EDGAR。按季更新。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["F01"]
-    review:
-      quantifiable: "是"
-      typical_range: "营收同比 > 0；优质成长股 > 10%"
-      latest_value: "AAPL 营收同比 +16.4%（最近一季）"
-      source: "yfinance info；SEC companyfacts"
-      free_python: "是"
-      freshness: "季更"
   - rule_id: QUA-03
-    description: {en: "Earnings and revenue 3-year growth", zh: "盈利与营收 3 年增速"}
-    explanation: "盈利和营收过去三年的增长速度，看增长是否持续，而不是一次性。"
-    default_weight: 3
+    name: {en: "3-year growth", zh: "3 年增速"}
+    description: {en: "Growth of earnings and revenue over the last 3 years, to check growth is lasting and not a one-off. Calculated as a CAGR (compound annual growth rate) from annual statements. Source: Yahoo Finance via yfinance financial statements (4 years), or SEC EDGAR. Typical values: a 3-year CAGR above 10% is typical of quality growth stocks (rule of thumb). Updated each quarter or year.", zh: "盈利和营收过去 3 年的增长速度，用来确认增长是持续的，而不是一次性的。用年报算 CAGR（复合年增长率）。数据来源：通过 yfinance 取 Yahoo Finance 的财务报表（4 年），或 SEC EDGAR。常见情形：优质成长股的 3 年 CAGR 常在 10% 以上（经验）。按季或按年更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "优质成长股 3 年复合增速 > 10%（经验）"
-      latest_value: "未算（yfinance 财报表有 4 年数据）"
-      source: "yfinance financials；SEC companyfacts"
-      free_python: "是"
-      freshness: "季更/年更"
   - rule_id: QUA-04
-    description: {en: "ROIC / ROE level and stability (moat evidence)", zh: "ROIC / ROE 水平与稳定性（护城河证据）"}
-    explanation: "公司用投入的资本赚钱的效率。高且长期稳定，通常说明有护城河。"
-    default_weight: 4
+    name: {en: "Return on capital", zh: "资本回报率"}
+    description: {en: "How efficiently the company turns invested money into profit: ROIC (return on invested capital) and ROE (return on equity). High and steady for many years usually signals a moat, a lasting competitive advantage. ROE can be distorted by buybacks, so ROIC is calculated from the statements. Source: Yahoo Finance via yfinance, or SEC EDGAR. Typical values: ROIC above 15% and steady for 5 to 10 years is a common moat test (Buffett-style rule of thumb); ROE above 15%. Updated each quarter.", zh: "公司把投入的钱变成利润的效率：ROIC（投入资本回报率）和 ROE（股本回报率）。长期又高又稳，通常说明有护城河，即持久的竞争优势。ROE 会被回购扭曲，所以 ROIC 要用财报自己算。数据来源：通过 yfinance 取 Yahoo Finance，或 SEC EDGAR。常见情形：ROIC 高于 15% 并稳定 5–10 年，是常见的护城河检验（巴菲特式经验）；ROE 高于 15%。按季更新。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "ROIC > 15% 且 5–10 年稳定，常被当作护城河证据（巴菲特式经验）；ROE > 15%"
-      latest_value: "AAPL ROE 148.8%、ROA 27.1%；ROE 因大量回购压低股本而失真，ROIC 需自己算"
-      source: "yfinance 报表自算（NOPAT ÷ 投入资本）"
-      free_python: "是"
-      freshness: "季更"
   - rule_id: QUA-05
-    description: {en: "Gross margin level and stability", zh: "毛利率水平与稳定性"}
-    explanation: "每卖一块钱的产品剩下多少毛利。毛利率高且稳定，说明有定价权。"
-    default_weight: 3
+    name: {en: "Gross margin", zh: "毛利率"}
+    description: {en: "Share of each sales dollar left after the direct cost of goods (gross margin). A high and stable margin means pricing power. Source: Yahoo Finance via yfinance; SEC EDGAR for history. Updated each quarter. Typical values: above 40% is common for brands and software; retail below 30% is normal.", zh: "每一块钱销售额扣掉直接成本后剩下的比例（毛利率）。毛利率高且稳定，说明有定价权。数据来源：通过 yfinance 取 Yahoo Finance；历史用 SEC EDGAR。按季更新。常见情形：品牌和软件公司常高于 40%；零售低于 30% 属正常。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "护城河企业毛利率高且 10 年波动小；> 40% 常见于品牌或软件，零售 < 30% 属正常"
-      latest_value: "AAPL 毛利率 48.7%"
-      source: "yfinance info；SEC companyfacts 取历史"
-      free_python: "是"
-      freshness: "季更"
   - rule_id: QUA-06
-    description: {en: "Free cash flow positive and growing", zh: "自由现金流为正且增长"}
-    explanation: "扣除资本开支后实际剩下的现金。比账面利润更难造假，是价值判断的核心。"
-    default_weight: 4
+    name: {en: "Free cash flow", zh: "自由现金流"}
+    description: {en: "Cash left after capital spending: FCF (free cash flow). It is harder to fake than accounting profit and is central to value investing. Passes when FCF is positive and growing. Source: Yahoo Finance via yfinance cash flow statement. Updated each quarter.", zh: "扣掉资本开支后剩下的现金：FCF（自由现金流）。它比账面利润更难造假，是价值投资的核心。FCF 为正且在增长时通过。数据来源：通过 yfinance 取 Yahoo Finance 的现金流量表。按季更新。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "自由现金流为正且连续增长"
-      latest_value: "AAPL 自由现金流 $107.7B（TTM），占市值 2.12%"
-      source: "yfinance info、cashflow"
-      free_python: "是"
-      freshness: "季更"
   - rule_id: QUA-07
-    description: {en: "Balance sheet strength (net debt to EBITDA, interest coverage)", zh: "财务稳健（净债务/EBITDA、利息覆盖）"}
-    explanation: "负债相对盈利是否可控。负债过高的公司在衰退或加息时容易出问题。"
-    default_weight: 4
+    name: {en: "Balance sheet", zh: "财务稳健"}
+    description: {en: "Whether debt is manageable relative to earnings: net debt (debt minus cash) divided by EBITDA (earnings before interest, taxes, depreciation and amortization), plus interest coverage (how many times profit covers interest). Heavily indebted companies get into trouble in recessions or when rates rise. Source: Yahoo Finance via yfinance balance sheet. Typical values: net debt to EBITDA below 2 is sound and above 4 is high; interest coverage above 5 is comfortable (rule of thumb).", zh: "债务相对盈利是否可控：净债务（债务减现金）除以 EBITDA（息税折旧摊销前利润），以及利息覆盖倍数（利润能覆盖利息几倍）。负债过高的公司在衰退或加息时容易出问题。数据来源：通过 yfinance 取 Yahoo Finance 的资产负债表。常见情形：净债务/EBITDA 低于 2 稳健，高于 4 偏高；利息覆盖高于 5 倍算宽裕（经验）。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "净债务/EBITDA < 2 稳健，> 4 偏高；利息覆盖 > 5（经验）"
-      latest_value: "AAPL 净债务/EBITDA 0.13"
-      source: "yfinance balance_sheet、info"
-      free_python: "是"
-      freshness: "季更"
   - rule_id: QUA-08
-    description: {en: "Earnings quality (operating cash flow to net income, accruals)", zh: "盈利质量（经营现金流/净利润、应计）"}
-    explanation: "利润有多少真的变成了现金。差距大说明利润可能含水分。"
-    default_weight: 2
+    name: {en: "Earnings quality", zh: "盈利质量"}
+    description: {en: "How much of reported profit turned into real cash: operating cash flow divided by net income, and accruals (non-cash accounting items). A big gap suggests profit may be inflated. Source: Yahoo Finance via yfinance cash flow and income statements. Typical values: operating cash flow to net income of 1 or more is good; 0.8 to 1.2 is common.", zh: "账面利润有多少变成了真金白银：经营现金流除以净利润，以及应计项目（不涉及现金的会计项目）。差距大说明利润可能含水分。数据来源：通过 yfinance 取 Yahoo Finance 的现金流量表和利润表。常见情形：经营现金流/净利润达到 1 以上为佳；0.8–1.2 常见。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "经营现金流/净利润 ≥ 1 为佳（0.8–1.2 常见）"
-      latest_value: "未算"
-      source: "yfinance cashflow、financials"
-      free_python: "是"
-      freshness: "季更"
   - rule_id: QUA-09
-    description: {en: "More analyst EPS upgrades than downgrades", zh: "分析师 EPS 上修多于下修"}
-    explanation: "分析师最近是上调还是下调盈利预期。上调多于下调，通常对应股价有支撑。"
-    default_weight: 3
+    name: {en: "EPS revisions", zh: "EPS 预期修正"}
+    description: {en: "Whether analysts are raising more than cutting their EPS (earnings per share) forecasts. Upgrades usually go with price support. Passes when upgrades outnumber downgrades. Source: Yahoo Finance via yfinance eps_revisions (counts for the last 7 and 30 days). Typical values: upgrades outnumbering downgrades (a revision ratio above 1) is positive. Updated daily.", zh: "分析师上调 EPS（每股收益）预期的次数是否多于下调。上调通常伴随股价支撑。上调多于下调时通过。数据来源：通过 yfinance 取 Yahoo Finance 的 eps_revisions（近 7 天和 30 天的次数）。常见情形：上调多于下调（修正比率大于 1）为正面。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "part"
     availability: "not_implemented"
     legacy_id: ["Z17"]
-    review:
-      quantifiable: "部分"
-      typical_range: "上修次数多于下修次数为正面（revision ratio）"
-      latest_value: "AAPL 当季近 30 天上修 1/下修 1；下一季上修 2/下修 1"
-      source: "yfinance eps_revisions（只有近 7、30 天的次数）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: QUA-10
-    description: {en: "Buy ratings above 60% of analysts", zh: "买入评级占比 > 60%"}
-    explanation: "分析师中建议买入的占比，反映市场共识；过于一致时也要警惕。"
-    default_weight: 2
+    name: {en: "Analyst buy ratings", zh: "分析师买入评级"}
+    description: {en: "Passes when more than 60% of analysts rate the stock a buy. It shows market consensus, but a very one-sided view is also a warning. Source: Yahoo Finance via yfinance recommendations (strong buy, buy, hold, sell, strong sell counts).", zh: "超过 60% 的分析师给出买入评级时通过。它反映市场共识，但观点过于一边倒时也要警惕。数据来源：通过 yfinance 取 Yahoo Finance 的 recommendations（强买、买入、持有、卖出、强卖的家数）。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["F01"]
-    review:
-      quantifiable: "是"
-      typical_range: "买入评级占比 > 60%（作者设）"
-      latest_value: "AAPL 强买 6＋买入 18，共 44 家，占 54.5% → 不通过"
-      source: "yfinance recommendations"
-      free_python: "是"
-      freshness: "月度汇总，日更"
   # MGT · Management and governance
   - rule_id: MGT-01
-    description: {en: "Insider net buying or selling", zh: "内部人净买入或净卖出"}
-    explanation: "公司高管和董事自己是在买还是卖股票。他们自掏腰包买入是较强的正面信号。"
-    default_weight: 3
+    name: {en: "Insider trading", zh: "内部人交易"}
+    description: {en: "Whether the company's executives and directors are net buyers or net sellers of its stock. Buying with their own money is a stronger positive signal than selling, which is often just stock compensation. Source: SEC Form 4 filings (insider trade reports, due within 2 business days), read through Yahoo Finance via yfinance.", zh: "公司高管和董事是净买入还是净卖出自家股票。自掏腰包买入是比卖出更强的正面信号，因为卖出多半只是股权激励。数据来源：SEC Form 4（内部人交易报告，须在 2 个工作日内披露），通过 yfinance 取 Yahoo Finance。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "净买入为正面信号；高管卖出多为股权激励，噪音大，买入信号更强"
-      latest_value: "AAPL 近 6 个月买入 12 笔/84.4 万股，卖出 20 笔/58.7 万股，净买 25.6 万股"
-      source: "yfinance insider_purchases、insider_transactions（来自 SEC Form 4）"
-      free_python: "是"
-      freshness: "Form 4 须在 2 个工作日内披露"
   - rule_id: MGT-02
-    description: {en: "Net buybacks and share dilution", zh: "净回购与股本稀释"}
-    explanation: "公司是在回购股票（股数减少），还是不断增发（股东被稀释）。"
-    default_weight: 3
+    name: {en: "Buybacks and dilution", zh: "回购与稀释"}
+    description: {en: "Whether the company is buying back its shares (share count falling) or issuing more (shareholders diluted). A steady fall of 1% to 3% a year is typical of regular buybacks; a rise above 2% a year is dilution. Source: Yahoo Finance via yfinance balance sheet (ordinary shares).", zh: "公司是在回购股票（股数下降），还是不断增发（股东被稀释）。每年稳定下降 1%–3% 是常见的持续回购，每年上升超过 2% 就是稀释。数据来源：通过 yfinance 取 Yahoo Finance 资产负债表里的普通股股数。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "股数年降 1%–3% 为稳定回购；年增 > 2% 视为稀释（经验）"
-      latest_value: "AAPL 股数同比 −2.27%（净回购）"
-      source: "yfinance balance_sheet 的 Ordinary Shares Number"
-      free_python: "是"
-      freshness: "季更/年更"
   - rule_id: MGT-03
-    description: {en: "Capital allocation record (acquisitions, sustainable dividend)", zh: "资本配置记录（并购、分红可持续）"}
-    explanation: "管理层把钱花在哪：并购是否创造价值，分红靠不靠得住。"
-    default_weight: 2
+    name: {en: "Capital allocation", zh: "资本配置"}
+    description: {en: "Where management spends the money: whether acquisitions create value and whether the dividend is sustainable (for example, dividends covered by FCF, free cash flow). No standard number exists; it is estimated from statements. Source: SEC EDGAR company facts.", zh: "管理层把钱花在哪：并购是否创造价值，分红靠不靠得住（例如分红是否被 FCF，即自由现金流，覆盖）。没有通用数值，需要从财报估算。数据来源：SEC EDGAR 的公司数据。"}
+    weight: 2
     kind: "script"
     acquisition: "scrape"
+    quantifiable: "part"
     availability: "missing_data_source"
-    review:
-      quantifiable: "部分"
-      typical_range: "无通用数值；可用 FCF 对分红覆盖率、回购价对内在价值、商誉减值近似"
-      latest_value: "未算"
-      source: "SEC companyfacts 自算"
-      free_python: "部分"
-      freshness: "季更"
   - rule_id: MGT-04
-    description: {en: "Governance and accounting risk (audit opinion, restatements)", zh: "治理与会计风险（审计意见、重述）"}
-    explanation: "有没有审计意见异常、财报重述等治理或会计问题。这类问题一旦暴露，往往重挫股价。"
-    default_weight: 2
+    name: {en: "Governance risk", zh: "治理风险"}
+    description: {en: "Whether there are governance or accounting problems, such as a qualified audit opinion or a restatement (re-issued financial statements). These usually hit the share price hard once exposed. Source: SEC EDGAR filings, for example 8-K Item 4.02 (non-reliance on past financials), found by an AI search.", zh: "有没有治理或会计问题，比如审计意见异常、财报重述（重新发布财务报表）。这类问题一旦暴露，往往重挫股价。数据来源：SEC EDGAR 披露文件，例如 8-K 第 4.02 项（过往财报不可再依赖），由 AI 搜索获得。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "part"
     availability: "missing_data_source"
-    review:
-      quantifiable: "部分"
-      typical_range: "无通用数值；可用 8-K 4.02（财报不可靠）等事件做代理"
-      latest_value: "未算"
-      source: "SEC EDGAR 全文检索（免费）；审计意见无结构化源"
-      free_python: "部分"
-      freshness: "事件驱动"
   # VAL · Valuation
   - rule_id: VAL-01
-    description: {en: "S&P 500 forward PE and its historical percentile", zh: "标普 500 Forward PE 及历史分位"}
-    explanation: "标普 500 按未来 12 个月盈利算的市盈率，以及它在历史中的位置，衡量整个市场贵不贵。"
-    default_weight: 3
+    name: {en: "S&P 500 forward PE", zh: "标普 500 Forward PE"}
+    description: {en: "Forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. Source: FactSet Earnings Insight (weekly) or Yardeni Research, read by an AI; multpl.com gives only trailing PE. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb, not verified). Updated weekly.", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。数据来源：FactSet 的 Earnings Insight（周报）或 Yardeni Research，由 AI 读取；multpl.com 只提供 TTM 市盈率。常见情形：长期均值约 16–17；高于 22 偏贵（经验，未核实）。每周更新。"}
+    weight: 3
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "yes"
     availability: "missing_data_source"
-    review:
-      quantifiable: "是"
-      typical_range: "长期均值约 16–17，> 22 偏贵（经验，未核实）"
-      latest_value: "multpl 标普 500 PE(TTM) 26.01；SPY trailingPE 24.13；Forward PE 无免费稳定源"
-      source: "multpl.com 网页抓取（非官方）"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: VAL-02
-    description: {en: "Nasdaq-100 / QQQ PE (TTM and forward) and premium over SPY", zh: "纳指 100 / QQQ 的 PE（TTM 与 Forward）及相对 SPY 的溢价"}
-    explanation: "纳指 100（QQQ）的市盈率，以及比标普贵多少。科技股占比高，估值波动更大。"
-    default_weight: 3
+    name: {en: "QQQ PE", zh: "QQQ 市盈率"}
+    description: {en: "PE of the Nasdaq-100, through QQQ (the Invesco fund that tracks it), with its premium over SPY (the S&P 500 fund). Tech-heavy, so valuation swings more. Source: Yahoo Finance via yfinance (trailing PE only; no free forward PE). Typical values: the Nasdaq-100 usually trades at a premium to the S&P 500. Updated daily.", zh: "纳指 100 的市盈率（用跟踪它的 QQQ 基金），以及相对 SPY（标普 500 基金）的溢价。科技股占比高，估值波动更大。数据来源：通过 yfinance 取 Yahoo Finance（只有 TTM 市盈率，没有免费的 Forward PE）。常见情形：纳指 100 的估值通常高于标普 500。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "纳指溢价看相对 SPY 的比值，随时间波动"
-      latest_value: "QQQ trailingPE 26.97，SPY 24.13 → QQQ 溢价约 11.8%；forwardPE 缺"
-      source: "yfinance info（基金层 PE 为估算，口径可能与 Invesco 官网不同）"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: VAL-03
-    description: {en: "Earnings yield minus 10Y yield (equity risk premium)", zh: "盈利收益率减 10Y 收益率（股权风险溢价）"}
-    explanation: "股票的盈利收益率（市盈率的倒数）减去 10 年期国债收益率。为负说明买股票的回报还不如国债。"
-    default_weight: 3
+    name: {en: "Equity risk premium", zh: "股权风险溢价"}
+    description: {en: "ERP (equity risk premium) in its simple form: earnings yield (1 divided by PE) minus the 10-year Treasury yield. If it is negative, stocks pay less than Treasuries. Source: Yahoo Finance via yfinance for PE and FRED series DGS10 for the yield. Typical values: a negative result means stocks look expensive against Treasuries (simplified Fed model). Updated daily.", zh: "股权风险溢价（ERP）的简化版：盈利收益率（1 除以市盈率）减去 10 年期国债收益率。为负说明买股票的回报还不如国债。数据来源：市盈率通过 yfinance 取 Yahoo Finance，收益率取 FRED 的 DGS10 序列。常见情形：结果为负，说明相对国债股票偏贵（简化的 Fed 模型）。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "盈利收益率 1/PE 减 10Y；负值＝股票相对国债偏贵（简化的 Fed model）"
-      latest_value: "SPY 盈利收益率 4.14%，10Y 4.96% → −0.82 个点"
-      source: "yfinance＋FRED 组合"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: VAL-04
-    description: {en: "Market cap to GDP (Buffett indicator)", zh: "市值/GDP（巴菲特指标）"}
-    explanation: "整个股市总市值相对 GDP 的比例，巴菲特常用它判断市场整体是否过热。这里用的口径不标准。"
-    default_weight: 1
+    name: {en: "Market cap to GDP", zh: "市值/GDP"}
+    description: {en: "Total stock market value divided by GDP (gross domestic product), the Buffett indicator, used to judge whether the market as a whole is overheated. Here a non-standard version is used: US non-financial corporate equities from the Fed's Z.1 flow of funds report divided by GDP. Source: FRED series NCBEILQ027S and GDP, quarterly with a 2 to 3 month lag. Typical values: the standard version above 150% is often called expensive (rule of thumb); this non-standard version gives different numbers.", zh: "股市总市值除以 GDP（国内生产总值），即巴菲特指标，用来判断整个市场是否过热。这里用的是非标准版本：美联储 Z.1 资金流量表里的美国非金融企业股权市值除以 GDP。数据来源：FRED 的 NCBEILQ027S 和 GDP 序列，季更，滞后 2–3 个月。常见情形：标准版本高于 150% 常被称为偏贵（经验）；这个非标准版本的数值不同。"}
+    weight: 1
     kind: "script"
     acquisition: "computed"
+    quantifiable: "part"
     availability: "missing_data_source"
-    review:
-      quantifiable: "部分"
-      typical_range: "巴菲特指标常用 Wilshire 5000 ÷ GDP；> 150% 常被称为偏贵（经验）"
-      latest_value: "FRED 的 Wilshire 系列已下架；替代：Z.1 非金融企业股权 $83.05T ÷ GDP $32.56T ≈ 255%，口径不标准"
-      source: "FRED NCBEILQ027S、GDP"
-      free_python: "部分"
-      freshness: "季更，滞后 2–3 个月"
   - rule_id: VAL-05
-    description: {en: "Stock PE TTM and premium over its own history", zh: "个股 PE TTM 及相对自身历史的溢价"}
-    explanation: "按过去 12 个月实际盈利算的市盈率，以及比自身历史贵还是便宜。"
-    default_weight: 4
+    name: {en: "Stock PE (TTM)", zh: "个股 PE (TTM)"}
+    description: {en: "PE (price divided by earnings per share) on TTM (trailing twelve months) actual earnings, and whether it is above or below the stock's own history. Long-run S&P 500 average is roughly 16 to 17. Source: Yahoo Finance via yfinance for the current value; history must be rebuilt from SEC EDGAR EPS. Typical values: growth stocks at 25 to 35 are common. Updated daily.", zh: "按 TTM（过去十二个月）实际盈利算的市盈率（价格除以每股收益），以及比这只股票自身历史贵还是便宜。标普 500 长期平均大约在 16–17。数据来源：当前值通过 yfinance 取 Yahoo Finance；历史需要用 SEC EDGAR 的 EPS 自己重建。常见情形：成长股常在 25–35。每日更新。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "标普长期约 16–17，成长股 25–35 常见；相对自身历史分位更有意义"
-      latest_value: "AAPL PE(TTM) 39.88；历史分位未算"
-      source: "yfinance info；历史 PE 需用 SEC 历史 EPS 自算"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: VAL-06
-    description: {en: "Stock forward PE and its gap to TTM", zh: "个股 Forward PE 及与 TTM 的差"}
-    explanation: "按分析师预期的未来盈利算的市盈率。和 TTM 差距大，说明市场预期盈利快速增长。"
-    default_weight: 4
+    name: {en: "Stock forward PE", zh: "个股 Forward PE"}
+    description: {en: "Forward PE: price divided by analysts' expected earnings for the next 12 months. If it is lower than the TTM PE, the market expects earnings to grow. Source: Yahoo Finance via yfinance.", zh: "Forward PE：价格除以分析师预期的未来 12 个月盈利。如果低于 TTM 市盈率，说明市场预期盈利会增长。数据来源：通过 yfinance 取 Yahoo Finance。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "Forward PE 低于 TTM 说明市场预期盈利增长"
-      latest_value: "AAPL Forward PE 36.33（低于 TTM 39.88）"
-      source: "yfinance info"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: VAL-07
-    description: {en: "EV/EBITDA and PEG", zh: "EV/EBITDA 与 PEG"}
-    explanation: "另外两把估值尺子：企业价值/EBITDA，以及考虑增速的 PEG。"
-    default_weight: 2
+    name: {en: "EV/EBITDA and PEG", zh: "EV/EBITDA 与 PEG"}
+    description: {en: "Two more valuation yardsticks: EV/EBITDA (enterprise value, meaning market cap plus net debt, divided by EBITDA, earnings before interest, taxes, depreciation and amortization) and PEG (PE divided by earnings growth rate; about 1 is often seen as fair). Source: Yahoo Finance via yfinance; its PEG definition is not always consistent. Typical values: EV/EBITDA of 8 to 15 is common.", zh: "另外两把估值尺子：EV/EBITDA（企业价值即市值加净债务，除以 EBITDA 息税折旧摊销前利润）和 PEG（市盈率除以盈利增速，约等于 1 常被视为合理）。数据来源：通过 yfinance 取 Yahoo Finance；它的 PEG 口径并不总是一致。常见情形：EV/EBITDA 常见在 8–15。"}
+    weight: 2
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "EV/EBITDA 8–15 常见；PEG ≈ 1 合理（Lynch 经验，yfinance 的 PEG 口径不稳）"
-      latest_value: "AAPL EV/EBITDA 30.3，PEG 2.79"
-      source: "yfinance info"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: VAL-08
-    description: {en: "Free cash flow yield", zh: "自由现金流收益率"}
-    explanation: "自由现金流占市值的比例，相当于买下整家公司每年能拿回多少现金。"
-    default_weight: 4
+    name: {en: "FCF yield", zh: "自由现金流收益率"}
+    description: {en: "FCF (free cash flow) divided by market value: roughly how much cash you get back each year for buying the whole company. Above 5% is often seen as cheap, below 3% as expensive. Source: Yahoo Finance via yfinance, calculated.", zh: "FCF（自由现金流）除以市值，相当于买下整家公司每年能拿回多少现金。高于 5% 常被视为便宜，低于 3% 偏贵。数据来源：通过 yfinance 取 Yahoo Finance，自行计算。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "> 5% 偏便宜，< 3% 偏贵（经验）"
-      latest_value: "AAPL 2.12%"
-      source: "yfinance info 自算（FCF ÷ 市值）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: VAL-09
-    description: {en: "Safety margin: strike <= the price you are willing to buy at", zh: "安全边际：Strike <= 你愿意接盘的价格"}
-    explanation: "卖 Put 的行权价不能高于你自己愿意买入的价格，这是卖 Put 最核心的安全边际。"
-    default_weight: 5
+    name: {en: "Safety margin", zh: "安全边际"}
+    description: {en: "Passes when the strike of the put you sell is no higher than the price you would be happy to pay for the stock. This is the core safety margin of selling puts. Source: your own answer; no data feed.", zh: "你卖出的 Put 的行权价不高于你愿意买入这只股票的价格时通过，这是卖 Put 最核心的安全边际。数据来源：你自己的回答，没有数据源。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "user_answer"
     legacy_id: ["A16"]
-    review:
-      quantifiable: "是"
-      typical_range: "由你决定的价格"
-      latest_value: "取决于你填写的价格；AAPL 现价 347.73 可作对照"
-      source: "你的输入；现价来自 yfinance"
-      free_python: "否"
-      freshness: "即时"
   # SEN · Sentiment and positioning
   - rule_id: SEN-01
-    description: {en: "VIX level (15-25 full credit, 12-15 and 25-30 half)", zh: "VIX 水平（15-25 满分，12-15 与 25-30 半分）"}
-    explanation: "VIX 衡量市场预期的短期波动，也叫恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。"
-    default_weight: 5
+    name: {en: "VIX", zh: "VIX 恐慌指数"}
+    description: {en: "The VIX (Cboe Volatility Index) shows how much volatility the options market expects for the S&P 500 over the next 30 days; it is called the fear gauge. Too low and options pay little; too high and the market is panicking, so sellers must be careful. Source: Yahoo Finance symbol ^VIX via yfinance; delayed about 15 minutes during trading. Typical values: long-run average about 19 to 20; below 12 is complacent, 20 to 30 tense, above 30 panic, above 40 extreme (market convention).", zh: "VIX（Cboe 波动率指数）反映期权市场预期标普 500 未来 30 天的波动，俗称恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，盘中约延迟 15 分钟。常见情形：长期均值约 19–20；低于 12 自满，20–30 紧张，高于 30 恐慌，高于 40 极端（业界惯例）。"}
+    weight: 5
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "vix_level"
     bands: [{operator: "between", value: [15, 25], credit: 1.0}, {operator: "between", value: [12, 15], credit: 0.5}, {operator: "between", value: [25, 30], credit: 0.5}]
     legacy_id: ["A10", "A11", "T01", "D02"]
     note: {en: "Seller view. Buyer strategies (old D02) read VIX above 30 as extreme fear and override the credits", zh: "卖方视角。买方策略（旧 D02）把 VIX 高于 30 视为极度恐慌，需要覆盖分档"}
-    review:
-      quantifiable: "是"
-      typical_range: "长期均值约 19–20；< 12 自满，20–30 紧张，> 30 恐慌，> 40 极端（业界惯例）"
-      latest_value: "19.45（2026-10-23）；20 日均值 16.54；近 1 年分位 78% → 落在 15–25 满分档"
-      source: "yfinance ^VIX（已接入）"
-      free_python: "是"
-      freshness: "日更，盘中约 15 分钟延迟"
   - rule_id: SEN-02
-    description: {en: "VIX term structure in contango", zh: "VIX 期限结构为 contango"}
-    explanation: "VIX 期货曲线是正常向上（contango）还是倒挂（backwardation）。倒挂说明短期恐慌很重。"
-    default_weight: 4
+    name: {en: "VIX term structure", zh: "VIX 期限结构"}
+    description: {en: "Shape of the VIX futures curve. Contango means later months cost more, which is normal; backwardation means near months cost more, which signals strong short-term panic. Passes in contango. Source: Yahoo Finance ^VIX versus ^VIX3M (3-month VIX) via yfinance. Typical values: contango is the normal state most of the time. Updated daily.", zh: "VIX 期货曲线的形状。Contango（远月更贵）是常态；Backwardation（近月更贵）说明短期恐慌很重。处于 contango 时通过。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX 与 ^VIX3M（3 个月 VIX）。常见情形：多数时间处于 contango。每日更新。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "vix_term_structure_is_contango"
     operator: "is_true"
     legacy_id: ["Z19"]
-    review:
-      quantifiable: "是"
-      typical_range: "contango 为常态；backwardation 代表短期恐慌"
-      latest_value: "VIX 19.45 < VIX3M 20.48 → contango"
-      source: "yfinance ^VIX、^VIX3M（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: SEN-03
-    description: {en: "VXN level (Nasdaq-100 volatility), and VXN to VIX ratio", zh: "VXN 水平（纳指 100 波动率），及 VXN/VIX 比值"}
-    explanation: "纳指 100 的波动率指数。比 VIX 高得多时，说明科技股特别紧张。"
-    default_weight: 3
+    name: {en: "VXN", zh: "VXN 纳指波动率"}
+    description: {en: "VXN (Cboe Nasdaq-100 Volatility Index) is the VIX equivalent for the Nasdaq-100, and its ratio to VIX shows whether tech is under extra stress. VXN usually sits above VIX. Source: Yahoo Finance symbol ^VXN via yfinance. Typical values: the VXN to VIX ratio is often around 1.1 to 1.3 (rule of thumb, not verified). Updated daily.", zh: "VXN（Cboe 纳斯达克 100 波动率指数）是纳指 100 版本的 VIX，它与 VIX 的比值反映科技股是否格外紧张。VXN 通常高于 VIX。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VXN。常见情形：VXN 与 VIX 的比值常在 1.1–1.3 左右（经验，未核实）。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "vxn_level"
     note: {en: "Indicator exists; no bands yet", zh: "指标已有，暂无分档"}
-    review:
-      quantifiable: "是"
-      typical_range: "VXN 常高于 VIX；比值常见约 1.1–1.3（经验，未核实）"
-      latest_value: "VXN 28.30，VXN/VIX 1.46（偏高，科技股相对更紧张）"
-      source: "yfinance ^VXN（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: SEN-04
-    description: {en: "CNN Fear and Greed (< 25 full credit, < 45 three quarters, < 55 half)", zh: "CNN 恐惧贪婪（< 25 满分，< 45 七成半，< 55 半分）"}
-    explanation: "CNN 的 0–100 情绪指数，由多个指标合成。越低越恐惧，卖方有时把极度恐惧当作机会。"
-    default_weight: 3
+    name: {en: "Fear and Greed", zh: "恐惧贪婪指数"}
+    description: {en: "CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (needs Referer and Origin headers); it may change at any time. Updated daily, close to real time.", zh: "CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（需要 Referer 和 Origin 请求头），随时可能变化。每日更新，接近实时。"}
+    weight: 3
     kind: "script"
     acquisition: "scrape"
+    quantifiable: "yes"
     availability: "not_implemented"
     indicator: "fear_greed_index"
     bands: [{operator: "less_than", value: 25, credit: 1.0}, {operator: "less_than", value: 45, credit: 0.75}, {operator: "less_than", value: 55, credit: 0.5}]
     legacy_id: ["A08", "A09", "B02", "D02", "D03"]
     note: {en: "Contrarian seller view. Old D03 (FGI above 75) is the opposite direction and belongs to a bearish strategy", zh: "逆向的卖方视角。旧 D03（FGI 高于 75）方向相反，属于看空策略"}
-    review:
-      quantifiable: "是"
-      typical_range: "CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪"
-      latest_value: "20.98「extreme fear」（2026-10-23）；前收 19.81，1 周前 22.07，1 月前 32.54"
-      source: "CNN 非官方接口 production.dataviz.cnn.io；必须带 Referer 与 Origin，否则返回 418"
-      free_python: "部分"
-      freshness: "日更，近实时；接口随时可能变，不稳定"
   - rule_id: SEN-05
-    description: {en: "AAII retail bull/bear survey", zh: "AAII 散户多空问卷"}
-    explanation: "美国个人投资者协会每周问卷：散户看多、看空的比例。常被当作反向指标。"
-    default_weight: 2
+    name: {en: "AAII survey", zh: "AAII 散户问卷"}
+    description: {en: "The weekly survey of the AAII (American Association of Individual Investors) asking retail investors if they are bullish, bearish or neutral. It is often used as a contrarian signal: long-run averages are about 37.5% bullish, 31% bearish and 31.5% neutral. Source: aaii.com sentiment.xls, updated every Thursday; parsing needs the xlrd package.", zh: "AAII（美国个人投资者协会）每周问卷：问散户看多、看空还是中性，常被当作反向指标。长期平均大约是看多 37.5%、看空 31%、中性 31.5%。数据来源：aaii.com 的 sentiment.xls，每周四更新；解析需要 xlrd 包。"}
+    weight: 2
     kind: "script"
     acquisition: "scrape"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "历史均值：看多约 37.5%、看空约 31%、中性约 31.5%；任一方 > 50% 为极端"
-      latest_value: "未取到数值：xls 下载成功（1.3MB），需要安装 xlrd 才能解析"
-      source: "aaii.com/files/surveys/sentiment.xls（免费）"
-      free_python: "部分"
-      freshness: "周更（周四）"
   - rule_id: SEN-06
-    description: {en: "NAAIM active manager exposure index", zh: "NAAIM 主动经理人仓位指数"}
-    explanation: "主动型基金经理每周自报的股票仓位。仓位极高说明大家都很乐观，容易拥挤。"
-    default_weight: 2
+    name: {en: "NAAIM exposure", zh: "NAAIM 经理人仓位"}
+    description: {en: "The NAAIM (National Association of Active Investment Managers) Exposure Index: the average stock exposure reported weekly by active fund managers. It typically ranges from 0 to 100 (it can go below 0 or above 100); very high means everyone is bullish and the trade is crowded. Source: naaim.org, updated every Thursday; the number could not be scraped, so an AI reads the page.", zh: "NAAIM（美国主动投资经理协会）仓位指数：主动型基金经理每周自报的平均股票仓位，常见范围 0–100（也可能低于 0 或高于 100）。极高说明大家都很乐观、交易拥挤。数据来源：naaim.org，每周四更新；数字无法直接抓取，由 AI 读网页。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "yes"
     availability: "missing_data_source"
-    review:
-      quantifiable: "是"
-      typical_range: "范围约 −200 到 +200，常见 0–100；越高代表经理人仓位越重"
-      latest_value: "未取到数值：网页可打开，但没有找到可抓取的数字或下载链接"
-      source: "naaim.org 网页；需进一步确认下载链接"
-      free_python: "部分"
-      freshness: "周更（周四）"
   - rule_id: SEN-07
-    description: {en: "Put/call ratio", zh: "Put/Call 比率"}
-    explanation: "看跌期权与看涨期权的成交比例。太高说明恐慌，太低说明过度自满。"
-    default_weight: 2
+    name: {en: "Put/Call ratio", zh: "Put/Call 比率"}
+    description: {en: "Ratio of put option volume to call option volume. A high ratio means fear, a low one means complacency. The free Cboe file stopped in 2019, so it can only be estimated from option chains of individual stocks, not the whole market. Source: Yahoo Finance option chains via yfinance. Typical values: a total Cboe put/call ratio of 0.7 to 1.0 is common; above 1.1 is fear and below 0.6 complacency (rule of thumb).", zh: "看跌期权（Put）成交量与看涨期权（Call）成交量的比值。偏高说明恐慌，偏低说明自满。Cboe 的免费文件在 2019 年就停更了，现在只能用个股的期权链估算，做不到全市场。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：Cboe 总 Put/Call 比率 0.7–1.0 常见；高于 1.1 是恐慌，低于 0.6 是自满（经验）。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "missing_data_source"
-    review:
-      quantifiable: "是"
-      typical_range: "CBOE 总 Put/Call 0.7–1.0 常见；> 1.1 恐慌，< 0.6 自满（经验）"
-      latest_value: "CBOE 公开 CSV 只到 2019 年，Yahoo 的 ^CPC/^CPCE 无数据；没有免费的当前值"
-      source: "只能用 yfinance 期权链自算（个股层面可行，全市场需汇总）"
-      free_python: "部分"
-      freshness: "自算则取决于链的新鲜度"
   - rule_id: SEN-08
-    description: {en: "No IPO of $10B or more in the window", zh: "窗口内无 ≥ $10B 的大型 IPO"}
-    explanation: "市场上有没有超大型 IPO。大额新股会抽走资金，常出现在市场热度的高点。"
-    default_weight: 1
+    name: {en: "Mega IPO", zh: "超大型 IPO"}
+    description: {en: "Passes when no IPO (initial public offering, a company's first stock sale) of $10 billion or more is happening in the window. Huge new issues soak up cash and often appear near market peaks. Source: no free structured feed; an AI reads news or SEC S-1 filings (registration statements).", zh: "窗口内没有 ≥ $100 亿的 IPO（首次公开募股，公司第一次卖股票）时通过。超大额新股会抽走资金，常出现在市场热度的高点。数据来源：没有免费的结构化数据，由 AI 读新闻或 SEC 的 S-1 文件（注册声明）。"}
+    weight: 1
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "yes"
     availability: "missing_data_source"
     legacy_id: ["A05"]
-    review:
-      quantifiable: "是"
-      typical_range: "≥ $10B 的 IPO 一年只有寥寥几次"
-      latest_value: "无"
-      source: "无免费结构化源；需手工记录（SEC S-1、媒体）"
-      free_python: "否"
-      freshness: "事件驱动"
   - rule_id: SEN-09
-    description: {en: "Stock short interest", zh: "个股空头比例"}
-    explanation: "被卖空的股数占流通股的比例。过高说明有人大量看空，也可能引发逼空。"
-    default_weight: 2
+    name: {en: "Short interest", zh: "空头比例"}
+    description: {en: "Share of the stock's float (shares available to trade) that is sold short. A high figure means many people bet against it, and can also fuel a short squeeze (a sharp rise as shorts rush to buy back). Above 10% is high, above 20% very high. Source: Yahoo Finance via yfinance; FINRA (the US broker regulator) publishes the files twice a month.", zh: "被卖空的股数占流通股（可交易股数）的比例。偏高说明很多人在看空，也可能引发逼空（空头抢着回补导致股价急涨）。高于 10% 偏高，高于 20% 很高。数据来源：通过 yfinance 取 Yahoo Finance；FINRA（美国券商监管机构）每月公布两次文件。"}
+    weight: 2
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "> 10% 偏高，> 20% 很高（经验）"
-      latest_value: "AAPL 空头占流通股 0.83%"
-      source: "yfinance info；FINRA 双周 CSV（2026-09-30 可下，10-15 尚未发布）"
-      free_python: "是"
-      freshness: "双周更，滞后 1–2 周"
   # TRD · Trend and momentum
   - rule_id: TRD-01
-    description: {en: "SPX > 200-day average", zh: "标普 500 > 200 日线"}
-    explanation: "标普 500 是否站在 200 日均线上方，用来判断大盘是处于上升还是下降趋势。"
-    default_weight: 5
+    name: {en: "Market above 200-day", zh: "大盘在 200 日线上"}
+    description: {en: "Passes when the S&P 500 closes above its 200-day moving average (the average close of the last 200 days), which marks an uptrend for the whole market. Source: Yahoo Finance symbol ^GSPC via yfinance, already wired in.", zh: "标普 500 收盘价在 200 日均线（最近 200 天收盘价的平均值）之上时通过，表示整个市场处于上升趋势。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC，已接入。"}
+    weight: 5
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "spx_above_two_hundred_day_average"
     operator: "is_true"
     legacy_id: ["Z18"]
-    review:
-      quantifiable: "是"
-      typical_range: "站上 200 日线＝多头趋势（Faber 2007 用 10 个月均线）"
-      latest_value: "标普 7623.7 > 200 日线 7291.3 → 通过"
-      source: "yfinance ^GSPC（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-02
-    description: {en: "Market breadth (share of stocks above their 200-day average, new highs minus new lows)", zh: "市场广度（站上 200 日线的股票占比、新高减新低）"}
-    explanation: "大盘里有多少股票站在 200 日线上方。指数涨但上涨的股票变少，说明行情变窄。"
-    default_weight: 3
+    name: {en: "Market breadth", zh: "市场广度"}
+    description: {en: "How many stocks are above their own 200-day average, and new 52-week highs minus lows. If the index rises while fewer stocks join, the rally is narrow. Needs prices for all 500 S&P 500 stocks. Source: Yahoo Finance via yfinance, calculated; Yahoo has no ready-made breadth index. Typical values: more than 60% of stocks above their 200-day average is strong, less than 40% weak (rule of thumb). Updated daily.", zh: "有多少股票站在自己的 200 日均线之上，以及 52 周新高减新低的数量。指数上涨但参与的股票变少，说明行情偏窄。需要标普 500 全部 500 只股票的价格。数据来源：通过 yfinance 取 Yahoo Finance 后自行计算，Yahoo 没有现成的广度指数。常见情形：超过 60% 的股票站上 200 日线算强，低于 40% 算弱（经验）。每日更新。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "站上 200 日线的股票 > 60% 偏强，< 40% 偏弱（经验）"
-      latest_value: "未算"
-      source: "Yahoo 没有现成广度指数；需下载标普 500 成分股价格自算（约 500 个标的，数分钟）"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: TRD-03
-    description: {en: "Stock > 200-day average", zh: "个股 > 200 日线"}
-    explanation: "这只股票是否站在自己的 200 日线上方。卖 Put 不去接下跌趋势里的股票。"
-    default_weight: 5
+    name: {en: "Stock above 200-day", zh: "个股在 200 日线上"}
+    description: {en: "Passes when the stock closes above its own 200-day average. Selling puts on stocks in a downtrend means catching a falling knife. Source: Yahoo Finance via yfinance, already wired in. The original rule also asked for no new 52-week low; that half is not built.", zh: "这只股票收盘价在自己的 200 日均线之上时通过。去给下跌趋势里的股票卖 Put，等于接下坠的飞刀。数据来源：通过 yfinance 取 Yahoo Finance，已接入。原规则还要求没有创 52 周新低，这一半尚未实现。"}
+    weight: 5
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "price_above_two_hundred_day_average"
     operator: "is_true"
     legacy_id: ["Z20"]
     note: {en: "The original rule also requires no new 52-week low; that part is not built yet", zh: "原规则还要求未创 52 周新低，这部分尚未实现"}
-    review:
-      quantifiable: "是"
-      typical_range: "价格 > 200 日线"
-      latest_value: "AAPL 347.73 > 294.11 → 通过"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-04
-    description: {en: "50-day average > 200-day average (golden cross state)", zh: "50 日线 > 200 日线（黄金交叉状态）"}
-    explanation: "50 日均线是否在 200 日均线之上（黄金交叉状态），是最常见的趋势确认。"
-    default_weight: 4
+    name: {en: "Golden cross state", zh: "黄金交叉状态"}
+    description: {en: "Passes when the 50-day moving average is above the 200-day moving average, called the golden cross state, the most common trend confirmation. Source: Yahoo Finance via yfinance, already wired in.", zh: "50 日均线在 200 日均线之上时通过，称为黄金交叉状态，是最常见的趋势确认。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "fifty_day_average_above_two_hundred_day_average"
     operator: "is_true"
     legacy_id: ["T02"]
-    review:
-      quantifiable: "是"
-      typical_range: "50 日线 > 200 日线＝黄金交叉状态"
-      latest_value: "AAPL 50 日线 329.47 > 200 日线 294.11 → 通过"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-05
-    description: {en: "Close > 50-day average", zh: "收盘价 > 50 日线"}
-    explanation: "收盘价是否在 50 日均线之上，反映中期走势是否健康。"
-    default_weight: 3
+    name: {en: "Above 50-day", zh: "在 50 日线上"}
+    description: {en: "Passes when the close is above the 50-day average, showing the medium-term trend is healthy. Source: Yahoo Finance via yfinance, already wired in.", zh: "收盘价在 50 日均线之上时通过，说明中期走势健康。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "price_above_fifty_day_average"
     operator: "is_true"
     legacy_id: ["T03"]
-    review:
-      quantifiable: "是"
-      typical_range: "价格 > 50 日线"
-      latest_value: "AAPL 347.73 > 329.47 → 通过"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-06
-    description: {en: "Distance from the 52-week high (<= 5% full credit, <= 15% half)", zh: "距 52 周高点（<= 5% 满分，<= 15% 半分）"}
-    explanation: "离 52 周最高价有多远。越近说明越强，突破新高时上方没有套牢盘。"
-    default_weight: 4
+    name: {en: "Near 52-week high", zh: "接近 52 周高点"}
+    description: {en: "How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, already wired in. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio).", zh: "价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "distance_from_fifty_two_week_high_percent"
     bands: [{operator: "less_or_equal", value: 5, credit: 1.0}, {operator: "less_or_equal", value: 15, credit: 0.5}]
     legacy_id: ["M02", "T05"]
-    review:
-      quantifiable: "是"
-      typical_range: "≤ 5% 近新高，≤ 15% 仍在强势区（经验；George & Hwang 2004 用 52 周高点比）"
-      latest_value: "AAPL 距 52 周高点 0.1% → 满分档"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-07
-    description: {en: "52-week range position (<= 25 full credit, <= 50 half)", zh: "52 周区间分位（<= 25 满分，<= 50 半分）"}
-    explanation: "当前价格在过去一年高低区间中的位置。位置低对 Wheel 策略更友好，位置高对动量策略更友好。"
-    default_weight: 3
+    name: {en: "52-week range position", zh: "52 周区间位置"}
+    description: {en: "Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance, already wired in.", zh: "价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "fifty_two_week_range_percentile"
     bands: [{operator: "less_or_equal", value: 25, credit: 1.0}, {operator: "less_or_equal", value: 50, credit: 0.5}]
     legacy_id: ["F02", "F03"]
     note: {en: "Low zone is the Wheel view; momentum strategies want the opposite and use TRD-06", zh: "低位是 Wheel 的视角；动量策略方向相反，用 TRD-06"}
-    review:
-      quantifiable: "是"
-      typical_range: "Wheel 偏好低位；动量策略方向相反"
-      latest_value: "AAPL 接近区间顶部（距高点 0.1%），分位未单独算"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-08
-    description: {en: "6-month gain > 10%", zh: "6 个月涨幅 > 10%"}
-    explanation: "最近 6 个月涨了多少。涨得好的股票往往短期内继续跑赢（动量效应）。"
-    default_weight: 4
+    name: {en: "6-month gain", zh: "6 个月涨幅"}
+    description: {en: "Passes when the stock is up more than 10% over the last 6 months. Winners tend to keep winning for a while (momentum effect). Source: Yahoo Finance via yfinance, already wired in. Typical values: above 10% is a common line; academic momentum uses 3 to 12 months (Jegadeesh and Titman 1993).", zh: "股票最近 6 个月涨幅超过 10% 时通过。涨得好的股票往往会在一段时间内继续跑赢（动量效应）。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：10% 是常用线；学术上的动量用 3–12 个月（Jegadeesh 与 Titman 1993）。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "return_six_month_percent"
     operator: "greater_than"
     value: 10
     legacy_id: ["M01"]
-    review:
-      quantifiable: "是"
-      typical_range: "> 10% 常用；学术动量用 3–12 个月（Jegadeesh & Titman 1993）"
-      latest_value: "AAPL 6 个月 +30.2% → 通过"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-09
-    description: {en: "Stock relative strength against SPY or its sector", zh: "个股相对 SPY 或行业的强弱"}
-    explanation: "这只股票最近跑赢还是跑输大盘或同行业。"
-    default_weight: 3
+    name: {en: "Relative strength", zh: "相对强弱"}
+    description: {en: "Whether the stock has beaten or lagged the market (SPY, the S&P 500 fund) or its sector over recent months. Source: Yahoo Finance via yfinance, calculated.", zh: "这只股票最近几个月跑赢还是跑输大盘（SPY，标普 500 基金）或所在板块。数据来源：通过 yfinance 取 Yahoo Finance，自行计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "个股 6 个月收益减 SPY > 0 为强"
-      latest_value: "AAPL 6 个月 +30.2%；SPY 本次未算"
-      source: "yfinance 自算"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-10
-    description: {en: "Volume >= 1.5 × 20-day average (higher volume)", zh: "成交量 >= 20 日均量 × 1.5（放量）"}
-    explanation: "最近一天成交量相对 20 日均量的倍数。放量突破比缩量突破更可信。"
-    default_weight: 3
+    name: {en: "Volume surge", zh: "放量"}
+    description: {en: "Passes when the latest day's volume is at least 1.5 times the 20-day average volume. A breakout on heavy volume is more believable than one on thin volume. Source: Yahoo Finance via yfinance, already wired in.", zh: "最近一天的成交量至少是 20 日平均成交量的 1.5 倍时通过。放量突破比缩量突破更可信。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "volume_ratio_to_twenty_day_average"
     operator: "greater_or_equal"
     value: 1.5
     legacy_id: ["M03"]
-    review:
-      quantifiable: "是"
-      typical_range: "≥ 1.5 倍 20 日均量算放量"
-      latest_value: "AAPL 量比 1.04 → 不通过"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-11
-    description: {en: "RSI(14) (40-70 full credit healthy trend, 70-80 half)", zh: "RSI(14)（40-70 满分趋势健康，70-80 半分）"}
-    explanation: "RSI(14) 衡量近期涨跌力度。太高是超买，太低是弱势，中间区间代表趋势健康。"
-    default_weight: 3
+    name: {en: "RSI(14)", zh: "RSI(14)"}
+    description: {en: "RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, already wired in.", zh: "14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "relative_strength_index_fourteen_day"
     bands: [{operator: "between", value: [40, 70], credit: 1.0}, {operator: "between", value: [70, 80], credit: 0.5}]
     legacy_id: ["T04", "M04"]
-    review:
-      quantifiable: "是"
-      typical_range: "Wilder 惯例 70 以上超买、30 以下超卖；40–70 视为健康趋势"
-      latest_value: "AAPL RSI(14) 63.9 → 满分档"
-      source: "yfinance 自算（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-12
-    description: {en: "RSI(2) oversold (< 5 full credit, < 10 three quarters)", zh: "RSI(2) 超卖（< 5 满分，< 10 七成半）"}
-    explanation: "2 日 RSI 非常敏感，低于 10 说明短期跌过头，是均值回归策略的买点。"
-    default_weight: 4
+    name: {en: "RSI(2) oversold", zh: "RSI(2) 超卖"}
+    description: {en: "RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, already wired in.", zh: "只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "relative_strength_index_two_day"
     bands: [{operator: "less_than", value: 5, credit: 1.0}, {operator: "less_than", value: 10, credit: 0.75}]
     legacy_id: ["R01", "R02"]
-    review:
-      quantifiable: "是"
-      typical_range: "Connors：RSI(2) < 10 超卖，> 90 超买"
-      latest_value: "AAPL RSI(2) 77.3 → 不超卖"
-      source: "yfinance 自算（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-13
-    description: {en: "Close < 5-day average (in a short-term pullback)", zh: "收盘价 < 5 日线（短期回调中）"}
-    explanation: "收盘价是否跌到 5 日线下方，用来确认正处于短期回调中。"
-    default_weight: 3
+    name: {en: "Below 5-day", zh: "跌破 5 日线"}
+    description: {en: "Passes when the close is below the 5-day average, confirming a short-term pullback is under way. Source: Yahoo Finance via yfinance, already wired in.", zh: "收盘价低于 5 日均线时通过，确认正处于短期回调中。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "price_below_five_day_average"
     operator: "is_true"
     legacy_id: ["R03"]
-    review:
-      quantifiable: "是"
-      typical_range: "收盘低于 5 日线＝短期回调"
-      latest_value: "AAPL 未单独算；RSI(2) 77 说明大概率在 5 日线上方"
-      source: "yfinance（已接入）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-14
-    description: {en: "Price within 3% of the nearest support", zh: "现价距最近支撑 <= 3%"}
-    explanation: "股价离最近的支撑位有多近。靠近支撑位时，下跌空间更有限。"
-    default_weight: 3
+    name: {en: "Near support", zh: "靠近支撑位"}
+    description: {en: "Passes when the price is within 3% of the nearest support, a price level where buyers have stepped in before. Near support the downside is more limited. Support is subjective; approximate it with recent lows, the 200-day average or round numbers. Source: Yahoo Finance via yfinance, calculated.", zh: "价格距最近支撑位不超过 3% 时通过。支撑位是之前有买盘接住的价格水平，靠近支撑位时下跌空间更有限。支撑位比较主观，可以用近期低点、200 日均线或整数关口近似。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "part"
     availability: "not_implemented"
     legacy_id: ["B06", "F04"]
-    review:
-      quantifiable: "部分"
-      typical_range: "支撑位定义主观，没有通用数值；可用近 N 日低点、200 日线、整数关口近似"
-      latest_value: "未算"
-      source: "yfinance 价格自算"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: TRD-15
-    description: {en: "ATR and typical daily price range", zh: "ATR 与日常价格波动幅度"}
-    explanation: "股票平均每天波动多大，用来判断止损距离和风险大小。"
-    default_weight: 2
+    name: {en: "ATR", zh: "ATR 日波动"}
+    description: {en: "ATR (Average True Range) over 14 days as a share of price: how much the stock normally moves in a day. Used to set stop distance and judge risk. Large blue chips are usually about 1% to 3%. Source: Yahoo Finance via yfinance, calculated.", zh: "14 日 ATR（平均真实波幅）占价格的比例：这只股票平时一天大概波动多少，用来设置止损距离、判断风险。大型蓝筹股通常在 1%–3%。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "ATR(14) 占价格 1%–3% 是大盘蓝筹的常见范围（经验）"
-      latest_value: "AAPL ATR(14) 占价格 1.78%"
-      source: "yfinance 自算"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: TRD-16
-    description: {en: "The symbol is in SPMO's holdings (largest, or top 20)", zh: "标的在 SPMO 持仓中（最大一只，或前 20）"}
-    explanation: "这只股票是否在 SPMO 的持仓里。SPMO 是按动量选股的 ETF，持仓可视为一份动量榜单。"
-    default_weight: 3
+    name: {en: "SPMO holding", zh: "SPMO 持仓"}
+    description: {en: "Whether the stock is held by SPMO (the Invesco S&P 500 Momentum ETF), which picks momentum stocks and rebalances every March and September, so its holdings work as a momentum list. The rule asks for the largest holding or the top 20. Source: Invesco's website holdings file; yfinance only gives the top 10.", zh: "这只股票是否被 SPMO（景顺标普 500 动量 ETF）持有。SPMO 按动量选股，每年 3 月和 9 月换仓，所以它的持仓可以当作一份动量名单。规则要求是最大一只或前 20 名。数据来源：景顺官网的持仓文件；yfinance 只给前 10 名。"}
+    weight: 3
     kind: "script"
     acquisition: "scrape"
+    quantifiable: "yes"
     availability: "missing_data_source"
     legacy_id: ["C03", "C05"]
     note: {en: "Depends on an external holdings list", zh: "依赖外部持仓名单"}
-    review:
-      quantifiable: "是"
-      typical_range: "SPMO 前 20 大持仓；每年 3 月、9 月再平衡"
-      latest_value: "前三大：MU 9.5%、AAPL 9.0%、AMD 5.6%（yfinance 只给前 10 名）"
-      source: "完整名单需 Invesco 官网下载；yfinance funds_data 只有前 10"
-      free_python: "部分"
-      freshness: "月更；再平衡后变化"
   # EVT · Events
   - rule_id: EVT-01
-    description: {en: "No earnings before expiration", zh: "到期前无财报"}
-    explanation: "期权到期前是否有财报。财报会让股价跳空，是卖方最常见的否决项。"
-    default_weight: 5
+    name: {en: "No earnings", zh: "无财报"}
+    description: {en: "Passes when there is no earnings report before the option expires. Earnings make the stock gap up or down, the most common veto for option sellers. Source: Yahoo Finance via yfinance calendar, already wired in; the date is an estimate until the company confirms it.", zh: "期权到期前没有财报时通过。财报会让股价跳空，是期权卖方最常见的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的财报日历，已接入；公司确认之前日期只是估计。"}
+    weight: 5
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "no_earnings_before_expiration"
     operator: "is_true"
     legacy_id: ["A22", "F05"]
-    review:
-      quantifiable: "是"
-      typical_range: "到期日前不要有财报"
-      latest_value: "AAPL 下次财报 2026-11-02（yfinance 日历，公司确认前是估计日期）"
-      source: "yfinance calendar（已接入）"
-      free_python: "是"
-      freshness: "日更；估计日期可能变"
   - rule_id: EVT-02
-    description: {en: "No FOMC decision inside the DTE window", zh: "DTE 窗口内无 FOMC 决议日"}
-    explanation: "期权存续期内是否有美联储议息会议。会议前后波动会放大。"
-    default_weight: 3
+    name: {en: "No FOMC", zh: "无 FOMC"}
+    description: {en: "Passes when no FOMC (Federal Open Market Committee, the Fed committee that sets US interest rates) meeting falls inside the option's life. Volatility rises around the meeting. Source: the Fed's published calendar at federalreserve.gov; today kept by hand in config/settings.yaml.", zh: "期权存续期内没有 FOMC（联邦公开市场委员会，美联储负责定利率的委员会）会议时通过。会议前后波动会放大。数据来源：美联储官网 federalreserve.gov 公布的日程；目前手工维护在 config/settings.yaml 里。"}
+    weight: 3
     kind: "script"
     acquisition: "scrape"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["F06"]
-    review:
-      quantifiable: "是"
-      typical_range: "每年 8 次，日期提前一年公布"
-      latest_value: "未取日期；联储日程页可抓取（HTTP 200）"
-      source: "federalreserve.gov 日程页；项目现为手工维护在 settings.yaml"
-      free_python: "部分"
-      freshness: "年更"
   - rule_id: EVT-03
-    description: {en: "No CPI or PCE inside the DTE window, and no new position on release days", zh: "DTE 窗口内无 CPI、PCE，且不在公布日开仓"}
-    explanation: "期权存续期内是否有 CPI、PCE 通胀数据公布。数据日波动较大。"
-    default_weight: 2
+    name: {en: "No CPI/PCE", zh: "无 CPI/PCE"}
+    description: {en: "Passes when no CPI (Consumer Price Index) or PCE (Personal Consumption Expenditures price index) inflation release falls inside the option's life, and no new position is opened on a release day. Release days move markets. Source: BLS (US Bureau of Labor Statistics) and BEA (Bureau of Economic Analysis) calendars; the BLS page blocks scripts, so an AI reads it.", zh: "期权存续期内没有 CPI（消费者物价指数）或 PCE（个人消费支出物价指数）通胀数据公布，并且不在公布日开新仓时通过。公布日市场波动较大。数据来源：BLS（美国劳工统计局）和 BEA（经济分析局）的日程；BLS 网页拦截脚本，由 AI 读取。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["F07", "Z14"]
-    review:
-      quantifiable: "是"
-      typical_range: "CPI、PCE 每月一次，日期提前公布"
-      latest_value: "未取日期"
-      source: "BLS 日程页对脚本返回 403；可手工维护，或用 FRED release calendar（需 key）"
-      free_python: "部分"
-      freshness: "年更"
   - rule_id: EVT-04
-    description: {en: "No election day inside the DTE window", zh: "DTE 窗口内无选举日"}
-    explanation: "存续期内是否有选举日。选举前后市场不确定性上升。"
-    default_weight: 1
+    name: {en: "No election", zh: "无选举日"}
+    description: {en: "Passes when no election day falls inside the option's life. Uncertainty rises around elections. Source: fixed dates, entered by hand.", zh: "期权存续期内没有选举日时通过。选举前后市场不确定性上升。数据来源：日期固定，手工录入。"}
+    weight: 1
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["F07"]
-    review:
-      quantifiable: "是"
-      typical_range: "固定日期"
-      latest_value: "无"
-      source: "手工录入"
-      free_python: "是"
-      freshness: "一次性"
   - rule_id: EVT-05
-    description: {en: "No new position within 1 day of the jobs report", zh: "不在非农数据前后 1 天开仓"}
-    explanation: "非农就业数据公布前后一天先不开仓，避免数据带来的跳空。"
-    default_weight: 2
+    name: {en: "No jobs report", zh: "避开非农"}
+    description: {en: "Do not open a new position within 1 day of the monthly jobs report (nonfarm payrolls, the number of jobs added, usually released on the first Friday of the month). Surprises cause gaps. Source: BLS schedule; the page blocks scripts, so dates are derived by rule and corrected by hand.", zh: "不在月度非农就业报告（新增非农就业人数，通常在每月第一个周五公布）前后 1 天开新仓。数据意外会引起跳空。数据来源：BLS 日程；网页拦截脚本，所以按规则推算日期再手工校正。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["Z13"]
-    review:
-      quantifiable: "是"
-      typical_range: "非农多在每月第一个周五（节假日会调整）"
-      latest_value: "未取日期"
-      source: "BLS 日程页 403；可按规则推算再手工校正"
-      free_python: "部分"
-      freshness: "年更"
   - rule_id: EVT-06
-    description: {en: "No ex-dividend date in the window", zh: "窗口内无除息日"}
-    explanation: "存续期内是否有除息日。卖 Covered Call 时，除息前有被提前行权的风险。"
-    default_weight: 3
+    name: {en: "No ex-dividend", zh: "无除息日"}
+    description: {en: "Passes when no ex-dividend date (the first day the stock trades without its next dividend) falls inside the window. When selling covered calls, there is a risk of early assignment just before it. Source: Yahoo Finance via yfinance calendar and dividends.", zh: "窗口内没有除息日（股票不再包含下一次分红的第一天）时通过。卖 Covered Call 时，除息前有被提前行权的风险。数据来源：通过 yfinance 取 Yahoo Finance 的日历和分红记录。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["Z08"]
-    review:
-      quantifiable: "是"
-      typical_range: "卖 Covered Call 要避开除息日前后（提前行权风险）"
-      latest_value: "AAPL 除息日 2026-08-09（上一次）"
-      source: "yfinance calendar、dividends"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: EVT-07
-    description: {en: "No tariff or policy deadline in the window", zh: "窗口内无关税或政策截止日"}
-    explanation: "是否临近关税或政策截止日。这类日期前后容易出现政策消息的冲击。"
-    default_weight: 2
+    name: {en: "No tariff deadline", zh: "无关税截止日"}
+    description: {en: "Passes when no tariff or policy deadline is close. Policy news around such dates can shock markets. Dates can be entered by hand; there is no structured feed, so an AI reads the news.", zh: "没有临近的关税或政策截止日时通过。这类日期前后的政策消息容易冲击市场。日期可以手工录入；没有结构化数据，由 AI 读新闻。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "part"
     availability: "missing_data_source"
     legacy_id: ["Z09"]
-    review:
-      quantifiable: "部分"
-      typical_range: "日期可手工录入；无标准数值"
-      latest_value: "无"
-      source: "无结构化源，靠新闻与手工记录"
-      free_python: "否"
-      freshness: "事件驱动"
   - rule_id: EVT-08
-    description: {en: "No escalating geopolitical conflict", zh: "没有正在升级的地缘冲突"}
-    explanation: "是否有正在升级的地缘冲突，会引发市场整体风险偏好下降。"
-    default_weight: 2
+    name: {en: "No geopolitical escalation", zh: "无地缘冲突升级"}
+    description: {en: "Passes when there is no escalating geopolitical conflict, which lowers risk appetite across the market. No standard threshold; the GPR (Geopolitical Risk Index by Caldara and Iacoviello) percentile can serve as a proxy. Source: matteoiacoviello.com GPR data, an Excel file that needs the xlrd package.", zh: "没有正在升级的地缘冲突时通过。地缘冲突会拉低整个市场的风险偏好。没有标准阈值，可以用 GPR（Caldara 和 Iacoviello 编制的地缘政治风险指数）的历史分位做代理。数据来源：matteoiacoviello.com 的 GPR 数据，是 Excel 文件，需要 xlrd 包解析。"}
+    weight: 2
     kind: "script"
     acquisition: "scrape"
+    quantifiable: "part"
     availability: "missing_data_source"
     legacy_id: ["Z10"]
-    review:
-      quantifiable: "部分"
-      typical_range: "无通用阈值；可用地缘政治风险指数（Caldara–Iacoviello GPR）的历史分位做代理"
-      latest_value: "GPR 数据可下载（xls 2.7MB），未解析"
-      source: "matteoiacoviello.com 的 GPR 数据；需 xlrd"
-      free_python: "部分"
-      freshness: "月更/日更"
   - rule_id: EVT-09
-    description: {en: "No pending industry regulation or export control event", zh: "没有待决的行业监管或出口管制事件"}
-    explanation: "行业是否有待决的监管或出口管制事件，可能一次性冲击整个行业。"
-    default_weight: 3
+    name: {en: "No regulation event", zh: "无监管事件"}
+    description: {en: "Passes when no industry regulation or export control decision is pending; one decision can hit a whole industry at once. No numbers exist, so events must be spotted from news by an AI.", zh: "没有待决的行业监管或出口管制事件时通过。一项决定可能一次性冲击整个行业。没有数值，需要由 AI 从新闻里识别事件。"}
+    weight: 3
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "no"
     availability: "missing_data_source"
     legacy_id: ["Z11"]
-    review:
-      quantifiable: "否"
-      typical_range: "无数值；靠事件识别"
-      latest_value: "无"
-      source: "无结构化源"
-      free_python: "否"
-      freshness: "事件驱动"
   - rule_id: EVT-10
-    description: {en: "No earnings from industry leaders in the window", zh: "同业龙头财报不在窗口内"}
-    explanation: "同行业龙头的财报日。龙头财报会带动整个板块，需要一起避开。"
-    default_weight: 2
+    name: {en: "Industry leader earnings", zh: "同业龙头财报"}
+    description: {en: "Avoid the earnings dates of the industry leader, since its report moves the whole sector. You first need to define the leader for each stock. Source: Yahoo Finance via yfinance calendar.", zh: "避开同行业龙头的财报日，因为龙头的财报会带动整个板块。需要先给每只股票定义谁是龙头。数据来源：通过 yfinance 取 Yahoo Finance 的财报日历。"}
+    weight: 2
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["Z15"]
-    review:
-      quantifiable: "是"
-      typical_range: "同业龙头财报日"
-      latest_value: "无"
-      source: "yfinance calendar；需先建立龙头清单"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: EVT-11
-    description: {en: "No earnings from major customers or suppliers in the window", zh: "大客户或上下游财报不在窗口内"}
-    explanation: "主要客户或供应商的财报日，会连带影响这家公司。"
-    default_weight: 2
+    name: {en: "Customer and supplier earnings", zh: "客户与供应商财报"}
+    description: {en: "Avoid the earnings dates of major customers and suppliers, which spill over to this company. The customer and supplier map has to be built by hand or by an AI; dates then come from the Yahoo Finance calendar via yfinance.", zh: "避开主要客户和供应商的财报日，这些财报会连带影响这家公司。客户和供应商关系表需要手工或由 AI 建立，日期再从 yfinance 取 Yahoo Finance 的日历。"}
+    weight: 2
     kind: "script"
     acquisition: "ai_search"
+    quantifiable: "part"
     availability: "missing_data_source"
     legacy_id: ["Z16"]
-    review:
-      quantifiable: "部分"
-      typical_range: "大客户或上下游财报日"
-      latest_value: "无"
-      source: "yfinance calendar；供应链映射要手工建立"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: EVT-12
-    description: {en: "Now is the March or September SPMO rebalance window", zh: "现在处于 3 月或 9 月 SPMO 换仓窗口"}
-    explanation: "是否处于 SPMO 每年 3 月、9 月的换仓窗口，只用于动量轮动策略。"
-    default_weight: 1
+    name: {en: "SPMO rebalance window", zh: "SPMO 换仓窗口"}
+    description: {en: "True when now is the March or September rebalance window of SPMO (the Invesco S&P 500 Momentum ETF), the time the momentum rotation strategy trades. Source: a fixed date rule.", zh: "现在处于 SPMO（景顺标普 500 动量 ETF）3 月或 9 月的换仓窗口时为真，这是动量轮动策略的交易时点。数据来源：固定的日期规则。"}
+    weight: 1
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["C01"]
-    review:
-      quantifiable: "是"
-      typical_range: "SPMO 每年 3 月、9 月再平衡"
-      latest_value: "距下一次（2027 年 3 月）还有数月"
-      source: "日期规则"
-      free_python: "是"
-      freshness: "一次性"
   - rule_id: EVT-13
-    description: {en: "Expiration calendar effects (monthly expiration, quadruple witching)", zh: "到期日历效应（月度到期、四巫日）"}
-    explanation: "月度到期日、四巫日前后，期权成交和价格波动较特殊，需要留意。"
-    default_weight: 1
+    name: {en: "Expiration calendar", zh: "到期日历"}
+    description: {en: "Calendar effects around option expiration: the monthly expiration is the third Friday, and quadruple witching (stock options, index options and futures all expire) falls on the third Friday of March, June, September and December. Trading and prices behave oddly then. Source: computed from the calendar.", zh: "期权到期前后的日历效应：月度到期日是每月第三个周五，四巫日（个股期权、指数期权和期货同时到期）是 3、6、9、12 月的第三个周五。这些日子的成交和价格会比较特殊。数据来源：由日历计算。"}
+    weight: 1
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "每月第三个周五是月度到期；3、6、9、12 月是四巫日"
-      latest_value: "下一次月度到期 2026-11-20（第三个周五）"
-      source: "日期算法"
-      free_python: "是"
-      freshness: "一次性"
   # LIQ · Liquidity
   - rule_id: LIQ-01
-    description: {en: "Market value > $200B", zh: "市值 > $200B"}
-    explanation: "公司市值是否够大。大公司流动性好，被极端行情冲击的风险较小。"
-    default_weight: 3
+    name: {en: "Market cap", zh: "市值"}
+    description: {en: "Passes when market capitalization (share price times shares outstanding) is above $200 billion. Big companies trade freely and are less likely to be hit by extreme moves. Source: Yahoo Finance via yfinance.", zh: "市值（股价乘以总股数）超过 $2,000 亿时通过。大公司交易顺畅，不容易被极端行情冲击。数据来源：通过 yfinance 取 Yahoo Finance。"}
+    weight: 3
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["E02"]
-    review:
-      quantifiable: "是"
-      typical_range: "> $200B（作者设）"
-      latest_value: "AAPL 市值 $5,075B"
-      source: "yfinance info"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: LIQ-02
-    description: {en: "Top 100 by market value or trading value", zh: "市值或成交额前 100"}
-    explanation: "是否在市值或成交额最大的前 100 只股票里。"
-    default_weight: 3
+    name: {en: "Top 100", zh: "前 100 大"}
+    description: {en: "Passes when the stock is among the 100 largest by market value or by trading value. Needs the S&P 500 or Nasdaq-100 member list and a market cap for each. Source: Yahoo Finance via yfinance.", zh: "股票属于市值或成交额最大的前 100 只时通过。需要标普 500 或纳指 100 的成分股名单和每只股票的市值。数据来源：通过 yfinance 取 Yahoo Finance。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["D01"]
-    review:
-      quantifiable: "是"
-      typical_range: "市值或成交额前 100"
-      latest_value: "未算"
-      source: "需成分股清单＋逐个取市值，yfinance 可做"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: LIQ-03
-    description: {en: "Stock average daily trading value", zh: "股票日均成交额"}
-    explanation: "每天平均成交多少钱。成交越活跃，进出越容易。"
-    default_weight: 3
+    name: {en: "Daily trading value", zh: "日均成交额"}
+    description: {en: "Average money traded in the stock per day (average volume times price). The more active it is, the easier it is to get in and out. Above about $50 million to $100 million a day is enough for an option seller. Source: Yahoo Finance via yfinance.", zh: "这只股票平均每天成交多少钱（平均成交量乘以价格）。越活跃，进出越容易。对期权卖方来说，每天超过约 $5,000 万到 $1 亿通常够用。数据来源：通过 yfinance 取 Yahoo Finance。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "日均成交额 > $50M–$100M 对期权卖方够用（经验）"
-      latest_value: "AAPL 日均约 $15.3B"
-      source: "yfinance info（均量×现价）"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: LIQ-04
-    description: {en: "Bid-ask spread <= 5% of the mid price", zh: "买卖价差 <= 中间价 5%"}
-    explanation: "期权买卖报价的差距占中间价的比例。差距越大，实际成交成本越高。"
-    default_weight: 4
+    name: {en: "Bid-ask spread", zh: "买卖价差"}
+    description: {en: "Passes when the bid-ask spread (the gap between the best buy and sell quotes) is at most 5% of the mid price (the average of the two). A wide spread means a high real trading cost. For cheap options also check the dollar gap. Source: Yahoo Finance option chain via yfinance; bid and ask are often 0 when the market is closed.", zh: "买卖价差（最优买价与卖价的差距）不超过中间价（两者的平均）的 5% 时通过。价差越大，实际成交成本越高；便宜的期权还要看绝对金额的差距。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；休市时买价和卖价常为 0。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["Z06"]
-    review:
-      quantifiable: "是"
-      typical_range: "价差 ≤ 中间价 5%–10%；低价合约比例失真，应同时看绝对价差 ≤ $0.05–0.10（经验）"
-      latest_value: "AAPL 2026-11-27 到期、约 95% 行权价 Put：价差 9.3% → 不通过"
-      source: "yfinance 期权链（休市时 bid/ask 常为 0）"
-      free_python: "是"
-      freshness: "约 15 分钟延迟，休市失真"
   - rule_id: LIQ-05
-    description: {en: "Open interest >= 500 and daily volume >= 100", zh: "OI >= 500 且当日成交量 >= 100"}
-    explanation: "期权的未平仓量和成交量。太少的合约难以成交，也难以平仓。"
-    default_weight: 4
+    name: {en: "Open interest and volume", zh: "持仓量与成交量"}
+    description: {en: "Passes when open interest (contracts still open) is at least 500 and the day's volume at least 100. Thinly traded contracts are hard to open and close. Source: Yahoo Finance option chain via yfinance; open interest updates once a day, volume builds up during trading.", zh: "未平仓量（仍未了结的合约数）至少 500，且当日成交量至少 100 时通过。成交稀少的合约很难开仓和平仓。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；未平仓量每天更新一次，成交量盘中累计。"}
+    weight: 4
     kind: "script"
     acquisition: "api_fetch"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["Z07"]
-    review:
-      quantifiable: "是"
-      typical_range: "OI ≥ 500 且成交量 ≥ 100（作者设）"
-      latest_value: "AAPL 同一合约 OI 10,259，成交量 352 → 通过"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "OI 日更（昨日收盘）；成交量盘中累计"
   # VOL · Volatility
   - rule_id: VOL-01
-    description: {en: "IV percentile (>= 70 full credit, >= 50 three quarters, >= 40 half)", zh: "IV 百分位（>= 70 满分，>= 50 七成半，>= 40 半分）"}
-    explanation: "当前隐含波动率在过去一年中的位置。位置高说明期权偏贵，对卖方更划算。"
-    default_weight: 5
+    name: {en: "IV percentile", zh: "IV 百分位"}
+    description: {en: "Where today's IV (implied volatility, the volatility priced into options) sits within the past year, as a percentile. A high reading means options are expensive, which favors sellers. Needs a year of daily IV history that no free source provides, so it has to be recorded daily and builds up over a year. VIX percentile can be a stopgap.", zh: "当前 IV（隐含波动率，期权价格里包含的波动率）在过去一年中处于什么百分位。数值高说明期权偏贵，对卖方有利。需要一年的每日 IV 历史，免费数据源都没有，只能自己每天记录，攒满一年才可用。VIX 的百分位可以做临时替代。"}
+    weight: 5
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "missing_data_source"
     indicator: "implied_volatility_percentile"
     bands: [{operator: "greater_or_equal", value: 70, credit: 1.0}, {operator: "greater_or_equal", value: 50, credit: 0.75}, {operator: "greater_or_equal", value: 40, credit: 0.5}]
     legacy_id: ["A12", "A13", "A14"]
-    review:
-      quantifiable: "是"
-      typical_range: "IV Rank 或 IV Percentile > 50 常被卖方当作 IV 偏贵（tastytrade 常用 30–50）"
-      latest_value: "拉不到：免费源没有个股 IV 历史；代理：VIX 近 1 年分位 78%"
-      source: "付费源（Barchart、ORATS）；或自己每天存 ATM IV，积累 ≥ 1 年"
-      free_python: "否"
-      freshness: "自建则日更，需时间积累"
   - rule_id: VOL-02
-    description: {en: "IV elevated: VIX above its 20-day average, or IV > RV30", zh: "IV 抬升期：VIX 高于 20 日均值，或 IV > RV30"}
-    explanation: "隐含波动率是否比最近的平均水平高，说明处于波动抬升期。"
-    default_weight: 3
+    name: {en: "IV rising", zh: "IV 抬升"}
+    description: {en: "IV is higher than its recent average, meaning volatility is on the rise. Measured as VIX above its 20-day average, or IV above RV30 (realized volatility, the actual price swings over 30 days). Source: Yahoo Finance ^VIX via yfinance and the option chain.", zh: "IV 比最近的平均水平高，说明波动正在抬升。用 VIX 高于其 20 日均值，或 IV 高于 RV30（实际波动率，即过去 30 天股价的真实波动）来衡量。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX 和期权链。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["B01"]
-    review:
-      quantifiable: "是"
-      typical_range: "VIX 高于 20 日均值＝IV 抬升"
-      latest_value: "VIX 19.45 > 20 日均值 16.54 → 满足"
-      source: "yfinance ^VIX；个股 IV 对 RV 见 VOL-03"
-      free_python: "是"
-      freshness: "日更"
   - rule_id: VOL-03
-    description: {en: "ATM IV (30-45 days) > RV30", zh: "ATM IV（30-45 天）> RV30"}
-    explanation: "期权隐含波动率是否高于股票的实际波动。高出的部分就是卖方的波动率风险溢价。"
-    default_weight: 4
+    name: {en: "IV vs realized", zh: "IV 对实际波动"}
+    description: {en: "Passes when ATM (at-the-money, strike near the current price) IV for 30 to 45 days is above RV30, the 30-day realized volatility. The gap is the volatility risk premium, the extra the seller is paid. Source: Yahoo Finance option chain and prices via yfinance, already wired in. Typical values: IV above RV is the normal state.", zh: "30–45 天的 ATM（平值，行权价接近现价）IV 高于 RV30，即 30 天实际波动率时通过。两者的差就是波动率风险溢价，也就是卖方额外拿到的补偿。数据来源：通过 yfinance 取 Yahoo Finance 的期权链和价格，已接入。常见情形：IV 高于 RV 是常态。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "selected_put_implied_volatility_exceeds_realized"
     operator: "is_true"
     legacy_id: ["Z05"]
-    review:
-      quantifiable: "是"
-      typical_range: "IV 高于 RV 说明期权偏贵（波动率风险溢价）"
-      latest_value: "AAPL 2026-11-27 到期 ATM IV 25.5%（RV30 本次未打印）"
-      source: "yfinance 期权链＋价格（已接入）"
-      free_python: "是"
-      freshness: "约 15 分钟延迟，休市失真"
   - rule_id: VOL-04
-    description: {en: "Pre-earnings IV and the expected move", zh: "财报前 IV 与预期波动幅度"}
-    explanation: "财报前期权价格里包含的预期波动幅度，以及财报后波动率回落的幅度。"
-    default_weight: 3
+    name: {en: "Expected move", zh: "预期波动幅度"}
+    description: {en: "The move the options market expects: the 1-sigma expected move is price times IV times the square root of days to expiration over 365. Also compares IV before earnings with after, the IV crush (the sharp drop in IV after the report). Source: Yahoo Finance option chain via yfinance; the before-and-after history has to be recorded.", zh: "期权市场预期的波动幅度：1σ 预期波动 = 价格 × IV × √(到期天数 ÷ 365)。同时对比财报前后的 IV，即 IV crush（财报公布后 IV 的快速回落）。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；财报前后的历史需要自己记录。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "预期波动 ≈ 现价 × IV × √(T/365)"
-      latest_value: "AAPL 32 天 1σ ≈ ±7.5%；财报前后 IV 对比需要自己存历史"
-      source: "yfinance 期权链"
-      free_python: "部分"
-      freshness: "同上"
   - rule_id: VOL-05
-    description: {en: "Put skew", zh: "Put 偏斜（skew）"}
-    explanation: "下跌保护（看跌期权）比平值期权贵多少。偏斜越大，说明市场越担心下跌。"
-    default_weight: 2
+    name: {en: "Put skew", zh: "Put 偏斜"}
+    description: {en: "Put skew: how much more expensive downside protection is than at-the-money options (IV of puts about 10% below the price minus ATM IV). A larger gap means the market fears a fall. Source: Yahoo Finance option chain via yfinance. Typical values: put skew is usually positive.", zh: "Put 偏斜：下跌保护比平值期权贵多少（价格下方约 10% 的 Put 的 IV 减去平值 IV）。差距越大，说明市场越担心下跌。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：Put 偏斜通常为正。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "Put skew 通常为正，越大代表下跌保护越贵"
-      latest_value: "AAPL 90% 行权价 Put 的 IV 比 ATM 高 5.3 个点"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "同上"
   # CTR · Contract selection
   - rule_id: CTR-01
-    description: {en: "|Δ| (0.15-0.20 full credit, 0.15-0.30 three quarters, <= 0.30 half)", zh: "|Δ|（0.15-0.20 满分，0.15-0.30 七成半，<= 0.30 半分）"}
-    explanation: "卖出期权的 Delta，近似为被行权的概率。Delta 越小越安全，但收的权利金也越少。"
-    default_weight: 5
+    name: {en: "Delta", zh: "Delta"}
+    description: {en: "Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance, already wired in.", zh: "卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    weight: 5
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "selected_put_absolute_delta"
     bands: [{operator: "between", value: [0.15, 0.2], credit: 1.0}, {operator: "between", value: [0.15, 0.3], credit: 0.75}, {operator: "less_or_equal", value: 0.3, credit: 0.5}]
     legacy_id: ["B03", "B04", "F08"]
-    review:
-      quantifiable: "是"
-      typical_range: "卖方 Delta 0.15–0.30（tastytrade 常用 16–30）"
-      latest_value: "按 Black-Scholes 由期权链算出（已接入）"
-      source: "yfinance 期权链（已接入）"
-      free_python: "是"
-      freshness: "约 15 分钟延迟"
   - rule_id: CTR-02
-    description: {en: "DTE (30-45 full credit, 14-45 and above 30 half)", zh: "DTE（30-45 满分，14-45 与 > 30 半分）"}
-    explanation: "期权离到期还有多少天。30–45 天是时间价值衰减较快、又不至于太短的区间。"
-    default_weight: 4
+    name: {en: "Days to expiration", zh: "到期天数"}
+    description: {en: "Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, already wired in. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard).", zh: "到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，已接入。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "selected_put_days_to_expiration"
     bands: [{operator: "between", value: [30, 45], credit: 1.0}, {operator: "between", value: [14, 45], credit: 0.5}, {operator: "greater_than", value: 30, credit: 0.5}]
     legacy_id: ["B07", "A23", "F09", "E05"]
-    review:
-      quantifiable: "是"
-      typical_range: "30–45 天（tastytrade 常用 45 DTE）"
-      latest_value: "由到期日直接算（已接入）"
-      source: "yfinance 期权链（已接入）"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: CTR-03
-    description: {en: "Buyer expiration 60-90 days", zh: "买方到期 60-90 天"}
-    explanation: "买方期权的到期时间。买方通常选更长的到期日，避免时间损耗太快。"
-    default_weight: 3
+    name: {en: "Buyer expiration", zh: "买方到期日"}
+    description: {en: "Expiration of the option you buy. Buyers prefer 60 to 90 days so time decay does not eat the premium too fast. Source: option expiration dates from Yahoo Finance via yfinance.", zh: "买方期权的到期时间。买方偏好 60–90 天，避免时间损耗太快吃掉权利金。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["D06"]
-    review:
-      quantifiable: "是"
-      typical_range: "买方 60–90 天（作者设）"
-      latest_value: "可由到期日直接算"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: CTR-04
-    description: {en: "Monthly expiration (third Friday)", zh: "到期日是月度期权（第三个周五）"}
-    explanation: "是不是月度期权（每月第三个周五到期），流动性通常更好。"
-    default_weight: 2
+    name: {en: "Monthly expiration", zh: "月度期权"}
+    description: {en: "Whether the option is a monthly one (expires on the third Friday of the month), which usually has better liquidity than weeklies. Source: computed from the expiration date.", zh: "是不是月度期权（每月第三个周五到期），通常比周期权流动性更好。数据来源：由到期日计算。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["B08"]
-    review:
-      quantifiable: "是"
-      typical_range: "月度期权＝每月第三个周五"
-      latest_value: "2026-11-20"
-      source: "日期算法"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: CTR-05
-    description: {en: "Strike = price −10% to −15% (or −20%)", zh: "Strike = 现价 −10% 到 −15%（或 −20%）"}
-    explanation: "行权价比现价低多少。Wheel 策略常选低于现价 10%–15% 的位置接盘。"
-    default_weight: 2
+    name: {en: "Strike distance", zh: "行权价距离"}
+    description: {en: "How far the strike is below the current price. The Wheel strategy often picks a strike 10% to 15% (or up to 20%) below the price, where it is happy to be assigned. Source: price from Yahoo Finance via yfinance, calculated.", zh: "行权价比现价低多少。Wheel 策略常选低于现价 10%–15%（最多 20%）的位置，也就是愿意接盘的价位。数据来源：价格通过 yfinance 取 Yahoo Finance 后计算。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["E03", "E04"]
-    review:
-      quantifiable: "是"
-      typical_range: "Strike 低于现价 10%–15%（作者设）"
-      latest_value: "AAPL 现价 347.73 → 约 295–313"
-      source: "yfinance 价格"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: CTR-06
-    description: {en: "Strike below the nearest support", zh: "Strike 低于最近支撑位"}
-    explanation: "行权价是否低于最近的支撑位。在支撑位下面卖 Put 更安全。"
-    default_weight: 3
+    name: {en: "Strike vs support", zh: "行权价对支撑位"}
+    description: {en: "Passes when the strike is below the nearest support, so a drop must break support before the put is in the money. Depends on the support level in TRD-14. Source: Yahoo Finance via yfinance, calculated.", zh: "行权价低于最近的支撑位时通过，这样股价要先跌破支撑才会进入价内。依赖 TRD-14 的支撑位。数据来源：通过 yfinance 取 Yahoo Finance 后计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "part"
     availability: "not_implemented"
     legacy_id: ["B05"]
-    review:
-      quantifiable: "部分"
-      typical_range: "依赖 TRD-14 的支撑位"
-      latest_value: "未算"
-      source: "同 TRD-14"
-      free_python: "部分"
-      freshness: "日更"
   - rule_id: CTR-07
-    description: {en: "Strike is a round number near the target with high volume", zh: "行权价是目标价附近的整数且成交量大"}
-    explanation: "行权价是否为整数且成交量大，这样的合约通常更容易成交。"
-    default_weight: 1
+    name: {en: "Round strike", zh: "整数行权价"}
+    description: {en: "Passes when the strike is a round number near the target price and has high trading volume, since such contracts are easier to trade. Source: Yahoo Finance option chain via yfinance.", zh: "行权价是目标价附近的整数且成交量大时通过，这样的合约更容易成交。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。"}
+    weight: 1
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["D07"]
-    review:
-      quantifiable: "是"
-      typical_range: "Strike 为 5 或 10 的整数倍且成交量大"
-      latest_value: "可直接判断"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "同上"
   - rule_id: CTR-08
-    description: {en: "Covered Call strike = price +10%", zh: "Covered Call 行权价 = 现价 +10%"}
-    explanation: "Covered Call 的行权价设在现价上方多少。"
-    default_weight: 2
+    name: {en: "Covered Call strike", zh: "Covered Call 行权价"}
+    description: {en: "Strike of the covered call (a call sold against shares you own) set about 10% above the current price. Source: price from Yahoo Finance via yfinance, calculated.", zh: "Covered Call（对自己持有的股票卖出的看涨期权）的行权价设在现价上方约 10%。数据来源：价格通过 yfinance 取 Yahoo Finance 后计算。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["E11"]
-    review:
-      quantifiable: "是"
-      typical_range: "Covered Call 行权价高于现价约 10%（作者设）"
-      latest_value: "AAPL 约 382"
-      source: "yfinance 价格"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: CTR-09
-    description: {en: "Covered Call expires in about 30 days", zh: "Covered Call 到期约 30 天"}
-    explanation: "Covered Call 的到期时间，通常选约 30 天。"
-    default_weight: 2
+    name: {en: "Covered Call expiration", zh: "Covered Call 到期日"}
+    description: {en: "Covered call expiration, usually about 30 days. Source: option expiration dates from Yahoo Finance via yfinance.", zh: "Covered Call 的到期时间，通常选约 30 天。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["E12"]
-    review:
-      quantifiable: "是"
-      typical_range: "约 30 天"
-      latest_value: "可由到期日直接算"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: CTR-10
-    description: {en: "Strike outside the expected move (1 sigma)", zh: "Strike 在预期波动幅度（1σ）之外"}
-    explanation: "行权价是否在期权隐含的 1 倍标准差预期波动之外，相当于要求股价跌破这个范围才会被行权。"
-    default_weight: 3
+    name: {en: "Strike vs expected move", zh: "行权价对预期波动"}
+    description: {en: "Passes when the strike is outside the 1-sigma expected move implied by options (see VOL-04), so the stock must fall further than the market expects before the put is assigned. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "行权价在期权隐含的 1σ 预期波动幅度之外（见 VOL-04）时通过，也就是股价要跌得比市场预期还多才会被行权。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "Strike 在 1σ 预期波动之外"
-      latest_value: "AAPL 1σ ≈ 7.5%，Put 行权价需低于约 321.7"
-      source: "由 ATM IV 自算"
-      free_python: "是"
-      freshness: "同 VOL-04"
   # RET · Return and payoff
   - rule_id: RET-01
-    description: {en: "Annualized return (>= 20% full credit, >= 8% half)", zh: "年化收益（>= 20% 满分，>= 8% 半分）"}
-    explanation: "把权利金换算成年化收益。太低不值得冒风险，太高往往说明风险也高。"
-    default_weight: 4
+    name: {en: "Annualized return", zh: "年化收益"}
+    description: {en: "The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, already wired in; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers.", zh: "把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，已接入；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。"}
+    weight: 4
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "automatic"
     indicator: "selected_put_annualized_return_percent"
     bands: [{operator: "greater_or_equal", value: 20, credit: 1.0}, {operator: "greater_or_equal", value: 8, credit: 0.5}]
     legacy_id: ["A21", "E08", "B09"]
-    review:
-      quantifiable: "是"
-      typical_range: "卖 Put 年化 8%–20% 常见（作者设）"
-      latest_value: "按 bid ÷ Strike 年化算（已接入）；休市时 bid 为 0 无法算"
-      source: "yfinance 期权链（已接入）"
-      free_python: "是"
-      freshness: "约 15 分钟延迟，休市失真"
   - rule_id: RET-02
-    description: {en: "Monthly premium (>= 4% full credit, >= 2% half)", zh: "月化权利金（>= 4% 满分，>= 2% 半分）"}
-    explanation: "权利金换算成每月收益，占行权价的比例。"
-    default_weight: 3
+    name: {en: "Monthly premium", zh: "月化权利金"}
+    description: {en: "The premium as a share of the strike, scaled to one month. Monthly 2% to 4% is common for put sellers. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "权利金占行权价的比例，折算成每月。卖 Put 常见的月化是 2%–4%。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     indicator: "selected_put_monthly_premium_percent"
     bands: [{operator: "greater_or_equal", value: 4, credit: 1.0}, {operator: "greater_or_equal", value: 2, credit: 0.5}]
     legacy_id: ["B10", "B11", "E06", "E07"]
-    review:
-      quantifiable: "是"
-      typical_range: "月化权利金 2%–4%（作者设）"
-      latest_value: "可由 bid 算"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "同上"
   - rule_id: RET-03
-    description: {en: "Implied leverage (Δ × price ÷ premium) >= 10x", zh: "隐含杠杆（Δ × 股价 ÷ 权利金）>= 10 倍"}
-    explanation: "买方期权的杠杆倍数：用多少本金控制多少股票。"
-    default_weight: 2
+    name: {en: "Implied leverage", zh: "隐含杠杆"}
+    description: {en: "Leverage of an option you buy: Delta times stock price divided by the premium, meaning how much stock exposure each dollar buys. Passes at 10 times or more. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "买方期权的杠杆倍数：Delta × 股价 ÷ 权利金，也就是每一块钱能买到多少股票敞口。达到 10 倍或以上时通过。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    weight: 2
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
     legacy_id: ["D05"]
-    review:
-      quantifiable: "是"
-      typical_range: "买方隐含杠杆 ≥ 10 倍（作者设）"
-      latest_value: "可由 Delta、现价、权利金算"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "同上"
   - rule_id: RET-04
-    description: {en: "Breakeven price and maximum loss", zh: "盈亏平衡价与最大亏损"}
-    explanation: "盈亏平衡价（行权价减权利金）和最大亏损。开仓前先算清最坏的情况。"
-    default_weight: 3
+    name: {en: "Breakeven and max loss", zh: "盈亏平衡与最大亏损"}
+    description: {en: "Breakeven price (strike minus premium for a put) and maximum loss ((strike minus premium) times 100 per contract). Know the worst case before opening. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "盈亏平衡价（Put 为行权价减权利金）和最大亏损（每张合约为（行权价减权利金）× 100）。开仓前先算清最坏的情况。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "盈亏平衡价＝Strike 减权利金；最大亏损＝(Strike 减权利金)×100"
-      latest_value: "可直接算"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "同上"
   - rule_id: RET-05
-    description: {en: "Probability of profit (POP)", zh: "盈利概率（POP）"}
-    explanation: "这笔交易赚钱的大致概率，常用 1 减去 Delta 来近似。"
-    default_weight: 3
+    name: {en: "Probability of profit", zh: "盈利概率"}
+    description: {en: "POP (probability of profit), roughly the chance the trade makes money, often approximated as 1 minus |Delta|. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "POP（盈利概率），这笔交易赚钱的大致概率，常用 1 减 |Delta| 近似。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    weight: 3
     kind: "script"
     acquisition: "computed"
+    quantifiable: "yes"
     availability: "not_implemented"
-    review:
-      quantifiable: "是"
-      typical_range: "盈利概率近似为 1 − |Delta|"
-      latest_value: "可由 Delta 近似"
-      source: "yfinance 期权链"
-      free_python: "是"
-      freshness: "同上"
   # POS · Position, account and portfolio
   - rule_id: POS-01
-    description: {en: "Option level >= L2 (L3 for spreads)", zh: "期权权限 >= L2（价差需 L3）"}
-    explanation: "你的账户是否有足够的期权权限。没有权限就不能下这类单。"
-    default_weight: 5
+    name: {en: "Option level", zh: "期权权限"}
+    description: {en: "Your brokerage account must have enough option permission: level 2 allows cash-secured puts and covered calls, level 3 allows spreads (the exact levels depend on the broker). Without it the order is rejected. Source: your brokerage account; not public data.", zh: "你的券商账户必须有足够的期权权限：2 级可以做现金担保 Put 和 Covered Call，3 级可以做价差（具体级别因券商而异）。没有权限，下单会被拒绝。数据来源：你的券商账户，不是公开数据。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["B14", "B15"]
-    review:
-      quantifiable: "是"
-      typical_range: "L2 可卖现金担保 Put 与 Covered Call，L3 可做价差（券商规则）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-02
-    description: {en: "No leverage, cash secured", zh: "零杠杆，现金担保"}
-    explanation: "不借钱、有足够现金保证金，才算现金担保卖 Put。"
-    default_weight: 4
+    name: {en: "No leverage", zh: "零杠杆"}
+    description: {en: "No borrowed money, and every short put is backed by enough cash (cash-secured). Source: your brokerage account.", zh: "不借钱，并且每个卖出的 Put 都有足够现金担保（现金担保）。数据来源：你的券商账户。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["A20", "F11"]
-    review:
-      quantifiable: "是"
-      typical_range: "现金 ≥ Strike × 100 × 张数"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-03
-    description: {en: "Cash >= 30% of net value", zh: "现金 >= 净值 × 30%"}
-    explanation: "账户里至少保留一定比例的现金，应对被行权和行情波动。"
-    default_weight: 3
+    name: {en: "Cash reserve", zh: "现金储备"}
+    description: {en: "Keep at least 30% of net value in cash to handle assignment and swings. Source: your brokerage account.", zh: "账户里至少保留净值 30% 的现金，用来应对被行权和行情波动。数据来源：你的券商账户。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["A19"]
-    review:
-      quantifiable: "是"
-      typical_range: "现金储备 20%–40% 常见（作者设 30%）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-04
-    description: {en: "Cash >= Strike × 100", zh: "现金 >= Strike × 100"}
-    explanation: "被行权时需要拿出 Strike × 100 的现金买入股票。现金不够就不该开仓。"
-    default_weight: 5
+    name: {en: "Cash to cover assignment", zh: "覆盖行权的现金"}
+    description: {en: "If assigned you must pay strike times 100 per contract to buy the shares, so cash must be at least that amount. Without it do not open the trade. Source: your brokerage account.", zh: "被行权时每张合约要拿出行权价 × 100 的现金买入股票，所以现金至少要有这个数。现金不够就不该开仓。数据来源：你的券商账户。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["E09", "F10"]
-    review:
-      quantifiable: "是"
-      typical_range: "硬约束：现金 ≥ Strike × 100"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-05
-    description: {en: "Total Put notional (including the new one) <= 70% of net value", zh: "全部 Put 名义敞口（含新仓）<= 净值 × 70%"}
-    explanation: "所有 Put 假设全部被行权要买入的总金额，不能超过净值的一定比例。"
-    default_weight: 4
+    name: {en: "Total put exposure", zh: "Put 总敞口"}
+    description: {en: "Notional exposure (strike times 100 times contracts) of all your short puts, including the new one, must not exceed 70% of net value. It is the amount you would have to buy if everything were assigned. Source: your brokerage account.", zh: "你所有卖出的 Put（含新仓）的名义敞口（行权价 × 100 × 张数）不能超过净值的 70%。这是全部被行权时需要买入的总金额。数据来源：你的券商账户。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["A17"]
-    review:
-      quantifiable: "是"
-      typical_range: "全部 Put 名义敞口占净值（作者设 ≤ 70%；保守者更低）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-06
-    description: {en: "Notional in this stock <= 35% of net value", zh: "该股名义敞口 <= 净值 × 35%"}
-    explanation: "单只股票的名义敞口不能太集中。"
-    default_weight: 4
+    name: {en: "Single-stock exposure", zh: "单股敞口"}
+    description: {en: "Notional exposure to any one stock must stay under 35% of net value, to avoid concentration. Source: your brokerage account.", zh: "对任何一只股票的名义敞口不能超过净值的 35%，避免过度集中。数据来源：你的券商账户。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["A18"]
-    review:
-      quantifiable: "是"
-      typical_range: "单票名义敞口 20%–35% 常见上限（经验）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-07
-    description: {en: "One sector <= 50% of total exposure", zh: "同板块敞口 <= 总敞口 50%"}
-    explanation: "同一板块的敞口不能过大，避免一个板块出事时全线受损。"
-    default_weight: 3
+    name: {en: "Sector exposure", zh: "板块敞口"}
+    description: {en: "One sector must not exceed 50% of total exposure, so one sector's trouble does not hurt everything. Source: your brokerage account.", zh: "同一板块的敞口不能超过总敞口的 50%，避免一个板块出事时全线受损。数据来源：你的券商账户。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["Z04"]
-    review:
-      quantifiable: "是"
-      typical_range: "同板块 ≤ 总敞口 50%（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-08
-    description: {en: "Largest loss per trade (to the stop) <= 2% of net value", zh: "单笔最大亏损（到止损）<= 净值 × 2%"}
-    explanation: "单笔交易最坏亏损不能超过净值的 2%，这是最基本的风控。"
-    default_weight: 5
+    name: {en: "Max loss per trade", zh: "单笔最大亏损"}
+    description: {en: "The worst loss on one trade, measured to the stop, must not exceed 2% of net value. This is the most basic risk control. Source: your brokerage account.", zh: "单笔交易到止损为止的最大亏损不能超过净值的 2%，这是最基本的风控。数据来源：你的券商账户。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["Z03"]
-    review:
-      quantifiable: "是"
-      typical_range: "单笔最大亏损 1%–2% 净值（常见风控规则）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-09
-    description: {en: "Single option position <= 10% of net value", zh: "单只期权仓位 <= 净值 × 10%"}
-    explanation: "买方期权的单笔投入要控制在小比例，因为可能归零。"
-    default_weight: 4
+    name: {en: "Single option size", zh: "单只期权仓位"}
+    description: {en: "A single option position you buy must be at most 10% of net value, because it can go to zero. Source: your brokerage account.", zh: "你买入的单只期权仓位不能超过净值的 10%，因为它可能归零。数据来源：你的券商账户。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["D08"]
-    review:
-      quantifiable: "是"
-      typical_range: "单只期权仓位 ≤ 净值 10%（买方经验）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-10
-    description: {en: "Total long option premium <= 20% of net value", zh: "多头期权总权利金 <= 净值 × 20%"}
-    explanation: "买方期权的总投入有上限，防止小额多笔累计亏光。"
-    default_weight: 4
+    name: {en: "Long premium total", zh: "多头权利金总额"}
+    description: {en: "Total premium paid for long options must stay under 20% of net value, so many small bets cannot add up to a large loss. Source: your brokerage account.", zh: "买入期权支付的权利金总额不能超过净值的 20%，防止多笔小额亏损累计成大额亏损。数据来源：你的券商账户。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["D10"]
-    review:
-      quantifiable: "是"
-      typical_range: "多头权利金总和 ≤ 净值 20%（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-11
-    description: {en: "Switch to a spread when one leg uses > 20% of net value", zh: "单腿占用 > 净值 × 20% 时改用价差"}
-    explanation: "单腿占用资金太大时，改用价差把风险封顶。"
-    default_weight: 3
+    name: {en: "Spread switch", zh: "改用价差"}
+    description: {en: "When one leg ties up more than 20% of net value, switch to a spread (buying a farther option to cap the risk). Source: your brokerage account.", zh: "单腿占用的资金超过净值的 20% 时，改用价差（再买一张更远的期权把风险封顶）。数据来源：你的券商账户。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["B13"]
-    review:
-      quantifiable: "是"
-      typical_range: "单腿占用 > 净值 20% 改用价差（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-12
-    description: {en: "Build the position in 2 or more steps", zh: "分 2 批以上建仓"}
-    explanation: "分批建仓，避免一次买在最差的价位。"
-    default_weight: 2
+    name: {en: "Scale in", zh: "分批建仓"}
+    description: {en: "Build the position in 2 or more steps instead of all at once, so you do not buy at the worst price. A trade plan item.", zh: "分 2 批或更多批建仓，不要一次买满，避免买在最差的价位。这是交易计划里的一项。"}
+    weight: 2
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["D09"]
-    review:
-      quantifiable: "是"
-      typical_range: "分 2–3 批建仓（经验）"
-      latest_value: "按你的成交记录判断"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-13
-    description: {en: "Covered Call contracts = shares ÷ 100, never more", zh: "Covered Call 张数 = 持股 ÷ 100，不超卖"}
-    explanation: "卖出的 Covered Call 张数不能超过持股数除以 100，否则会变成裸卖。"
-    default_weight: 5
+    name: {en: "Covered Call size", zh: "Covered Call 张数"}
+    description: {en: "Covered call contracts must equal shares owned divided by 100, never more; otherwise the extra calls are naked (uncovered). Source: your brokerage account.", zh: "Covered Call 的张数必须等于持股数除以 100，不能多；多出的部分就成了裸卖（没有股票覆盖）。数据来源：你的券商账户。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["E13"]
-    review:
-      quantifiable: "是"
-      typical_range: "硬约束：张数 × 100 ≤ 持股数"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-14
-    description: {en: "Portfolio Greeks (Delta, Vega, Theta, beta-weighted Delta)", zh: "组合希腊字母（Delta、Vega、Theta、beta 加权 Delta）"}
-    explanation: "整个期权组合的 Delta、Vega、Theta，反映整体方向、波动率和时间价值的敞口。"
-    default_weight: 3
+    name: {en: "Portfolio Greeks", zh: "组合希腊字母"}
+    description: {en: "The Greeks of the whole option book: Delta (direction), Vega (sensitivity to volatility), Theta (daily time decay) and beta-weighted Delta (everything converted to S&P 500 equivalent). Thresholds differ by person. Source: your brokerage account, or computed from positions and option chains.", zh: "整个期权组合的希腊字母：Delta（方向敞口）、Vega（对波动率的敏感度）、Theta（每日时间损耗）和 beta 加权 Delta（统一折算成标普 500 的等价敞口）。阈值因人而异。数据来源：你的券商账户，或由持仓和期权链计算。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
-    review:
-      quantifiable: "是"
-      typical_range: "组合 Delta、Vega、Theta 按净值标准化；阈值因人而异，无通用数值"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商直接提供，或由持仓＋期权链自算"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-15
-    description: {en: "Margin and buying power usage", zh: "保证金占用与购买力使用率"}
-    explanation: "已经用掉多少保证金或购买力。用得太满，遇到行情波动容易被强平。"
-    default_weight: 3
+    name: {en: "Margin usage", zh: "保证金占用"}
+    description: {en: "How much of your margin or buying power is already used. If it is too full, a market swing can force the broker to close positions. Many traders stay under half. Source: your brokerage account.", zh: "已经用掉多少保证金或购买力。用得太满，行情一波动，券商可能强制平仓。很多交易者控制在一半以内。数据来源：你的券商账户。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
-    review:
-      quantifiable: "是"
-      typical_range: "保证金占用常建议 ≤ 购买力的 50%（tastytrade 经验 25%–50%）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: POS-16
-    description: {en: "Position correlation and stress test", zh: "持仓相关性与压力测试"}
-    explanation: "持仓之间是否高度相关，以及极端行情下会亏多少。"
-    default_weight: 2
+    name: {en: "Correlation and stress", zh: "相关性与压力测试"}
+    description: {en: "Whether your positions move together (correlation), and how much you would lose in a stress test such as a 20% drop with volatility up 50%. Thresholds differ by person. Source: your brokerage account, calculated.", zh: "你的持仓是否同涨同跌（相关性），以及压力测试下会亏多少，比如标的下跌 20% 且波动率上升 50%。阈值因人而异。数据来源：你的券商账户，自行计算。"}
+    weight: 2
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
-    review:
-      quantifiable: "是"
-      typical_range: "常见做法：假设标的 −20% 且 IV +50% 的情景损失；阈值因人而异"
-      latest_value: "未读取（需要你的账户）"
-      source: "由持仓＋期权链自算"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   # THS · Thesis and discipline
   - rule_id: THS-01
-    description: {en: "Circle of competence: you can explain how the company makes money", zh: "能力圈：你能说清这家公司怎么赚钱"}
-    explanation: "你能不能说清这家公司怎么赚钱。说不清的公司不要碰。"
-    default_weight: 3
+    name: {en: "Circle of competence", zh: "能力圈"}
+    description: {en: "You can explain in plain words how the company makes money. If you cannot, stay away. Source: your own judgment.", zh: "你能用大白话说清这家公司怎么赚钱。说不清的公司不要碰。数据来源：你自己的判断。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "no"
     availability: "user_answer"
-    review:
-      quantifiable: "否"
-      typical_range: "定性，无数值"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: THS-02
-    description: {en: "The thesis is written down (why you trade, what you expect)", zh: "已写下投资逻辑（为什么做、预期什么）"}
-    explanation: "开仓前把理由写下来：为什么做、预期什么。写不出来多半是冲动。"
-    default_weight: 4
+    name: {en: "Written thesis", zh: "书面逻辑"}
+    description: {en: "Write down the reason before you open: why you trade and what you expect. If you cannot write it, it is probably an impulse. Source: your own notes.", zh: "开仓前把理由写下来：为什么做、预期什么。写不出来多半是冲动。数据来源：你自己的记录。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "no"
     availability: "user_answer"
-    review:
-      quantifiable: "否"
-      typical_range: "文字记录；可强制要求填写后才允许开仓"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: THS-03
-    description: {en: "You are willing to hold the stock long term", zh: "你愿意长期持有该股"}
-    explanation: "卖 Put 可能被行权接股票，所以你必须愿意长期持有它。"
-    default_weight: 5
+    name: {en: "Willing to hold", zh: "愿意持有"}
+    description: {en: "Selling a put may leave you owning the stock, so you must be willing to hold it for the long term. Source: your own answer.", zh: "卖 Put 可能让你被行权接下股票，所以你必须愿意长期持有它。数据来源：你自己的回答。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "user_answer"
     legacy_id: ["A15", "E01"]
-    review:
-      quantifiable: "是"
-      typical_range: "是或否"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: THS-04
-    description: {en: "The purpose of the trade is clear (income or buying the stock)", zh: "开仓目的已经明确（收租或接盘）"}
-    explanation: "这笔交易是想收租金（权利金），还是想接盘买股。目的不同，处理方式也不同。"
-    default_weight: 4
+    name: {en: "Trade purpose", zh: "交易目的"}
+    description: {en: "Be clear whether the trade is to earn rent (the premium) or to buy the stock. The purpose changes how you manage it. Source: your own answer.", zh: "要清楚这笔交易是想收租金（权利金），还是想接盘买股。目的不同，处理方式也不同。数据来源：你自己的回答。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "user_answer"
     legacy_id: ["E16"]
-    review:
-      quantifiable: "是"
-      typical_range: "二选一：收租或接盘"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: THS-05
-    description: {en: "Falsification: what proves you wrong is written down, and you exit when it happens", zh: "证伪条件：写下什么情况证明你错了，发生时就离场"}
-    explanation: "写下什么情况证明你的判断错了，发生时就认错离场，不要事后找理由。"
-    default_weight: 5
+    name: {en: "Falsification", zh: "证伪条件"}
+    description: {en: "Write down what would prove you wrong, and exit when it happens instead of finding reasons afterwards. For it to be testable, state it as a price or indicator, such as a close below a moving average. Source: your own notes.", zh: "写下什么情况证明你的判断错了，发生时就认错离场，不要事后找理由。要能检验，就写成价格或指标，比如收盘跌破某条均线。数据来源：你自己的记录。"}
+    weight: 5
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "part"
     availability: "user_answer"
-    review:
-      quantifiable: "部分"
-      typical_range: "证伪条件写成可检验的价格或指标（如跌破某均线、财报低于预期）才能量化"
-      latest_value: "你的回答"
-      source: "你的输入；价格与指标部分来自 yfinance"
-      free_python: "部分"
-      freshness: "即时"
   - rule_id: THS-06
-    description: {en: "Sleep test: the loss at the 52-week low is bearable", zh: "睡眠测试：跌到 52 周低点时的亏损可以承受"}
-    explanation: "股价跌到 52 周低点时，你的亏损是否还能让你睡得着觉。"
-    default_weight: 3
+    name: {en: "Sleep test", zh: "睡眠测试"}
+    description: {en: "Ask whether you could still sleep if the stock fell to its 52-week low. Convert the loss into dollars and a share of net value. Source: your own answer.", zh: "问自己：股价跌到 52 周低点时，你还睡得着觉吗？把亏损换算成金额和占净值的比例。数据来源：你自己的回答。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "part"
     availability: "user_answer"
     legacy_id: ["A24"]
-    review:
-      quantifiable: "部分"
-      typical_range: "把「可承受亏损」换算成金额与净值占比"
-      latest_value: "你的回答"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: THS-07
-    description: {en: "At most 2 trades in the last 30 days", zh: "近 30 日出手 <= 2 次"}
-    explanation: "近 30 天出手次数是否过多。过于频繁通常说明在追涨杀跌。"
-    default_weight: 3
+    name: {en: "Trade frequency", zh: "出手频率"}
+    description: {en: "Passes when you made at most 2 trades in the last 30 days. Trading too often usually means chasing prices. Source: your trade records.", zh: "近 30 天出手不超过 2 次时通过。出手过于频繁通常说明在追涨杀跌。数据来源：你的成交记录。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "user_answer"
     legacy_id: ["D04"]
-    review:
-      quantifiable: "是"
-      typical_range: "近 30 天出手次数 ≤ 2（作者设）"
-      latest_value: "按成交记录计数"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   # EXT · Management and exit
   - rule_id: EXT-01
-    description: {en: "Seller take profit: buy back at 50% or 70% profit", zh: "卖方止盈：盈利 50% 或 70% 时买回平仓"}
-    explanation: "卖方赚到一半（或七成）权利金就买回平仓，把利润落袋。"
-    default_weight: 4
+    name: {en: "Seller take profit", zh: "卖方止盈"}
+    description: {en: "Sellers buy the option back once half (50%) or 70% of the premium is earned, to lock in the profit and free the capital. Source: a trade plan, with prices from the option chain.", zh: "卖方赚到一半（50%）或七成权利金时买回平仓，把利润落袋，释放资金。数据来源：交易计划，价格来自期权链。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["B16", "B17"]
-    review:
-      quantifiable: "是"
-      typical_range: "盈利 50% 买回（tastytrade 常用），70% 为另一档"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自期权链"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: EXT-02
-    description: {en: "Buyer take profit: +60% or +100%", zh: "买方止盈：+60% 或 +100%"}
-    explanation: "买方期权涨到一定幅度就止盈，避免利润回吐。"
-    default_weight: 3
+    name: {en: "Buyer take profit", zh: "买方止盈"}
+    description: {en: "Buyers take profit once the option is up 60% or 100%, so gains do not melt away. Source: a trade plan, with prices from the option chain.", zh: "买方在期权上涨 60% 或 100% 时止盈，避免利润回吐。数据来源：交易计划，价格来自期权链。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["D12", "D13"]
-    review:
-      quantifiable: "是"
-      typical_range: "+60% 或 +100%（作者设）"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自期权链"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: EXT-03
-    description: {en: "Stop loss at 2 times the premium", zh: "止损：亏损达到 2 倍权利金"}
-    explanation: "亏损达到权利金的 2 倍就止损离场。"
-    default_weight: 4
+    name: {en: "Stop loss", zh: "止损"}
+    description: {en: "Close the trade when the loss reaches 2 times the premium collected. Source: a trade plan, with prices from the option chain.", zh: "亏损达到收取权利金的 2 倍时平仓离场。数据来源：交易计划，价格来自期权链。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["Z01"]
-    review:
-      quantifiable: "是"
-      typical_range: "亏损达 2 倍权利金（tastytrade 常用）"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自期权链"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: EXT-04
-    description: {en: "Buyer stop: exit when the stock reaches the target but the option still loses", zh: "买方止损：正股到目标位而期权仍亏损时离场"}
-    explanation: "买方：正股已经到目标位但期权仍亏损，说明时间或波动率在拖累，应该离场。"
-    default_weight: 3
+    name: {en: "Buyer stop", zh: "买方止损"}
+    description: {en: "For buyers: if the stock has reached your target but the option still loses money, time decay or falling volatility is hurting you, so exit. Source: a trade plan.", zh: "买方：正股已经到了目标位，但期权仍然亏损，说明时间损耗或波动率下降在拖累你，应该离场。数据来源：交易计划。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["D14"]
-    review:
-      quantifiable: "是"
-      typical_range: "正股到目标位而期权仍亏损时离场"
-      latest_value: "交易计划，不是筛选"
-      source: "价格来自行情"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: EXT-05
-    description: {en: "Time stop or roll at 21 days left", zh: "剩 21 天时时间止损或展期"}
-    explanation: "剩 21 天左右就处理：要么提前平仓，要么展期，避免临近到期的剧烈波动。"
-    default_weight: 3
+    name: {en: "Time stop or roll", zh: "时间止损或展期"}
+    description: {en: "With 21 days left, either close early or roll (close and reopen further out in time), to avoid the sharp swings near expiration. Source: a trade plan, with dates from the option chain.", zh: "剩 21 天左右时，要么提前平仓，要么展期（平掉后在更远的到期日重新开仓），避免临近到期的剧烈波动。数据来源：交易计划，日期来自期权链。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["Z02"]
-    review:
-      quantifiable: "是"
-      typical_range: "剩 21 天时间止损或展期（tastytrade 常用）"
-      latest_value: "交易计划，不是筛选"
-      source: "到期日直接算"
-      free_python: "是"
-      freshness: "即时"
   - rule_id: EXT-06
-    description: {en: "Planned holding period (buyer 3-10 days, SPMO at least six months)", zh: "计划持有期（买方 3-10 天，SPMO 至少半年）"}
-    explanation: "事先定好持有多久，避免一直拿着不动。"
-    default_weight: 2
+    name: {en: "Holding period", zh: "持有期"}
+    description: {en: "Decide how long you will hold in advance: 3 to 10 days for buyers, at least six months for the SPMO rotation. Source: a trade plan.", zh: "事先定好持有多久：买方 3–10 天，SPMO 轮动至少半年。数据来源：交易计划。"}
+    weight: 2
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["D11", "C04"]
-    review:
-      quantifiable: "是"
-      typical_range: "买方 3–10 天；SPMO 至少半年"
-      latest_value: "交易计划，不是筛选"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: EXT-07
-    description: {en: "Trade at the close on SPMO rebalance day", zh: "在 SPMO 换仓日以收盘价执行"}
-    explanation: "SPMO 换仓日用收盘价执行，保持规则一致。"
-    default_weight: 1
+    name: {en: "Rebalance execution", zh: "换仓执行"}
+    description: {en: "On the SPMO rebalance day, trade at the closing price so execution stays consistent. Source: a trade plan.", zh: "在 SPMO 换仓日用收盘价执行，保持执行方式一致。数据来源：交易计划。"}
+    weight: 1
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["C02"]
-    review:
-      quantifiable: "是"
-      typical_range: "在再平衡日收盘价执行"
-      latest_value: "交易计划，不是筛选"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: EXT-08
-    description: {en: "Covered Call already planned while holding shares", zh: "持股时已规划卖 Covered Call"}
-    explanation: "持股后要提前计划卖 Covered Call，而不是被动持有。"
-    default_weight: 3
+    name: {en: "Covered Call plan", zh: "Covered Call 计划"}
+    description: {en: "Once you hold the shares, plan the covered calls in advance rather than just holding. Source: a trade plan.", zh: "持股后要提前计划卖 Covered Call，而不是被动持有。数据来源：交易计划。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "trade_plan"
     legacy_id: ["E10"]
-    review:
-      quantifiable: "是"
-      typical_range: "持股时已有卖 Covered Call 的计划"
-      latest_value: "交易计划，不是筛选"
-      source: "你的输入"
-      free_python: "否"
-      freshness: "即时"
   - rule_id: EXT-09
-    description: {en: "Covered Call strike >= cost basis", zh: "Covered Call 行权价 >= 成本价"}
-    explanation: "Covered Call 的行权价不低于成本价，避免被行权后亏损。"
-    default_weight: 4
+    name: {en: "Covered Call strike floor", zh: "Covered Call 行权价下限"}
+    description: {en: "The covered call strike must be at or above your cost basis (what you paid for the shares), so assignment does not lock in a loss. Source: your brokerage account.", zh: "Covered Call 的行权价必须不低于你的成本价（买入股票时的成本），这样被行权不会锁定亏损。数据来源：你的券商账户。"}
+    weight: 4
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["E14"]
-    review:
-      quantifiable: "是"
-      typical_range: "Covered Call 行权价 ≥ 成本价"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
   - rule_id: EXT-10
-    description: {en: "Cost basis <= price × 1.15, otherwise pause Covered Calls", zh: "成本 <= 现价 × 1.15，否则暂停 Covered Call"}
-    explanation: "成本比现价高很多时，先不要卖 Covered Call，避免在低价被行权而锁定亏损。"
-    default_weight: 3
+    name: {en: "Cost basis check", zh: "成本价检查"}
+    description: {en: "Passes when cost basis is at most 1.15 times the current price; if it is much higher, pause covered calls so you are not assigned at a low price and lock in a loss. Source: your brokerage account.", zh: "成本价不超过现价的 1.15 倍时通过；成本比现价高很多时，先暂停卖 Covered Call，避免在低价被行权而锁定亏损。数据来源：你的券商账户。"}
+    weight: 3
     kind: "manual"
     acquisition: "manual"
+    quantifiable: "yes"
     availability: "account_data"
     legacy_id: ["E15", "F12"]
-    review:
-      quantifiable: "是"
-      typical_range: "成本 ≤ 现价 × 1.15，否则暂停 Covered Call（作者设）"
-      latest_value: "未读取（需要你的账户）"
-      source: "券商账户 API（如 IBKR 的 ib_insync，需本机运行网关）；不是公开数据"
-      free_python: "部分"
-      freshness: "取决于券商，近实时"
 
 # Old rules that did not become a rule here (strategy choices or strategy-level checks, move them into strategy files):
 #   B12 margin account path, D15 trade direction, C06 12-month Sharpe against SPY.

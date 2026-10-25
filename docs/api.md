@@ -7,13 +7,13 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 - Field names are `snake_case`. Unknown values are `null`. Enumerations are lower-case strings.
 - Times are ISO 8601 in exchange time (America/New_York) with offset, for example `2026-10-23T15:52:19-04:00`.
 - `schema_version` (currently `3`): within one version fields may only be added. Renaming, removing or changing the type of a field bumps the version (3 made text fields objects).
-- Text a person reads is an object `{"en": "...", "zh": "..."}`: strategy `display_name`, `summary`, `help_text`, `source`; gate `display_name`; rule `description` and `note`; group `display_name` and `description`; indicator `display_name`. Clients pick the language; `default_language` tells them which to start with.
+- Text a person reads is an object `{"en": "...", "zh": "..."}`: strategy `display_name`, `summary`, `help_text`, `source`; gate `display_name`; rule `name`, `description` and `note`; group `display_name` and `description`; indicator `display_name`. Clients pick the language; `default_language` tells them which to start with.
 - Errors: HTTP 404 with `{"detail": "..."}` for an unknown strategy or symbol.
 - CORS is off unless `allowed_origin_list` in `config/settings.yaml` lists origins. Native apps do not need it.
 
 ## GET /api/v1/rules
 
-Every rule from `config/rules.yaml`, grouped by group, with the strategies that use it. The catalog now groups rules by category (`MAC`, `TRD`, ...) and carries more fields (`explanation`, `kind`, `acquisition`, `bands`, `legacy_id`, `review`); the response below still shows the old shape and the API does not return the new fields yet.
+Every rule from `config/rules.yaml`, grouped by group, with the strategies that use it. The catalog now groups rules by category (`MAC`, `TRD`, ...) and carries more fields (`name`, `kind`, `acquisition`, `quantifiable`, `bands`, `legacy_id`; the long text moved into `description`); the response below still shows the old shape and the API does not return the new fields yet.
 
 ```json
 {"default_language": "en",
