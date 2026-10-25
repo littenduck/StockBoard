@@ -55,17 +55,17 @@ def test_validation_catches_a_bad_age_group_or_history(tmp_path):
 def test_rules_take_their_facts_from_the_indicator(registry):
     catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
     indicator = registry.indicator_by_name["treasury_ten_year_yield"]
-    for rule_id in ("MAC-03", "MAC-13"):  # two lines of one indicator
+    for rule_id in ("R-MAC-03", "R-MAC-04"):  # two lines of one indicator
         entry = catalog.rule_entry_by_id[rule_id]
         assert (entry.method, entry.history_source, entry.status, entry.fetch_every, entry.max_age) == (
             indicator.method, indicator.history_source, indicator.status, indicator.fetch_every, indicator.max_age)
-    assert catalog.rule_entry_by_id["POS-01"].method == "manual" and catalog.rule_entry_by_id["POS-01"].fetch_every is None
+    assert catalog.rule_entry_by_id["R-POS-01"].method == "manual" and catalog.rule_entry_by_id["R-POS-01"].fetch_every is None
 
 
 def test_a_rule_may_not_repeat_what_its_indicator_owns(registry):
     with pytest.raises(ValueError, match="repeats"):
         rule_catalog.rule_catalog_merge_indicator_fields(
-            {"rule_id": "MAC-03", "indicator": registry.indicator_by_name["treasury_ten_year_yield"].indicator_id, "status": "built"}, registry)
+            {"rule_id": "R-MAC-03", "indicator": registry.indicator_by_name["treasury_ten_year_yield"].indicator_id, "status": "built"}, registry)
 
 
 def test_the_sidebar_reads_names_from_the_registry():
@@ -83,7 +83,7 @@ def test_every_indicator_has_a_short_id_and_a_long_name(registry):
 
 def test_a_rule_resolves_its_indicator_id_to_the_name_and_keeps_the_id():
     catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
-    entry = catalog.rule_entry_by_id["MAC-03"]
+    entry = catalog.rule_entry_by_id["R-MAC-03"]
     assert entry.indicator == "treasury_ten_year_yield" and entry.indicator_id == catalog.indicator_registry.indicator_by_name[entry.indicator].indicator_id
 
 

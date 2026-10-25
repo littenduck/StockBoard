@@ -26,14 +26,14 @@ gates:
   - gate_id: gate_0_market
     display_name: {en: "GATE 0 Market", zh: "GATE 0 市场环境"}
     rules:
-      - {rule_id: TRD-01, weight: 3}   # Market above 200-day
+      - {rule_id: R-TRD-01, weight: 3}   # market_above_200_day
   - gate_id: gate_1_trend
     display_name: {en: "GATE 1 Long-term trend", zh: "GATE 1 长期趋势"}
     rules:
-      - {rule_id: TRD-03, weight: 5, veto: true}   # Stock above 200-day
+      - {rule_id: R-TRD-05, weight: 5, veto: true}   # stock_above_200_day
   - gate_id: gate_2_pullback
     display_name: {en: "GATE 2 Short-term oversold", zh: "GATE 2 短期超跌"}
     rules:
-      - {rule_id: TRD-20, weight: 3}   # RSI(2) below 10
-      - {rule_id: TRD-12, weight: 1}   # RSI(2) below 5
-      - {rule_id: TRD-13, weight: 3}   # Below 5-day
+      - {rule_id: R-TRD-19, weight: 3}   # rsi_2_below_10
+      - {rule_id: R-TRD-18, weight: 1}   # rsi_2_below_5
+      - {rule_id: R-TRD-20, weight: 3}   # below_5_day

@@ -71,11 +71,11 @@ def test_rule_catalog_lists_usage():
     response = web_server.web_server_get_rule_catalog()
     rule_by_id = {rule["rule_id"]: rule for group in response["group_list"] for rule in group["rule_list"]}
     assert any(usage["strategy_id"] == STRATEGY_ID and usage["veto"] and usage["weight"] == 5
-               for usage in rule_by_id["EVT-01"]["used_by"])
-    assert rule_by_id["THS-03"]["used_by"] == [] and rule_by_id["THS-03"]["status"] == "no_data"
-    assert rule_by_id["THS-03"]["method"] == "manual"
-    assert rule_by_id["SEN-12"]["band_of"] == "SEN-01" and rule_by_id["SEN-12"]["operator"] == "less_than"
-    assert rule_by_id["SEN-01"]["rule_name"] == "vix_at_least_15" and "weight" not in rule_by_id["SEN-01"]
+               for usage in rule_by_id["R-EVT-01"]["used_by"])
+    assert rule_by_id["R-THS-03"]["used_by"] == [] and rule_by_id["R-THS-03"]["status"] == "no_data"
+    assert rule_by_id["R-THS-03"]["method"] == "manual"
+    assert rule_by_id["R-SEN-04"]["band_of"] == "R-SEN-01" and rule_by_id["R-SEN-04"]["operator"] == "less_than"
+    assert rule_by_id["R-SEN-01"]["rule_name"] == "vix_at_least_15" and "weight" not in rule_by_id["R-SEN-01"]
 
 
 def test_strategy_list_is_bilingual_with_english_default():
@@ -120,8 +120,8 @@ def test_rule_text_script_is_served():
 def test_the_rule_list_carries_the_indicator_text_and_the_lines_of_the_measure():
     group_list = web_server.web_server_get_rule_catalog()["group_list"]
     rule_by_id = {rule["rule_id"]: rule for group in group_list for rule in group["rule_list"]}
-    rule = rule_by_id["MAC-03"]
+    rule = rule_by_id["R-MAC-03"]
     assert rule["indicator_description"]["en"].startswith("Yield on the 10-year")
-    assert [item["rule_id"] for item in rule["indicator_line_list"]] == ["MAC-03", "MAC-13"]
+    assert [item["rule_id"] for item in rule["indicator_line_list"]] == ["R-MAC-03", "R-MAC-04"]
     assert [item["line"] for item in rule["indicator_line_list"]] == ["< 4.5", "< 5.0"]
-    assert rule_by_id["POS-01"]["indicator_description"] is None and rule_by_id["POS-01"]["indicator_line_list"] == []
+    assert rule_by_id["R-POS-01"]["indicator_description"] is None and rule_by_id["R-POS-01"]["indicator_line_list"] == []

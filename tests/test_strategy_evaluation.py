@@ -93,9 +93,9 @@ def test_nested_tier_lines_give_partial_credit():
 
 def test_strategy_evaluation_picks_best_expiration_window():
     contract_gate = GateDefinition("gate_2", "Gate 2", [
-        build_rule("CTR-02", "days", "between", 4, [30, 45])], per_expiration_window=True)
+        build_rule("R-CTR-04", "days", "between", 4, [30, 45])], per_expiration_window=True)
     macro_gate = GateDefinition("gate_0", "Gate 0", [
-        build_rule("EVT-01", "clear", "is_true", 5, veto=True)])
+        build_rule("R-EVT-01", "clear", "is_true", 5, veto=True)])
     strategy = StrategyDefinition("s", "S", "t", StrategyThresholds(), [macro_gate, contract_gate])
     result = strategy_evaluation_evaluate_strategy_for_symbol(
         strategy, "AAA", build_indicator_value_by_name(clear=True),

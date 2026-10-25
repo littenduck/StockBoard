@@ -33,11 +33,18 @@ class RetiredRule:
 
 
 @dataclass
+class RuleTopic:
+    topic_id: str
+    display_name: LocalizedText
+
+
+@dataclass
 class RuleGroup:
     group_id: str
     display_name: LocalizedText
     description: LocalizedText
     aspect: Optional[LocalizedText] = None
+    topic_list: List[RuleTopic] = field(default_factory=list)
 
 
 @dataclass
@@ -45,6 +52,7 @@ class RuleCatalogEntry:
     rule_id: str
     rule_name: str  # a short lower case name with underscores, like an indicator_name
     description: LocalizedText
+    topic: Optional[str] = None  # the topic of its group, in config/rules.yaml
     method: Optional[str] = None
     quantifiable: Optional[str] = None
     backtestable: Optional[str] = None
@@ -65,7 +73,8 @@ class RuleCatalogEntry:
 
     @property
     def group_id(self) -> str:
-        return self.rule_id[:3]
+        """R-MAC-03 belongs to the group MAC."""
+        return self.rule_id.split("-")[1] if self.rule_id.startswith("R-") else self.rule_id[:3]
 
 
 @dataclass
@@ -77,6 +86,7 @@ class RuleCatalog:
 
 
 RULE_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
+RULE_ID_PATTERN = re.compile(r"^R-([A-Z]{3})-(\d{2})$")
 INDICATOR_OWNED_FIELD_LIST = ["method", "quantifiable", "backtestable", "history_source", "history_start", "status"]
 
 
@@ -128,6 +138,8 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, i
         display_name=localized_text_build_from_raw_value(raw_group.get("display_name"), "group {} name".format(raw_group["group_id"])),
         description=localized_text_build_from_raw_value(raw_group.get("description"), "group {} description".format(raw_group["group_id"])),
         aspect=localized_text_build_optional_from_raw_value(raw_group.get("aspect"), "group {} aspect".format(raw_group["group_id"])),
+        topic_list=[RuleTopic(raw_topic["topic_id"], localized_text_build_from_raw_value(
+            raw_topic.get("display_name"), "topic {} name".format(raw_topic["topic_id"]))) for raw_topic in raw_group.get("topic_list") or []],
     ) for raw_group in raw["rule_group_list"]]
     retired_rule_list = [RetiredRule(
         rule_id=raw_retired["rule_id"], legacy_id=raw_retired.get("legacy_id") or [],
@@ -139,6 +151,37 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, i
         retired_rule_list=retired_rule_list,
         indicator_registry=registry,
     )
+
+
+def rule_catalog_validate_numbering_and_topics(rule_catalog: RuleCatalog) -> List[str]:
+    """Ids run 01, 02, 03 ... in the order of the file inside every group (no gaps, no repeats), and a topic is one unbroken run of rules."""
+    error_list = []
+    next_number_by_group: Dict[str, int] = {}
+    topic_by_group = {group.group_id: {topic.topic_id for topic in group.topic_list} for group in rule_catalog.rule_group_list}
+    seen_topic_set: Set[tuple] = set()
+    last_topic_by_group: Dict[str, Optional[str]] = {}
+    for entry in rule_catalog.rule_entry_by_id.values():
+        match = RULE_ID_PATTERN.match(entry.rule_id)
+        if not match:
+            error_list.append("rule id {} must look like R-MAC-03".format(entry.rule_id))
+            continue
+        group_id, number = match.group(1), int(match.group(2))
+        expected = next_number_by_group.get(group_id, 1)
+        if number != expected:
+            error_list.append("rule {} is out of order: {} comes next in its group".format(entry.rule_id, "R-{}-{:02d}".format(group_id, expected)))
+        next_number_by_group[group_id] = number + 1
+        if topic_by_group.get(group_id) and entry.topic not in topic_by_group[group_id]:
+            error_list.append("rule {} has an unknown topic {}".format(entry.rule_id, entry.topic))
+        key = (group_id, entry.topic)
+        if last_topic_by_group.get(group_id) != entry.topic and key in seen_topic_set:
+            error_list.append("topic {} of group {} is split in two runs".format(entry.topic, group_id))
+        seen_topic_set.add(key)
+        last_topic_by_group[group_id] = entry.topic
+    for group in rule_catalog.rule_group_list:
+        for topic in group.topic_list:
+            if (group.group_id, topic.topic_id) not in seen_topic_set:
+                error_list.append("topic {} of group {} has no rule".format(topic.topic_id, group.group_id))
+    return error_list
 
 
 def rule_catalog_validate_rule_catalog_against_known_indicators(
@@ -183,6 +226,7 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
                 error_list.append("rule {} is built but has no indicator".format(entry.rule_id))
             elif entry.indicator not in known_indicator_name_set:
                 error_list.append("rule {} uses unknown indicator {}".format(entry.rule_id, entry.indicator))
+    error_list += rule_catalog_validate_numbering_and_topics(rule_catalog)
     rule_name_list = [entry.rule_name for entry in rule_catalog.rule_entry_by_id.values()]
     for rule_name in sorted({name for name in rule_name_list if rule_name_list.count(name) > 1}):
         error_list.append("two rules share the rule_name {}".format(rule_name))

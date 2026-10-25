@@ -1,4 +1,5 @@
 import os
+import re
 
 import pytest
 
@@ -35,56 +36,56 @@ def build_catalog(*entry_list):
 
 
 def test_strategy_rule_takes_the_test_from_the_catalog_and_the_weight_from_the_strategy():
-    catalog = build_catalog(build_entry("TST-01"))
-    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 2}, catalog)
-    assert (rule.rule_name, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("tst_01", "x", "less_than", 1, 2, False)
+    catalog = build_catalog(build_entry("R-TST-01"))
+    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "R-TST-01", "weight": 2}, catalog)
+    assert (rule.rule_name, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("r_tst_01", "x", "less_than", 1, 2, False)
     assert strategy_loader_build_rule_definition_from_catalog(
-        {"rule_id": "TST-01", "weight": 5, "veto": True}, catalog).veto is True
+        {"rule_id": "R-TST-01", "weight": 5, "veto": True}, catalog).veto is True
 
 
 def test_manual_rule_can_be_listed_but_never_vetoes():
-    catalog = build_catalog(build_entry("TST-01", method="manual", status="no_data", indicator=None, operator=None, value=None))
-    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 3}, catalog)
+    catalog = build_catalog(build_entry("R-TST-01", method="manual", status="no_data", indicator=None, operator=None, value=None))
+    rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "R-TST-01", "weight": 3}, catalog)
     assert rule.indicator is None and rule.method == "manual"
     with pytest.raises(ValueError):
-        strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 5, "veto": True}, catalog)
+        strategy_loader_build_rule_definition_from_catalog({"rule_id": "R-TST-01", "weight": 5, "veto": True}, catalog)
 
 
 def test_strategy_rule_errors():
-    catalog = build_catalog(build_entry("TST-01"))
-    for raw_rule in ({"rule_id": "TST-99", "weight": 3}, {"rule_id": "TST-01"}, {"rule_id": "TST-01", "weight": 6},
-                     {"rule_id": "TST-01", "weight": 0}, {"rule_id": "TST-01", "weight": 2.5},
-                     {"rule_id": "TST-01", "weight": 3, "veto": "yes"}, {"rule_id": "TST-01", "weight": 3, "variant_group": "g"}):
+    catalog = build_catalog(build_entry("R-TST-01"))
+    for raw_rule in ({"rule_id": "R-TST-99", "weight": 3}, {"rule_id": "R-TST-01"}, {"rule_id": "R-TST-01", "weight": 6},
+                     {"rule_id": "R-TST-01", "weight": 0}, {"rule_id": "R-TST-01", "weight": 2.5},
+                     {"rule_id": "R-TST-01", "weight": 3, "veto": "yes"}, {"rule_id": "R-TST-01", "weight": 3, "variant_group": "g"}):
         with pytest.raises(ValueError):
             strategy_loader_build_rule_definition_from_catalog(raw_rule, catalog)
 
 
 def test_catalog_validation_finds_problems():
-    catalog = build_catalog(build_entry("TST-01", indicator=None),
-                            build_entry("TST-02", status="soon"),
-                            build_entry("TST-03", band_of="TST-77"),
-                            build_entry("TST-04", operator="near"),
-                            build_entry("TST-05", value=None),
-                            build_entry("TST-06", backtestable="maybe"),
-                            build_entry("ZZZ-01", indicator="x"))
+    catalog = build_catalog(build_entry("R-TST-01", indicator=None),
+                            build_entry("R-TST-02", status="soon"),
+                            build_entry("R-TST-03", band_of="R-TST-77"),
+                            build_entry("R-TST-04", operator="near"),
+                            build_entry("R-TST-05", value=None),
+                            build_entry("R-TST-06", backtestable="maybe"),
+                            build_entry("R-ZZZ-01", indicator="x"))
     assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})) == 7
 
 
 def test_history_fields_follow_the_format():
-    catalog = build_catalog(build_entry("TST-01", history_source="fred:DGS10", history_start="1962-01-02"),
-                            build_entry("TST-02", history_source="fred", history_start="1962"),
-                            build_entry("TST-03", history_source="fred:DGS10"),
-                            build_entry("TST-04", history_source="paid_vendor", history_start="2020-01-01"),
-                            build_entry("TST-05", history_source="fred", history_start="last year"))
+    catalog = build_catalog(build_entry("R-TST-01", history_source="fred:DGS10", history_start="1962-01-02"),
+                            build_entry("R-TST-02", history_source="fred", history_start="1962"),
+                            build_entry("R-TST-03", history_source="fred:DGS10"),
+                            build_entry("R-TST-04", history_source="paid_vendor", history_start="2020-01-01"),
+                            build_entry("R-TST-05", history_source="fred", history_start="last year"))
     errors = rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})
-    assert len(errors) == 3 and all(rule_id in " ".join(errors) for rule_id in ("TST-03", "TST-04", "TST-05"))
+    assert len(errors) == 3 and all(rule_id in " ".join(errors) for rule_id in ("R-TST-03", "R-TST-04", "R-TST-05"))
 
 
 def test_a_retired_id_cannot_come_back():
-    catalog = build_catalog(build_entry("TST-01"))
-    catalog.retired_rule_list = [RetiredRule("TST-01", [], LocalizedText("gone", "没了")), RetiredRule("TST-02", ["A01"], LocalizedText("gone", "没了"))]
+    catalog = build_catalog(build_entry("R-TST-01"))
+    catalog.retired_rule_list = [RetiredRule("R-TST-01", [], LocalizedText("gone", "没了")), RetiredRule("R-TST-02", ["A01"], LocalizedText("gone", "没了"))]
     errors = rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})
-    assert len(errors) == 1 and "TST-01" in errors[0]
+    assert len(errors) == 1 and "R-TST-01" in errors[0]
 
 
 def test_manual_rules_are_never_backtestable():
@@ -108,13 +109,16 @@ def test_every_backtestable_rule_names_its_free_history():
 def test_the_project_catalog_has_no_retired_id_and_keeps_every_legacy_id():
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
     assert {retired.rule_id for retired in catalog.retired_rule_list} == {"VAL-02", "LIQ-02", "EVT-09"}
-    kept = {legacy for entry in catalog.rule_entry_by_id.values() for legacy in entry.legacy_id}
+    older = re.compile(r"^[A-Z]{3}-\d\d$")  # the ids the rules had before the R-MAC-03 numbering
+    kept = {legacy for entry in catalog.rule_entry_by_id.values() for legacy in entry.legacy_id if not older.match(legacy)}
     kept |= {legacy for retired in catalog.retired_rule_list for legacy in retired.legacy_id}
     assert len(kept) == 119
+    for entry in catalog.rule_entry_by_id.values():
+        assert older.match(entry.legacy_id[0]), entry.rule_id  # the id it had before the renumbering comes first
 
 
 def test_todo_rule_may_name_an_indicator_that_does_not_exist_yet():
-    catalog = build_catalog(build_entry("TST-01", status="todo", indicator="not_written_yet"))
+    catalog = build_catalog(build_entry("R-TST-01", status="todo", indicator="not_written_yet"))
     assert rule_catalog_validate_rule_catalog_against_known_indicators(catalog, set()) == []
 
 
@@ -199,6 +203,37 @@ def test_rule_names_are_short_unique_words_with_underscores():
 
 
 def test_a_duplicate_or_malformed_rule_name_is_reported():
-    catalog = build_catalog(build_entry("TST-01", rule_name="same"), build_entry("TST-02", rule_name="same"), build_entry("TST-03", rule_name="Bad Name"))
+    catalog = build_catalog(build_entry("R-TST-01", rule_name="same"), build_entry("R-TST-02", rule_name="same"), build_entry("R-TST-03", rule_name="Bad Name"))
     errors = rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})
-    assert any("share the rule_name same" in error for error in errors) and any("TST-03 needs a rule_name" in error for error in errors)
+    assert any("share the rule_name same" in error for error in errors) and any("R-TST-03 needs a rule_name" in error for error in errors)
+
+
+def build_topic_catalog(entry_topic_list, topic_id_list=("a", "b")):
+    from stockboard_backend.rule_catalog import RuleTopic
+    group = RuleGroup("TST", LocalizedText("T", "T"), LocalizedText("", ""), topic_list=[RuleTopic(name, LocalizedText(name, name)) for name in topic_id_list])
+    entry_list = [build_entry("R-TST-%02d" % number, topic=topic) for number, topic in enumerate(entry_topic_list, start=1)]
+    return RuleCatalog([group], {entry.rule_id: entry for entry in entry_list})
+
+
+def test_numbers_run_in_file_order_without_gaps_and_topics_are_unbroken_runs():
+    from stockboard_backend.rule_catalog import rule_catalog_validate_numbering_and_topics as validate
+    assert validate(build_topic_catalog(["a", "a", "b"])) == []
+    assert any("split in two runs" in error for error in validate(build_topic_catalog(["a", "b", "a"])))
+    assert any("unknown topic" in error for error in validate(build_topic_catalog(["a", "zzz"])))
+    assert any("has no rule" in error for error in validate(build_topic_catalog(["a", "a"])))
+    catalog = build_topic_catalog(["a", "a", "b"])
+    catalog.rule_entry_by_id = {"R-TST-01": catalog.rule_entry_by_id["R-TST-01"], "R-TST-03": catalog.rule_entry_by_id["R-TST-03"]}
+    assert any("out of order" in error and "R-TST-02" in error for error in validate(catalog))
+
+
+def test_the_project_catalog_numbers_every_category_from_01_in_its_topic_order():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    assert all(re.match(r"^R-[A-Z]{3}-\d{2}$", rule_id) for rule_id in catalog.rule_entry_by_id)
+    for group in catalog.rule_group_list:
+        id_list = [entry.rule_id for entry in catalog.rule_entry_by_id.values() if entry.group_id == group.group_id]
+        assert id_list == ["R-%s-%02d" % (group.group_id, number) for number in range(1, len(id_list) + 1)], group.group_id
+        assert group.topic_list, group.group_id
+    for entry in catalog.rule_entry_by_id.values():
+        if entry.band_of:  # another line of a measure sits right after its main rule or after an earlier line of it
+            ids = list(catalog.rule_entry_by_id)
+            assert ids.index(entry.band_of) < ids.index(entry.rule_id) and entry.topic == catalog.rule_entry_by_id[entry.band_of].topic, entry.rule_id

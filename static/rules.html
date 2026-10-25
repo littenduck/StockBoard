@@ -15,7 +15,8 @@
   .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
   .rule-group { margin-bottom:var(--space-6); }
   .rule-group > header { margin-bottom:var(--space-2); }
-  .rule-group .row { display:grid; grid-template-columns:72px 1fr; gap:var(--space-3); align-items:baseline; margin:0;
+  .rule-group h3 { margin:var(--space-5) var(--space-2) var(--space-1); } .rule-group .row[data-tier="1"] { margin-left:var(--space-5); }
+  .rule-group .row { display:grid; grid-template-columns:88px 1fr; gap:var(--space-3); align-items:baseline; margin:0;
     border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
   .rule-group .row > :first-child { white-space:nowrap; } .rule-group > header > small, .rule-group .row > div > small { display:block; } .rule-group .row > div > small { margin-top:var(--space-1); }
   .rule-meta { display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:var(--space-2) var(--space-4); margin-top:var(--space-3); }
@@ -55,22 +56,14 @@ function markTargetRow() {
   return row;
 }
 window.addEventListener('hashchange', markTargetRow);
-const RECORD_FIELD_LIST = ['indicator', 'operator', 'value', 'band_of', 'method', 'quantifiable', 'status', 'backtestable', 'history_source', 'history_start', 'fetch_every', 'max_age', 'legacy_id'];
-const DASH = '<p class="muted">—</p>';
-function renderFieldValue(rule, name) {
-  const value = rule[name];
-  if (value == null || value === '') return DASH;
-  if (name === 'band_of') return `<p><a href="#rule-${value}">${escapeText(value)}</a></p>`;
-  return `<p${name === 'status' ? ` class="${STATUS_COLOR[value]}"` : ''}>${escapeText(Array.isArray(value) ? value.join(', ') : String(value)).replace(/([_:+])/g, '$1<wbr>')}</p>`;
-}
 function renderRuleRow(rule) {
-  const field = name => `<div><small>${name}</small>${renderFieldValue(rule, name)}</div>`;
+  const field = name => `<div><small>${name}</small>${ruleTextRenderFieldValue(rule, name, STATUS_COLOR)}</div>`;
   const usage = rule.used_by.map(use => `<small class="box">${escapeText(primaryText(use.display_name))} · W${use.weight}${use.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('');
-  return `<div class="row" id="rule-${rule.rule_id}"><small>${rule.rule_id}</small>
+  return `<div class="row" id="rule-${rule.rule_id}" data-tier="${rule.band_of ? 1 : 0}"><small>${rule.rule_id}</small>
     <div>${languageRenderName(rule.rule_name)}<small>${languageRenderText(rule.description)}</small>${ruleTextRenderIndicator(rule, true)}
-      <div class="rule-meta">${RECORD_FIELD_LIST.map(field).join('')}</div>
-      <div class="rule-meta"><div><small>note</small>${rule.note ? `<p>${languageRenderText(rule.note)}</p>` : DASH}</div>
-        <div><small>used_by</small>${usage ? `<div class="usage">${usage}</div>` : DASH}</div></div></div></div>`;
+      <div class="rule-meta">${RULE_TEXT_FIELD_LIST.map(field).join('')}</div>
+      <div class="rule-meta"><div><small>note</small>${rule.note ? `<p>${languageRenderText(rule.note)}</p>` : RULE_TEXT_DASH}</div>
+        <div><small>used_by</small>${usage ? `<div class="usage">${usage}</div>` : RULE_TEXT_DASH}</div></div></div></div>`;
 }
 
 function renderStaticText() {
@@ -112,8 +105,10 @@ function renderRuleCatalog(shouldScrollToTarget = true) {
   document.getElementById('rule-group-list').innerHTML = ruleCatalog.group_list.map(group => {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
+    const topicName = Object.fromEntries(group.topic_list.map(topic => [topic.topic_id, topic.display_name]));
     return `<section class="rule-group"><header><h2>${languageRenderText(group.display_name)}</h2><small>${languageRenderText(group.description)}</small></header>
-      ${ruleList.map(renderRuleRow).join('')}</section>`;
+      ${ruleList.map((rule, index) => (index && ruleList[index - 1].topic === rule.topic || !topicName[rule.topic] ? '' : `<h3>${languageRenderText(topicName[rule.topic])}</h3>`)
+        + renderRuleRow(rule)).join('')}</section>`;
   }).join('');
   const target = markTargetRow();
   if (target && shouldScrollToTarget) target.scrollIntoView({ block:'center' });
