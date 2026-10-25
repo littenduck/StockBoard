@@ -5,7 +5,7 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 
 ## Writing both languages
 
-- Every text in `config/rules_auto.yaml`, `strategies/*.yaml` and `config/settings.yaml` that a person reads is an object `{en: "...", zh: "..."}`. Both are required and non-empty; the app refuses to start otherwise.
+- Every text in `config/rules.yaml`, `strategies/*.yaml` and `config/settings.yaml` that a person reads is an object `{en: "...", zh: "..."}`. Both are required and non-empty; the app refuses to start otherwise. Exception: the `explanation` and `review` fields of a rule in `config/rules.yaml` are Chinese-only working notes, and the app does not show them yet.
 - English must not contain Chinese characters. Use the glossary below; do not invent variants.
 - Technical terms stay English in both languages: GATE, VIX, SPX, DTE, IV, RV30, FGI, HY, bp, Delta, Put, Call.
 - Interface strings live in `static/language.js` (`UI_TEXT`), with the same rule.

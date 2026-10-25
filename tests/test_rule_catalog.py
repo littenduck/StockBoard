@@ -10,7 +10,7 @@ from stockboard_backend.settings_loader import PROJECT_DIRECTORY, settings_loade
 from stockboard_backend.strategy_loader import strategy_loader_build_rule_definition_from_catalog, \
     strategy_loader_load_all_strategy_definitions_from_directory
 
-CATALOG_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "config", "rules_auto.yaml")
+CATALOG_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml")
 
 
 def test_project_catalog_and_strategies_are_valid():

@@ -28,7 +28,7 @@ help:
     期权数据只在美股开盘时有实时报价，休市时 GATE 2 显示「未知」。不构成投资建议。
 # Not built yet (need account data or manual answers): GATE 3 capital structure,
 # GATE 4 position limits, rules tagged ASK / PLAN, Fed / FOMC / CPI / oil rules.
-# Rules are defined in config/rules_auto.yaml; here only the id, this strategy's weight and the variant group.
+# Rules are defined in config/rules.yaml; here only the id, this strategy's weight and the variant group.
 # Variant groups: list the loose rule first, the strict rule after it.
 gates:
   - gate_id: gate_0_macro

@@ -2,6 +2,8 @@
 
 A strategy is one YAML file in `strategies/`. The app loads every file in that folder at startup and refuses to start if a rule refers to an unknown indicator.
 
+> **Status (branch `refactor/rule-catalog-by-theme`):** `config/rules.yaml` has been redesigned (new ids, `kind`, `acquisition`, `bands`, `explanation`, `review`). The files in `strategies/`, the loader and the evaluator still use the old ids and rules, so they do not load against the new catalog until they are migrated. Sections below describe the new catalog; the "Variant groups" section describes what the evaluator does today.
+
 ## File format
 
 ```yaml
@@ -20,25 +22,40 @@ gates:                                    # evaluated in order, top to bottom
   - gate_id: gate_0_macro
     display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}
     rules:
-      - {rule_id: A07, weight: 2, variant_group: ten_year_level}
-      - {rule_id: A02, weight: 4, variant_group: ten_year_level}
+      - {rule_id: MAC-03, weight: 4}
+      - {rule_id: SEN-01, weight: 5}
 ```
 
-A strategy only references rules. Every rule is defined once in `config/rules_auto.yaml` (description, indicator, operator, threshold, default weight, availability). A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `default_weight`) and an optional `variant_group`. Only rules with `availability: automatic` can be used; the loader refuses copies (`alias_of`) and rules without an indicator.
+A strategy only references rules. Every rule is defined once in `config/rules.yaml` (description, explanation, importance, kind, acquisition, availability, indicator with operator and threshold or with bands, old ids, review notes). A strategy entry has `rule_id`, an optional `weight` (1 to 5, defaults to the catalog's `default_weight`) and an optional `variant_group`. Any rule can be listed. A rule the app has no data for, including every `kind: manual` rule, evaluates to unknown ❓ and is left out of the score (target behaviour; the current loader still refuses rules without an indicator).
 
 ## Languages
 
-Every text a person reads (`display_name`, `source`, `summary`, `help`, gate `display_name`, and rule text in `config/rules_auto.yaml`) is `{en, zh}`. Both are required, English must not contain Chinese characters, and help paragraphs must pair up. The app refuses to start otherwise; `pytest` checks it too. Glossary: `docs/language.md`.
+Every text a person reads (`display_name`, `source`, `summary`, `help`, gate `display_name`, and rule text in `config/rules.yaml`) is `{en, zh}`. Both are required, English must not contain Chinese characters, and help paragraphs must pair up. The app refuses to start otherwise; `pytest` checks it too. Glossary: `docs/language.md`.
 
 ## Rule ids
 
-Id = group letter + two digits. A to F and Z come from the Notion scorecard: A #1 five-layer framework, B #2 CSP parameters, C #3 SPMO rotation, D #4 directional buying, E #5 Wheel, F #6 wheel stock selection, Z common layer. T (trend), R (pullback) and M (momentum) were added with the stock strategies. The same id means the same rule in every strategy. A strategy uses only the rules it needs and that can be computed, so ids inside one gate are not consecutive. The full list, with the reason each unused rule is not automated, is on the 规则目录 page (`/rules`).
+Id = category code + two digits, for example `TRD-03`. The same id means the same rule in every strategy, and ids are never reused. Categories run from macro down to detail, grouped into six aspects:
+
+| Aspect | Categories |
+|---|---|
+| Fundamentals | `MAC` macro, `IND` industry, `QUA` company quality, `MGT` management and governance, `VAL` valuation |
+| Sentiment and flows | `SEN` sentiment and positioning |
+| Technicals | `TRD` trend and momentum |
+| Events | `EVT` events |
+| Options | `LIQ` liquidity, `VOL` volatility, `CTR` contract selection, `RET` return and payoff |
+| Risk | `POS` position, account and portfolio, `THS` thesis and discipline, `EXT` management and exit |
+
+Each rule lists the old ids it replaces in `legacy_id` (A01 to Z20 plus T, R, M). Old alias rules were merged away, and loose and strict tiers of one test became one rule with `bands`. Three old rules are not rules any more because they are strategy choices (B12, D15, C06); see the comment at the end of `config/rules.yaml`. The full list is on the 规则目录 page (`/rules`).
+
+Every rule has a `kind`. `script` means the app gets the value with code; `manual` means it would come from you, your trade plan or your brokerage account. `acquisition` says how a script rule is obtained: `api_fetch` (stable API or CSV such as FRED and yfinance), `scrape` (web page, unofficial endpoint, spreadsheet), `computed` (calculated from fetched prices, series or option chains), `ai_search` (an AI reads web pages and records the result with its source), or `manual`.
+
+`default_weight` is the importance score from 1 to 5. A rule with `bands` gives partial credit: the first matching band wins and no match means credit 0. Credits are a first draft. A weight 5 manual rule in a strategy keeps the pass result unknown, because the veto can never be checked.
 
 Operators: `less_than`, `less_or_equal`, `greater_than`, `greater_or_equal`, `between` (value is `[low, high]`, inclusive), `is_true`.
 
 ## Rule status
 
-`pass` ✅, `fail` ❌, `unknown` ❓ (indicator missing), `not_applicable` ➖.
+`pass` ✅, `fail` ❌, `unknown` ❓ (no data: indicator missing, or a manual rule), `not_applicable` ➖.
 
 ## Two independent results per symbol
 
@@ -50,11 +67,11 @@ A high score can still fail the veto, and a low score can still pass.
 
 ## Variant groups
 
-Rules sharing a `variant_group` are loose and strict versions of one test (for example VIX at least 13 and at least 15). Only the strictest passing rule counts as pass; the looser ones become `not_applicable`. If none pass, only the loosest counts as fail. Order rules from loose to strict inside the file.
+Rules sharing a `variant_group` are loose and strict versions of one test (for example VIX at least 13 and at least 15). Only the strictest passing rule counts as pass; the looser ones become `not_applicable`. If none pass, only the loosest counts as fail. Order rules from loose to strict inside the file. The new catalog replaces most variant groups with `bands` on a single rule; the evaluator does not read `bands` yet.
 
 ## Expiration windows
 
-A gate with `per_expiration_window: true` is evaluated once per window in `option_expiration_window_list` (`config/settings.yaml`). The symbol's result for that gate is the window with the highest score; the other windows are shown as alternatives. Rule `B07` (DTE 30 to 45) is fixed, so the standard window normally wins.
+A gate with `per_expiration_window: true` is evaluated once per window in `option_expiration_window_list` (`config/settings.yaml`). The symbol's result for that gate is the window with the highest score; the other windows are shown as alternatives. Rule `CTR-02` (DTE 30 to 45 is full credit; old id `B07`) is fixed, so the standard window normally wins.
 
 ## Converting to other formats
 

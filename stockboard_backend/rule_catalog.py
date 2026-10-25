@@ -1,4 +1,4 @@
-"""Load config/rules_auto.yaml: the one place where every rule is defined."""
+"""Load config/rules.yaml: the one place where every rule is defined."""
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
