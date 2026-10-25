@@ -6,10 +6,11 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
-from stockboard_backend import (company_indicators, event_calendar, indicator_calculation, live_indicators, macro_data,
-                                market_data, option_chain, snapshot_storage, strategy_evaluation)
+from stockboard_backend import (company_indicators, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
+                                option_chain, snapshot_storage, strategy_evaluation, yahoo_gate)
+from stockboard_backend.fetch_cache import FetchCache
 from stockboard_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
 from stockboard_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
 
@@ -23,14 +24,19 @@ SYMBOL_WORKER_COUNT = 4
 POLL_SECONDS = 60
 SNAPSHOT_SCHEMA_VERSION = 4
 SPARKLINE_TRADING_DAY_COUNT = 60
+TREASURY_INDICATOR_ID_LIST = ["treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points"]
+HIGH_YIELD_INDICATOR_ID_LIST = ["high_yield_credit_spread_basis_points"]
+fetch_cache_holder: Dict[str, Optional[FetchCache]] = {"cache": None}
 
 
-def refresh_scheduler_fetch_series_or_none(fetch_function):
-    try:
-        return fetch_function()
-    except Exception as error:  # a failed source only makes its indicators unknown
-        print("fetch failed:", fetch_function.__name__, error)
-        return None
+def refresh_scheduler_get_fetch_cache(settings: ApplicationSettings) -> FetchCache:
+    """The one cache of the process, built from config/indicators.yaml on first use."""
+    if fetch_cache_holder["cache"] is None:
+        yahoo_gate.yahoo_gate_install()
+        registry = indicator_registry.indicator_registry_load_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"))
+        fetch_cache_holder["cache"] = FetchCache(registry, lambda now: market_data.market_data_determine_whether_us_market_is_open(
+            datetime.datetime.fromtimestamp(now, datetime.timezone.utc), settings.market_holiday_date_set, settings.market_early_close_date_set))
+    return fetch_cache_holder["cache"]
 
 
 def refresh_scheduler_find_next_ex_dividend_date(snapshot: dict) -> Optional[datetime.date]:
@@ -45,10 +51,12 @@ def refresh_scheduler_find_next_ex_dividend_date(snapshot: dict) -> Optional[dat
 def refresh_scheduler_build_option_indicator_value_by_window_label(
     option_session: option_chain.OptionChainSession, underlying_price: float, realized_volatility_percent: Optional[float],
     settings: ApplicationSettings, risk_free_rate_percent: float, today: datetime.date,
-    support_price: Optional[float] = None, dividend_snapshot: Optional[dict] = None,
-) -> Dict[str, Dict[str, IndicatorValue]]:
+    support_price: Optional[float] = None,
+) -> Tuple[Dict[str, Dict[str, IndicatorValue]], Dict[str, Optional[datetime.date]]]:
+    """Per window: the indicators of the selected put, and the expiration date chosen (the event rules need it even without a quote)."""
     expiration_date_list = option_session.expiration_date_list()
     indicator_by_window_label = {}
+    expiration_date_by_window_label = {}
     for window in settings.option_expiration_window_list:
         expiration_date = option_chain.option_chain_determine_expiration_within_day_window(
             expiration_date_list, window.minimum_days, window.maximum_days, today)
@@ -63,11 +71,9 @@ def refresh_scheduler_build_option_indicator_value_by_window_label(
             None if selected_contract is None else option_chain.option_chain_calculate_put_skew_points(
                 put_table, underlying_price, selected_contract.days_to_expiration,
                 risk_free_rate_percent))
-        if expiration_date is not None:
-            value_by_id.update(refresh_scheduler_build_option_life_indicator_value_by_id(
-                settings, today, expiration_date, dividend_snapshot or {}))
         indicator_by_window_label[window.label] = value_by_id
-    return indicator_by_window_label
+        expiration_date_by_window_label[window.label] = expiration_date
+    return indicator_by_window_label, expiration_date_by_window_label
 
 
 def refresh_scheduler_build_covered_call_indicator_value_by_id(
@@ -107,54 +113,69 @@ def refresh_scheduler_build_option_life_indicator_value_by_id(
     return {key: IndicatorValue(key, value, "calendar") for key, value in value_by_id.items() if value is not None}
 
 
+def refresh_scheduler_fetch_option_indicators(
+    symbol: str, price_history, realized_volatility, ten_year_yield, settings: ApplicationSettings, today: datetime.date,
+) -> dict:
+    """The option job of one symbol: the window indicators, the expiration chosen per window and the covered call. Asks Yahoo."""
+    option_session = option_chain.OptionChainSession(symbol)
+    price = float(price_history["Close"].iloc[-1])
+    value_by_window_label, expiration_by_window_label = refresh_scheduler_build_option_indicator_value_by_window_label(
+        option_session, price, None if realized_volatility is None else realized_volatility.value, settings,
+        ten_year_yield.value if ten_year_yield else option_chain.DEFAULT_RISK_FREE_RATE_PERCENT, today,
+        float(price_history["Close"].iloc[-SUPPORT_LOW_TRADING_DAY_COUNT:].min()))
+    return {"value_by_window_label": value_by_window_label, "expiration_by_window_label": expiration_by_window_label,
+            "covered_call": refresh_scheduler_build_covered_call_indicator_value_by_id(option_session, price, today)}
+
+
 def refresh_scheduler_evaluate_symbol_for_all_strategies(
     symbol: str, price_history, shared_indicator_value_by_id: Dict[str, IndicatorValue],
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
-    market_history_by_symbol: Optional[Dict[str, object]] = None,
+    market_history_by_symbol: Optional[Dict[str, object]] = None, fetch_cache: Optional[FetchCache] = None,
+    price_fetched_at: Optional[float] = None,
 ) -> dict:
     today = datetime.date.today()
+    now = time.time()
+    fetch_cache = fetch_cache or refresh_scheduler_get_fetch_cache(settings)
+    registry = fetch_cache.registry
     market_history_by_symbol = market_history_by_symbol or {}
-    try:
-        company_snapshot = live_indicators.live_indicators_fetch_company_snapshot(symbol)
-        company_indicator_value_by_id = live_indicators.live_indicators_build_company_indicator_value_by_id(symbol, today)
-    except Exception as error:  # a symbol without company data keeps its price indicators
-        print("company data failed:", symbol, error)
-        company_snapshot, company_indicator_value_by_id = {}, {}
-    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_edgar_indicator_value_by_id(symbol, today))
-    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_implied_volatility_indicator_value_by_id(symbol, today))
-    spmo_rank = live_indicators.live_indicators_fetch_spmo_rank_by_symbol().get(symbol)
-    if spmo_rank is not None:
-        company_indicator_value_by_id["spmo_holding_rank"] = IndicatorValue("spmo_holding_rank", spmo_rank, "yfinance SPMO")
-    option_session = option_chain.OptionChainSession(symbol)
-    company_indicator_value_by_id.update(refresh_scheduler_build_covered_call_indicator_value_by_id(
-        option_session, float(price_history["Close"].iloc[-1]), today))
+    company_snapshot = live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, symbol)
     info = company_snapshot.get("info") if isinstance(company_snapshot.get("info"), dict) else {}
+    shares_outstanding = company_indicators.company_indicators_get_number(info, "sharesOutstanding")
+    company_indicator_value_by_id = live_indicators.live_indicators_build_company_indicator_value_by_id(company_snapshot, today)
+    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_short_interest_indicator_value_by_id(
+        fetch_cache, symbol, shares_outstanding, today))
+    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_edgar_indicator_value_by_id(fetch_cache, symbol, today))
+    company_indicator_value_by_id.update(live_indicators.live_indicators_fetch_implied_volatility_indicator_value_by_id(fetch_cache, symbol, today))
+    spmo_rank = live_indicators.live_indicators_fetch_spmo_rank_by_symbol(fetch_cache).get(symbol)
+    if spmo_rank is not None:
+        company_indicator_value_by_id["spmo_holding_rank"] = IndicatorValue("spmo_holding_rank", spmo_rank, "yfinance SPMO", observed_at=now)
+
     sector_etf_symbol = company_indicators.company_indicators_find_sector_etf_symbol(info)
     spy_history, sector_history = market_history_by_symbol.get("SPY"), market_history_by_symbol.get(sector_etf_symbol)
-    try:
-        next_earnings_date = market_data.market_data_fetch_next_earnings_date_by_symbol(symbol)
-        is_earnings_date_known = True
-    except Exception as error:
-        print("earnings failed:", symbol, error)
-        next_earnings_date, is_earnings_date_known = None, False
-    symbol_indicator_value_by_id = indicator_calculation.indicator_calculation_build_symbol_indicator_value_by_id(
-        price_history, is_earnings_date_known, next_earnings_date,
-        settings.option_expiration_window_list[0].maximum_days, today,
-        None if spy_history is None else spy_history["Close"], None if sector_history is None else sector_history["Close"])
+    is_earnings_date_known = info is not None and bool(info)
+    next_earnings_date = market_data.market_data_find_next_earnings_date_in_calendar(company_snapshot.get("calendar"), today)
+    symbol_indicator_value_by_id = live_indicators.live_indicators_stamp(
+        indicator_calculation.indicator_calculation_build_symbol_indicator_value_by_id(
+            price_history, is_earnings_date_known, next_earnings_date, settings.option_expiration_window_list[0].maximum_days, today,
+            None if spy_history is None else spy_history["Close"], None if sector_history is None else sector_history["Close"]),
+        price_fetched_at)
 
-    realized_volatility = symbol_indicator_value_by_id.get("realized_volatility_thirty_day")
-    ten_year_yield = shared_indicator_value_by_id.get("treasury_ten_year_yield")
-    try:
-        option_indicator_by_window_label = refresh_scheduler_build_option_indicator_value_by_window_label(
-            option_session, float(price_history["Close"].iloc[-1]),
-            None if realized_volatility is None else realized_volatility.value, settings,
-            ten_year_yield.value if ten_year_yield else option_chain.DEFAULT_RISK_FREE_RATE_PERCENT, today,
-            float(price_history["Close"].iloc[-SUPPORT_LOW_TRADING_DAY_COUNT:].min()), company_snapshot)
-    except Exception as error:
-        print("option chain failed:", symbol, error)
-        option_indicator_by_window_label = {}
+    options, options_fetched_at = fetch_cache.get(
+        "yahoo_options", symbol, lambda: refresh_scheduler_fetch_option_indicators(
+            symbol, price_history, symbol_indicator_value_by_id.get("realized_volatility_thirty_day"),
+            shared_indicator_value_by_id.get("treasury_ten_year_yield"), settings, today), default={})
+    company_indicator_value_by_id.update(live_indicators.live_indicators_stamp(options.get("covered_call", {}), options_fetched_at))
+    option_indicator_by_window_label = {}
+    for window_label, value_by_id in options.get("value_by_window_label", {}).items():
+        window_value_by_id = dict(live_indicators.live_indicators_stamp(value_by_id, options_fetched_at))
+        expiration_date = options["expiration_by_window_label"].get(window_label)
+        if expiration_date is not None:  # event answers need no quote and are worked out fresh every time
+            window_value_by_id.update(live_indicators.live_indicators_stamp(
+                refresh_scheduler_build_option_life_indicator_value_by_id(settings, today, expiration_date, company_snapshot), now))
+        option_indicator_by_window_label[window_label] = indicator_registry.indicator_registry_drop_stale_values(window_value_by_id, registry, now)
 
-    combined_indicator_value_by_id = {**shared_indicator_value_by_id, **company_indicator_value_by_id, **symbol_indicator_value_by_id}
+    combined_indicator_value_by_id = indicator_registry.indicator_registry_drop_stale_values(
+        {**shared_indicator_value_by_id, **company_indicator_value_by_id, **symbol_indicator_value_by_id}, registry, now)
     last_price = symbol_indicator_value_by_id["last_price"]
     return {
         "symbol": symbol,
@@ -188,25 +209,36 @@ def refresh_scheduler_build_calendar_indicator_value_by_id(
 
 
 def refresh_scheduler_build_dashboard_snapshot(
-    settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
+    settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition], fetch_cache: Optional[FetchCache] = None,
 ) -> dict:
+    fetch_cache = fetch_cache or refresh_scheduler_get_fetch_cache(settings)
+    registry = fetch_cache.registry
+    now = time.time()
+    today = datetime.date.today()
     failed_symbol_list: List[str] = []
-    market_history_by_symbol = market_data.market_data_fetch_daily_price_history_for_symbol_list(
-        MARKET_GAUGE_SYMBOL_LIST, HISTORY_PERIOD)
-    shared_indicator_value_by_id = indicator_calculation.indicator_calculation_build_market_indicator_value_by_id(
-        market_history_by_symbol,
-        refresh_scheduler_fetch_series_or_none(macro_data.macro_data_fetch_treasury_ten_year_yield_series),
-        refresh_scheduler_fetch_series_or_none(macro_data.macro_data_fetch_high_yield_credit_spread_series))
-
-    shared_indicator_value_by_id.update(refresh_scheduler_fetch_series_or_none(
-        live_indicators.live_indicators_fetch_series_indicator_value_by_id) or {})
-    shared_indicator_value_by_id.update(refresh_scheduler_build_calendar_indicator_value_by_id(settings, datetime.date.today()))
+    market_history_by_symbol, market_fetched_at = fetch_cache.get(
+        "yahoo_quote", "market", lambda: market_data.market_data_fetch_daily_price_history_for_symbol_list(MARKET_GAUGE_SYMBOL_LIST, HISTORY_PERIOD),
+        default={})
+    ten_year_series, high_yield_series = live_indicators.live_indicators_fetch_treasury_series(fetch_cache)
+    shared_indicator_value_by_id = live_indicators.live_indicators_stamp(
+        indicator_calculation.indicator_calculation_build_market_indicator_value_by_id(
+            market_history_by_symbol, ten_year_series, high_yield_series), market_fetched_at)
+    for indicator_id_list, series in ((TREASURY_INDICATOR_ID_LIST, ten_year_series), (HIGH_YIELD_INDICATOR_ID_LIST, high_yield_series)):
+        for indicator_id in indicator_id_list:  # a FRED figure is as old as its newest observation, not as old as the request
+            if indicator_id in shared_indicator_value_by_id and series is not None and len(series):
+                shared_indicator_value_by_id[indicator_id] = dataclasses.replace(
+                    shared_indicator_value_by_id[indicator_id], observed_at=series.index[-1].to_pydatetime().replace(tzinfo=datetime.timezone.utc).timestamp())
+    shared_indicator_value_by_id.update(live_indicators.live_indicators_fetch_series_value_by_id(fetch_cache))
+    shared_indicator_value_by_id.update(live_indicators.live_indicators_stamp(
+        refresh_scheduler_build_calendar_indicator_value_by_id(settings, today), now))
     ten_year_yield = shared_indicator_value_by_id.get("treasury_ten_year_yield")
     shared_indicator_value_by_id.update(live_indicators.live_indicators_build_equity_risk_premium_indicator_value_by_id(
-        None if ten_year_yield is None else ten_year_yield.value))
+        live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, "SPY"), None if ten_year_yield is None else ten_year_yield.value))
+    shared_indicator_value_by_id = indicator_registry.indicator_registry_drop_stale_values(shared_indicator_value_by_id, registry, now)
 
-    symbol_history_by_symbol = market_data.market_data_fetch_daily_price_history_for_symbol_list(
-        settings.watchlist_symbol_list, HISTORY_PERIOD)
+    symbol_history_by_symbol, symbol_fetched_at = fetch_cache.get(
+        "yahoo_quote", "watchlist", lambda: market_data.market_data_fetch_daily_price_history_for_symbol_list(
+            settings.watchlist_symbol_list, HISTORY_PERIOD), default={})
     symbol_list = [s for s in settings.watchlist_symbol_list if s in symbol_history_by_symbol]
     failed_symbol_list += [s for s in settings.watchlist_symbol_list if s not in symbol_history_by_symbol]
 
@@ -214,7 +246,7 @@ def refresh_scheduler_build_dashboard_snapshot(
         try:
             return refresh_scheduler_evaluate_symbol_for_all_strategies(
                 symbol, symbol_history_by_symbol[symbol], shared_indicator_value_by_id, settings,
-                strategy_definition_by_id, market_history_by_symbol)
+                strategy_definition_by_id, market_history_by_symbol, fetch_cache, symbol_fetched_at)
         except Exception as error:  # one broken symbol must not abort the whole snapshot
             print("symbol failed:", symbol, error)
             return None
@@ -237,6 +269,8 @@ def refresh_scheduler_build_dashboard_snapshot(
     return {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "generated_at": refresh_scheduler_get_current_exchange_time_text(),
+        "prices_as_of": None if symbol_fetched_at is None else datetime.datetime.fromtimestamp(
+            symbol_fetched_at, market_data.NEW_YORK_TIME_ZONE).replace(microsecond=0).isoformat(),
         "market_indicator_card_list": market_indicator_card_list,
         "symbol_result_list": symbol_result_list,
         "failed_symbol_list": failed_symbol_list,
@@ -256,8 +290,9 @@ def refresh_scheduler_refresh_snapshot_file(
     return snapshot
 
 
-def refresh_scheduler_determine_whether_refresh_is_due(settings: ApplicationSettings) -> bool:
-    """Due when there is no snapshot yet, or the market is open and the snapshot is old enough."""
+def refresh_scheduler_determine_whether_refresh_is_due(settings: ApplicationSettings, fetch_cache: Optional[FetchCache] = None) -> bool:
+    """Due when there is no snapshot yet, when the market is open and the snapshot is old enough, or when some source is due again
+    (this also catches the after-hours times in config/indicators.yaml: prices after the close, slow data before the open)."""
     snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(SNAPSHOT_FILE_PATH)
     if snapshot is None or snapshot.get("schema_version") != SNAPSHOT_SCHEMA_VERSION:
         return True
@@ -265,7 +300,9 @@ def refresh_scheduler_determine_whether_refresh_is_due(settings: ApplicationSett
         datetime.datetime.now(datetime.timezone.utc), settings.market_holiday_date_set,
         settings.market_early_close_date_set)
     age_minutes = (time.time() - os.path.getmtime(SNAPSHOT_FILE_PATH)) / 60
-    return is_market_open and age_minutes >= settings.refresh_interval_minutes
+    if is_market_open and age_minutes >= settings.refresh_interval_minutes:
+        return True
+    return (fetch_cache or refresh_scheduler_get_fetch_cache(settings)).is_anything_due()
 
 
 def refresh_scheduler_start_background_refresh_thread(

@@ -77,11 +77,12 @@ def web_server_find_strategy_id_or_raise(strategy_id: Optional[str]) -> str:
     return chosen_strategy_id
 
 
-def web_server_build_status(generated_at: Optional[str]) -> dict:
+def web_server_build_status(generated_at: Optional[str], prices_as_of: Optional[str] = None) -> dict:
     """Computed per request so clients can judge freshness against the server clock, not their own."""
     return {
         "server_time": refresh_scheduler.refresh_scheduler_get_current_exchange_time_text(),
         "generated_at": generated_at,
+        "prices_as_of": prices_as_of or generated_at,  # when the prices were taken; the snapshot is also rebuilt after the close
         "market_is_open": market_data.market_data_determine_whether_us_market_is_open(
             datetime.datetime.now(datetime.timezone.utc), application_settings.market_holiday_date_set,
             application_settings.market_early_close_date_set),
@@ -185,7 +186,7 @@ def web_server_get_dashboard_snapshot(strategy_id: Optional[str] = None) -> dict
         })
     return {
         "schema_version": snapshot["schema_version"],
-        "status": web_server_build_status(snapshot["generated_at"]),
+        "status": web_server_build_status(snapshot["generated_at"], snapshot.get("prices_as_of")),
         "strategy_id": chosen_strategy_id,
         "max_unknown_weight_ratio": strategy_definition_by_id[chosen_strategy_id].thresholds.max_unknown_weight_ratio,
         "market_indicator_card_list": snapshot["market_indicator_card_list"],

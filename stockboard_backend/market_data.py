@@ -26,12 +26,14 @@ def market_data_fetch_daily_price_history_for_symbol_list(
     return price_history_by_symbol
 
 
-def market_data_fetch_next_earnings_date_by_symbol(symbol: str) -> Optional[datetime.date]:
-    """None means no upcoming earnings date is listed (for example an index fund)."""
-    calendar = yfinance.Ticker(symbol).calendar or {}
-    today = datetime.date.today()
-    upcoming_date_list = [d for d in calendar.get("Earnings Date", []) if d >= today]
+def market_data_find_next_earnings_date_in_calendar(calendar: Optional[dict], today: datetime.date) -> Optional[datetime.date]:
+    """The calendar yfinance gives for a symbol; None means no upcoming earnings date is listed (for example an index fund)."""
+    upcoming_date_list = [d for d in (calendar or {}).get("Earnings Date", []) if d >= today]
     return min(upcoming_date_list) if upcoming_date_list else None
+
+
+def market_data_fetch_next_earnings_date_by_symbol(symbol: str) -> Optional[datetime.date]:
+    return market_data_find_next_earnings_date_in_calendar(yfinance.Ticker(symbol).calendar, datetime.date.today())
 
 
 def market_data_determine_whether_us_market_is_open(

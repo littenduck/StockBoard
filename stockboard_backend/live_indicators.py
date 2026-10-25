@@ -1,25 +1,26 @@
-"""Fetch the slower sources for the live dashboard and keep them for a while so a ten minute refresh does not ask again.
+"""Fetch the slower sources for the live dashboard, each through the fetch cache so a source is asked only when it is due.
 
-Market wide figures come from the history series (FRED, Cboe, CNN, AAII): the latest value counts only if it is recent enough.
-Company figures come from yfinance (info, estimates, ratings, insider trades) and SEC EDGAR (multi year growth), each kept for a time.
+Every function that reaches the network takes the FetchCache and names its fetch group (see config/indicators.yaml); the cache decides, from the
+group's fetch_every, market_hours_only and fetch_at, whether to ask again or hand back the last answer. Values carry observed_at so a value older
+than its indicator's max_age is dropped later (indicator_registry_drop_stale_values).
 """
+import dataclasses
 import datetime
 import os
-import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas
 import yfinance
 
 from stockboard_backend import (cboe_data, company_indicators, dolthub_data, edgar_data, finra_data, fundamental_series, history_series,
                                 macro_data, sentiment_data)
+from stockboard_backend.fetch_cache import FetchCache
+from stockboard_backend.indicator_registry import IndicatorRegistry
 from stockboard_backend.strategy_evaluation import IndicatorValue
 
-SERIES_CACHE_SECONDS = 30 * 60
-COMPANY_CACHE_SECONDS = 60 * 60
 SERIES_WORKER_COUNT = 6
+SERIES_GROUP_ID_LIST = ["fred", "cboe_put_call", "cnn", "aaii", "reference_files"]
 SHORT_INTEREST_MAX_AGE_DAYS = 45
 EDGAR_START_DAY = datetime.date(2018, 1, 1)  # six years of days: the PE median needs five years of earnings and prices
 EDGAR_INDICATOR_ID_LIST = [
@@ -27,123 +28,119 @@ EDGAR_INDICATOR_ID_LIST = [
     "free_cash_flow_year_over_year_change", "interest_coverage_ratio", "shares_outstanding_year_over_year_percent",
     "price_earnings_ttm_to_five_year_median_ratio",
 ]
-SLOW_COMPANY_CACHE_SECONDS = 6 * 60 * 60
 SPMO_SYMBOL = "SPMO"
-FAILED_RETRY_SECONDS = 15 * 60
-DAILY_DAYS, WEEKLY_DAYS, MONTHLY_DAYS, QUARTERLY_DAYS = 10, 16, 100, 270
-# A series is used only while its newest observation is no older than this, so a source that stops updating reads unknown.
-# Monthly and quarterly observations are dated the first day of their period and published one to three months later, hence the long limits.
-MAX_AGE_DAYS_BY_SERIES_INDICATOR_ID = {
-    "federal_funds_target_rate_not_raised_in_182_days": DAILY_DAYS,
-    "six_month_treasury_bill_yield_minus_federal_funds_rate": DAILY_DAYS,
-    "high_yield_credit_spread_twenty_day_change_basis_points": DAILY_DAYS,
-    "moodys_baa_minus_ten_year_treasury_spread": DAILY_DAYS,
-    "treasury_ten_year_minus_two_year_spread": DAILY_DAYS,
-    "treasury_ten_year_minus_three_month_spread": DAILY_DAYS,
-    "us_epu_thirty_day_average_percentile_five_year": DAILY_DAYS,
-    "put_call_ratio_total_five_day_average": 7,
-    "fear_greed_index": 5,
-    "initial_jobless_claims_four_week_average": WEEKLY_DAYS,
-    "federal_reserve_total_assets_thirteen_week_change_percent": WEEKLY_DAYS,
-    "aaii_bullish_percent": WEEKLY_DAYS,
-    "aaii_bullish_minus_bearish_percent": WEEKLY_DAYS,
-    "consumer_price_index_year_over_year_percent": MONTHLY_DAYS,
-    "core_pce_price_index_year_over_year_percent": MONTHLY_DAYS,
-    "sahm_rule_recession_indicator": MONTHLY_DAYS,
-    "shiller_cape": 45,
-    "damodaran_implied_equity_risk_premium_percent": 75,
-    "geopolitical_risk_index_thirty_day_average_percentile_five_year": 14,
-    "chicago_fed_national_activity_index_three_month_average": MONTHLY_DAYS,
-    "m2_money_supply_year_over_year_percent": MONTHLY_DAYS,
-    "trade_policy_uncertainty_ten_year_percentile": MONTHLY_DAYS,
-    "market_value_to_gdp_percent": QUARTERLY_DAYS,
+# These three come with the price figures (they carry a daily change), so the series job leaves them alone.
+MADE_WITH_PRICE_FIGURES_INDICATOR_ID_SET = {
+    "treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points", "high_yield_credit_spread_basis_points",
 }
-series_cache: Dict[str, object] = {"loaded_at": 0.0, "value_by_id": {}}
-company_cache: Dict[str, Tuple[float, dict]] = {}
-edgar_cache: Dict[Tuple[str, datetime.date], Dict[str, float]] = {}
-cache_lock = threading.Lock()
 
 
-def live_indicators_extract_latest_value(series: pandas.Series, max_age_days: int, today: datetime.date):
-    """The newest value, or None when the series is empty or its newest observation is too old."""
+def live_indicators_stamp(value_by_id: Dict[str, IndicatorValue], observed_at: Optional[float]) -> Dict[str, IndicatorValue]:
+    """Give every value that has no observation time the time its source was asked."""
+    return {key: value if value.observed_at is not None or observed_at is None else dataclasses.replace(value, observed_at=observed_at)
+            for key, value in value_by_id.items()}
+
+
+def live_indicators_extract_latest_value(series: pandas.Series):
+    """(newest value, time of its observation as epoch seconds), or None when the series is empty."""
     series = series.dropna()
-    if series.empty or (today - series.index[-1].date()).days > max_age_days:
+    if series.empty:
         return None
     latest = series.iloc[-1]
-    return bool(latest) if series.dtype == bool else round(float(latest), 4)
+    return (bool(latest) if series.dtype == bool else round(float(latest), 4)), series.index[-1].to_pydatetime().replace(
+        tzinfo=datetime.timezone.utc).timestamp()
 
 
-def live_indicators_fetch_series_indicator_value_by_id(today: Optional[datetime.date] = None) -> Dict[str, IndicatorValue]:
-    """FRED, Cboe, CNN and AAII figures. One failed source only drops its own indicators. Kept for 30 minutes."""
-    with cache_lock:
-        if time.time() - series_cache["loaded_at"] < SERIES_CACHE_SECONDS and series_cache["value_by_id"]:
-            return dict(series_cache["value_by_id"])
-    today = today or datetime.date.today()
-    macro_data.fred_series_cache.clear()
+# ---- market wide series: FRED, Cboe, CNN, AAII and the reference files -----------------------------------------------------------
+
+def live_indicators_run_series_job(indicator_id_list: List[str], group_id: str) -> Dict[str, IndicatorValue]:
+    """Rebuild each indicator's series and keep its newest value. One failed series only drops its own indicator."""
+    macro_data.fred_series_cache.clear()  # these module caches only spare repeat downloads inside one job
     cboe_data.index_history_cache.clear()
     sentiment_data.aaii_table_cache.clear()
-    try:
-        cboe_data.cboe_data_update_total_put_call_cache(history_series.PUT_CALL_CACHE_FILE_PATH)
-    except Exception as error:  # the cache keeps whatever days it already has
-        print("put/call cache update failed:", error)
-
-    def fetch_one(indicator_id: str) -> Tuple[str, Optional[IndicatorValue]]:
+    if group_id == "cboe_put_call":
         try:
-            value = live_indicators_extract_latest_value(
-                history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID[indicator_id](),
-                MAX_AGE_DAYS_BY_SERIES_INDICATOR_ID[indicator_id], today)
+            cboe_data.cboe_data_update_total_put_call_cache(history_series.PUT_CALL_CACHE_FILE_PATH)
+        except Exception as error:  # the cache keeps whatever days it already has
+            print("put/call cache update failed:", error)
+
+    def fetch_one(indicator_id: str) -> Optional[IndicatorValue]:
+        try:
+            latest = live_indicators_extract_latest_value(history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID[indicator_id]())
         except Exception as error:
             print("series failed:", indicator_id, error)
-            return indicator_id, None
-        return indicator_id, None if value is None else IndicatorValue(indicator_id, value, "history series")
+            return None
+        return None if latest is None else IndicatorValue(indicator_id, latest[0], "history series", observed_at=latest[1])
 
     with ThreadPoolExecutor(max_workers=SERIES_WORKER_COUNT) as executor:
-        result_list = list(executor.map(fetch_one, MAX_AGE_DAYS_BY_SERIES_INDICATOR_ID))
-    value_by_id = {indicator_id: value for indicator_id, value in result_list if value is not None}
-    with cache_lock:
-        series_cache.update(loaded_at=time.time(), value_by_id=value_by_id)
-    return dict(value_by_id)
+        value_list = list(executor.map(fetch_one, indicator_id_list))
+    return {value.indicator_id: value for value in value_list if value is not None}
 
 
-def live_indicators_fetch_company_snapshot(symbol: str) -> dict:
-    """info, eps_trend, recommendations_summary and insider_transactions from yfinance; each piece may come back None."""
-    with cache_lock:
-        cached = company_cache.get(symbol)
-        if cached and time.time() - cached[0] < COMPANY_CACHE_SECONDS:
-            return cached[1]
-    ticker = yfinance.Ticker(symbol)
-    snapshot = {"info": None, "eps_trend": None, "recommendations_summary": None, "insider_transactions": None, "calendar": None}
-    try:
-        snapshot["info"] = ticker.info
-    except Exception as error:
-        print("company data failed:", symbol, "info", error)
-    is_fund = isinstance(snapshot["info"], dict) and snapshot["info"].get("quoteType") == "ETF"
-    for key in () if is_fund else ("eps_trend", "recommendations_summary", "insider_transactions", "calendar"):  # a fund has none of these
+def live_indicators_fetch_series_value_by_id(fetch_cache: FetchCache) -> Dict[str, IndicatorValue]:
+    """The newest value of every market wide series indicator, each group asked only when due."""
+    registry: IndicatorRegistry = fetch_cache.registry
+    value_by_id: Dict[str, IndicatorValue] = {}
+    for group_id in SERIES_GROUP_ID_LIST:
+        indicator_id_list = [indicator.indicator_id for indicator in registry.indicator_by_id.values()
+                             if indicator.fetch_group == group_id and indicator.status == "built"
+                             and indicator.indicator_id in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID
+                             and indicator.indicator_id not in MADE_WITH_PRICE_FIGURES_INDICATOR_ID_SET]
+        value_by_group, _ = fetch_cache.get(
+            group_id, None, lambda ids=indicator_id_list, group=group_id: live_indicators_run_series_job(ids, group), default={})
+        value_by_id.update(value_by_group)
+    return value_by_id
+
+
+def live_indicators_fetch_treasury_series(fetch_cache: FetchCache) -> Tuple[Optional[pandas.Series], Optional[pandas.Series]]:
+    """The 10-year yield and the high yield spread (FRED group), used for the sidebar cards and the risk free rate."""
+    def fetch():
+        macro_data.fred_series_cache.clear()
+        return macro_data.macro_data_fetch_treasury_ten_year_yield_series(), macro_data.macro_data_fetch_high_yield_credit_spread_series()
+    series_pair, _ = fetch_cache.get("fred", "treasury", fetch, default=(None, None))
+    return series_pair
+
+
+# ---- company figures from yfinance --------------------------------------------------------------------------------------------
+
+def live_indicators_fetch_company_snapshot(fetch_cache: FetchCache, symbol: str) -> dict:
+    """info, eps_trend, recommendations_summary, insider_transactions and calendar from yfinance; each piece may come back None."""
+    def fetch():
+        ticker = yfinance.Ticker(symbol)
+        snapshot = {"info": None, "eps_trend": None, "recommendations_summary": None, "insider_transactions": None, "calendar": None}
         try:
-            snapshot[key] = getattr(ticker, key)
+            snapshot["info"] = ticker.info
         except Exception as error:
-            print("company data failed:", symbol, key, error)
-    try:
-        snapshot["short_interest"] = finra_data.finra_data_fetch_short_interest_table(symbol)
-    except Exception as error:
-        print("short interest failed:", symbol, error)
-        snapshot["short_interest"] = None
-    with cache_lock:
-        company_cache[symbol] = (time.time(), snapshot)
-    return snapshot
+            print("company data failed:", symbol, "info", error)
+        is_fund = isinstance(snapshot["info"], dict) and snapshot["info"].get("quoteType") == "ETF"
+        for key in () if is_fund else ("eps_trend", "recommendations_summary", "insider_transactions", "calendar"):  # a fund has none
+            try:
+                snapshot[key] = getattr(ticker, key)
+            except Exception as error:
+                print("company data failed:", symbol, key, error)
+        return snapshot
+    snapshot, fetched_at = fetch_cache.get("yahoo_company", symbol, fetch, default={"info": None})
+    return {**snapshot, "fetched_at": fetched_at}
 
 
-def live_indicators_build_company_indicator_value_by_id(symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
-    snapshot = live_indicators_fetch_company_snapshot(symbol)
-    info = snapshot["info"] if isinstance(snapshot["info"], dict) else {}
+def live_indicators_build_company_indicator_value_by_id(snapshot: dict, today: datetime.date) -> Dict[str, IndicatorValue]:
+    info = snapshot["info"] if isinstance(snapshot.get("info"), dict) else {}
     value_by_id = company_indicators.company_indicators_build_info_indicator_value_by_id(info)
     value_by_id.update(company_indicators.company_indicators_build_estimate_indicator_value_by_id(
-        snapshot["eps_trend"], snapshot["recommendations_summary"], company_indicators.company_indicators_get_number(info, "forwardPE")))
+        snapshot.get("eps_trend"), snapshot.get("recommendations_summary"), company_indicators.company_indicators_get_number(info, "forwardPE")))
     value_by_id.update(company_indicators.company_indicators_build_insider_indicator_value_by_id(
-        snapshot["insider_transactions"], company_indicators.company_indicators_get_number(info, "sharesOutstanding"), today))
-    value_by_id.update(live_indicators_build_short_interest_indicator_value_by_id(
-        snapshot["short_interest"], company_indicators.company_indicators_get_number(info, "sharesOutstanding"), today))
-    return {key: IndicatorValue(key, value, "yfinance") for key, value in value_by_id.items()}
+        snapshot.get("insider_transactions"), company_indicators.company_indicators_get_number(info, "sharesOutstanding"), today))
+    value_by_id = {key: IndicatorValue(key, value, "yfinance") for key, value in value_by_id.items()}
+    return live_indicators_stamp(value_by_id, snapshot.get("fetched_at"))
+
+
+def live_indicators_fetch_short_interest_indicator_value_by_id(
+    fetch_cache: FetchCache, symbol: str, shares_outstanding: Optional[float], today: datetime.date,
+) -> Dict[str, IndicatorValue]:
+    table, _ = fetch_cache.get("finra", symbol, lambda: finra_data.finra_data_fetch_short_interest_table(symbol), default=None)
+    value_by_id = live_indicators_build_short_interest_indicator_value_by_id(table, shares_outstanding, today)
+    observed_at = None if table is None or table.empty else table.index[-1].to_pydatetime().replace(tzinfo=datetime.timezone.utc).timestamp()
+    return {key: IndicatorValue(key, value, "FINRA", observed_at=observed_at) for key, value in value_by_id.items()}
 
 
 def live_indicators_build_short_interest_indicator_value_by_id(
@@ -167,77 +164,58 @@ def live_indicators_fetch_price_series_or_none(symbol: str) -> Optional[pandas.S
         return None
 
 
-def live_indicators_fetch_edgar_indicator_value_by_id(symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
+# ---- SEC EDGAR, DoltHub, SPMO -------------------------------------------------------------------------------------------------
+
+def live_indicators_fetch_edgar_indicator_value_by_id(fetch_cache: FetchCache, symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
     """Multi year growth, interest coverage, the PE against its five year median and the audit check, from SEC filings.
-    Needs EDGAR_CONTACT; a fund or an unknown ticker gives nothing. Kept for the day."""
+    Needs EDGAR_CONTACT. A fund or a ticker SEC does not list gives nothing, and is not asked again until the next due time."""
     if not os.environ.get("EDGAR_CONTACT"):
         return {}
-    key = (symbol, today)
-    with cache_lock:
-        cached = edgar_cache.get(key)
-    if cached is None:
-        cached = {}
+
+    def fetch() -> Dict[str, float]:
         try:
             company_facts = edgar_data.edgar_data_fetch_company_facts(symbol)
-            days = pandas.date_range(EDGAR_START_DAY, today, freq="D")
-            table = fundamental_series.fundamental_series_build_table(company_facts, days, live_indicators_fetch_price_series_or_none(symbol))
-            last_row = table.iloc[-1]
-            cached = {name: round(float(last_row[name]), 4) for name in EDGAR_INDICATOR_ID_LIST
-                      if name in table.columns and pandas.notna(last_row[name])}
-            has_problem = edgar_data.edgar_data_find_audit_or_late_filing_problem(edgar_data.edgar_data_fetch_submissions(symbol), today)
-            cached["no_audit_or_late_filing_problem_in_last_365_days"] = not has_problem
-        except Exception as error:  # funds have no company facts; a failed download tries again tomorrow
-            print("edgar failed:", symbol, error)
-        with cache_lock:
-            edgar_cache[key] = cached
-    return {name: IndicatorValue(name, value, "SEC EDGAR") for name, value in cached.items()}
+        except KeyError:
+            return {}  # not a company SEC lists (a fund)
+        days = pandas.date_range(EDGAR_START_DAY, today, freq="D")
+        table = fundamental_series.fundamental_series_build_table(company_facts, days, live_indicators_fetch_price_series_or_none(symbol))
+        last_row = table.iloc[-1]
+        value_by_name = {name: round(float(last_row[name]), 4) for name in EDGAR_INDICATOR_ID_LIST
+                         if name in table.columns and pandas.notna(last_row[name])}
+        has_problem = edgar_data.edgar_data_find_audit_or_late_filing_problem(edgar_data.edgar_data_fetch_submissions(symbol), today)
+        value_by_name["no_audit_or_late_filing_problem_in_last_365_days"] = not has_problem
+        return value_by_name
+
+    value_by_name, fetched_at = fetch_cache.get("edgar", symbol, fetch, default={})
+    return live_indicators_stamp({name: IndicatorValue(name, value, "SEC EDGAR") for name, value in value_by_name.items()}, fetched_at)
 
 
-def live_indicators_fetch_implied_volatility_indicator_value_by_id(symbol: str, today: datetime.date) -> Dict[str, IndicatorValue]:
-    """IV percentile over a year and IV against a month ago, from the DoltHub history. Kept for six hours."""
-    key = f"iv:{symbol}"
-    with cache_lock:
-        cached = company_cache.get(key)
-    if cached and time.time() - cached[0] < SLOW_COMPANY_CACHE_SECONDS:
-        value_by_id = cached[1]
-    else:
-        try:
-            value_by_id = dolthub_data.dolthub_data_build_indicator_value_by_id(
-                dolthub_data.dolthub_data_fetch_implied_volatility_series(symbol, today), today)
-            loaded_at = time.time()
-        except Exception as error:
-            print("implied volatility history failed:", symbol, error)
-            value_by_id, loaded_at = {}, time.time() - SLOW_COMPANY_CACHE_SECONDS + FAILED_RETRY_SECONDS  # try again in 15 minutes
-        with cache_lock:
-            company_cache[key] = (loaded_at, value_by_id)
-    return {name: IndicatorValue(name, value, "DoltHub") for name, value in value_by_id.items()}
+def live_indicators_fetch_implied_volatility_indicator_value_by_id(
+    fetch_cache: FetchCache, symbol: str, today: datetime.date,
+) -> Dict[str, IndicatorValue]:
+    """IV percentile over a year and IV against a month ago, from the DoltHub history."""
+    def fetch() -> Dict[str, float]:
+        return dolthub_data.dolthub_data_build_indicator_value_by_id(dolthub_data.dolthub_data_fetch_implied_volatility_series(symbol, today), today)
+    value_by_name, fetched_at = fetch_cache.get("dolthub_iv", symbol, fetch, default={})
+    return live_indicators_stamp({name: IndicatorValue(name, value, "DoltHub") for name, value in value_by_name.items()}, fetched_at)
 
 
-def live_indicators_fetch_spmo_rank_by_symbol() -> Dict[str, int]:
+def live_indicators_fetch_spmo_rank_by_symbol(fetch_cache: FetchCache) -> Dict[str, int]:
     """Rank in SPMO's ten largest holdings (1 is the largest). A stock outside the ten has no rank here: its rules read unknown."""
-    with cache_lock:
-        cached = company_cache.get("spmo")
-    if cached and time.time() - cached[0] < SLOW_COMPANY_CACHE_SECONDS:
-        return cached[1]
-    try:
+    def fetch() -> Dict[str, int]:
         holding_table = yfinance.Ticker(SPMO_SYMBOL).funds_data.top_holdings
-        rank_by_symbol = {str(symbol).upper(): rank for rank, symbol in enumerate(holding_table.index, start=1)}
-    except Exception as error:
-        print("SPMO holdings failed:", error)
-        rank_by_symbol = {}
-    with cache_lock:
-        company_cache["spmo"] = (time.time(), rank_by_symbol)
+        return {str(symbol).upper(): rank for rank, symbol in enumerate(holding_table.index, start=1)}
+    rank_by_symbol, _ = fetch_cache.get("spmo_holdings", None, fetch, default={})
     return rank_by_symbol
 
 
-def live_indicators_build_equity_risk_premium_indicator_value_by_id(ten_year_yield_percent: Optional[float]) -> Dict[str, IndicatorValue]:
+def live_indicators_build_equity_risk_premium_indicator_value_by_id(
+    spy_snapshot: dict, ten_year_yield_percent: Optional[float],
+) -> Dict[str, IndicatorValue]:
     """Earnings yield of the S&P 500 (from SPY's trailing PE) minus the 10-year Treasury yield, in percent points."""
-    try:
-        trailing_pe = company_indicators.company_indicators_get_number(live_indicators_fetch_company_snapshot("SPY")["info"] or {}, "trailingPE")
-    except Exception as error:
-        print("S&P 500 PE failed:", error)
-        return {}
+    trailing_pe = company_indicators.company_indicators_get_number(spy_snapshot.get("info") or {}, "trailingPE")
     if not trailing_pe or trailing_pe <= 0 or ten_year_yield_percent is None:
         return {}
     value = round(100 / trailing_pe - ten_year_yield_percent, 3)
-    return {"equity_risk_premium_simple_percent": IndicatorValue("equity_risk_premium_simple_percent", value, "yfinance SPY, FRED DGS10")}
+    return live_indicators_stamp({"equity_risk_premium_simple_percent": IndicatorValue(
+        "equity_risk_premium_simple_percent", value, "yfinance SPY, FRED DGS10")}, spy_snapshot.get("fetched_at"))

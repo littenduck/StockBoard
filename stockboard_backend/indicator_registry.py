@@ -34,6 +34,7 @@ class FetchGroup:
     market_hours_only: bool = False
     fetch_at: List[datetime.time] = field(default_factory=list)  # New York time of day
     note: str = ""
+    fetch_every: Optional[str] = None  # only for a group no indicator belongs to (an internal job); otherwise the indicators decide
 
 
 @dataclass
@@ -71,8 +72,11 @@ class IndicatorRegistry:
 
     def group_fetch_every_seconds(self, fetch_group_id: str) -> int:
         """A group is fetched as often as its most frequent indicator needs."""
-        return min(indicator.fetch_every_seconds for indicator in self.indicator_by_id.values()
-                   if indicator.fetch_group == fetch_group_id and indicator.status == "built")
+        every_list = [indicator.fetch_every_seconds for indicator in self.indicator_by_id.values()
+                      if indicator.fetch_group == fetch_group_id and indicator.status == "built"]
+        if every_list:
+            return min(every_list)
+        return indicator_registry_parse_duration_seconds(self.fetch_group_by_id[fetch_group_id].fetch_every)
 
 
 def indicator_registry_parse_duration_seconds(text: str) -> int:
@@ -92,7 +96,7 @@ def indicator_registry_load_from_yaml_file(indicator_file_path: str) -> Indicato
             fetch_group_id=raw_group["fetch_group_id"], market_hours_only=bool(raw_group.get("market_hours_only", False)),
             fetch_at=[datetime.time(int(text[:2]), int(text[3:])) for text in map(str, raw_group.get("fetch_at") or [])
                       if TIME_OF_DAY_PATTERN.match(text)],
-            note=raw_group.get("note", ""))
+            note=raw_group.get("note", ""), fetch_every=raw_group.get("fetch_every"))
     indicator_by_id = {}
     for raw_indicator in raw["indicator_list"]:
         indicator_by_id[raw_indicator["indicator_id"]] = IndicatorDefinition(**{
@@ -139,7 +143,28 @@ def indicator_registry_validate(indicator_registry: IndicatorRegistry) -> List[s
             except ValueError as error:
                 error_list.append("{}: {}".format(name, error))
     used_group_set = {indicator.fetch_group for indicator in indicator_registry.indicator_by_id.values() if indicator.status == "built"}
-    for group_id in indicator_registry.fetch_group_by_id:
-        if group_id not in used_group_set:
-            error_list.append("fetch group {} has no built indicator".format(group_id))
+    for group_id, group in indicator_registry.fetch_group_by_id.items():
+        if group_id in used_group_set:
+            continue
+        try:
+            if group.fetch_every is None:
+                error_list.append("fetch group {} has no built indicator and no fetch_every of its own".format(group_id))
+            else:
+                indicator_registry_parse_duration_seconds(group.fetch_every)
+        except ValueError as error:
+            error_list.append("fetch group {}: {}".format(group_id, error))
     return error_list
+
+
+def indicator_registry_drop_stale_values(value_by_id: dict, indicator_registry: IndicatorRegistry, now: float) -> dict:
+    """Leave out every value whose observation is older than its indicator's max_age, so the rules that use it read unknown.
+    A value without an observation time is kept."""
+    kept = {}
+    for indicator_id, value in value_by_id.items():
+        indicator = indicator_registry.indicator_by_id.get(indicator_id)
+        age_limit = None if indicator is None else indicator.max_age_seconds
+        observed_at = getattr(value, "observed_at", None)
+        if age_limit is not None and observed_at is not None and now - observed_at > age_limit:
+            continue
+        kept[indicator_id] = value
+    return kept

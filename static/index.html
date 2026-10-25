@@ -144,9 +144,9 @@ function renderStatusBar() {
   let text = languageText('loading_data'), color = 'muted', title = '';
   if (connectionError) { text = languageText('disconnected'); color = 'negative'; }
   else if (status && status.generated_at) {
-    const ageMinutes = (Date.parse(status.server_time) - Date.parse(status.generated_at) + Date.now() - statusReceivedAt) / 60000;
-    const shortTime = formatExchangeTime(status.generated_at, false);
-    title = languageText('generated_at', { time:formatExchangeTime(status.generated_at, true) });
+    const ageMinutes = (Date.parse(status.server_time) - Date.parse(status.prices_as_of) + Date.now() - statusReceivedAt) / 60000;
+    const shortTime = formatExchangeTime(status.prices_as_of, false);
+    title = languageText('generated_at', { time:formatExchangeTime(status.prices_as_of, true) });
     if (!status.market_is_open) text = languageText('market_closed', { time:shortTime });
     else if (ageMinutes > status.stale_after_minutes) { text = languageText('data_stale', { time:shortTime }); color = 'caution'; }
     else { text = languageText('market_open', { age:formatAge(ageMinutes) }); color = 'positive'; }
