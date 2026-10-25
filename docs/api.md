@@ -21,12 +21,12 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...), wi
   "description": {"en": "...", "zh": "..."}, "aspect": {"en": "Events", "zh": "事件面"},
   "rule_list": [{"rule_id": "EVT-01", "name": {"en": "No earnings", "zh": "无财报"},
                  "description": {"en": "Passes when there is no earnings report before the option expires. ...", "zh": "..."},
-                 "method": "api_fetch", "quantifiable": "yes", "status": "built", "indicator": "no_earnings_before_expiration",
+                 "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "status": "built", "indicator": "no_earnings_before_expiration",
                  "operator": "is_true", "value": null, "band_of": null, "legacy_id": ["A22", "F05"], "note": null,
                  "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5, "veto": true}]}]}]}
 ```
 
-`status`: `built`, `todo`, `no_data`. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `band_of` names the main rule when this rule is another line of the same measure (for example `SEN-12`, VIX below 25, points to `SEN-01`).
+`status`: `built`, `todo`, `no_data`. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `backtestable`: `yes` or `no`, whether free historical data can rebuild what the rule would have said on a past date. `band_of` names the main rule when this rule is another line of the same measure (for example `SEN-12`, VIX below 25, points to `SEN-01`).
 
 ## GET /api/v1/strategies
 

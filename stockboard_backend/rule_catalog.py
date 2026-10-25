@@ -12,6 +12,7 @@ STATUS_SET = {"built", "todo", "no_data"}
 METHOD_SET = {"api_fetch", "scrape", "computed", "ai_search", "manual"}
 OPERATOR_SET = {"less_than", "less_or_equal", "greater_than", "greater_or_equal", "between", "is_true"}
 QUANTIFIABLE_SET = {"yes", "part", "no"}
+BACKTESTABLE_SET = {"yes", "no"}
 
 
 @dataclass
@@ -29,6 +30,7 @@ class RuleCatalogEntry:
     description: LocalizedText
     method: Optional[str] = None
     quantifiable: Optional[str] = None
+    backtestable: Optional[str] = None
     status: Optional[str] = None
     indicator: Optional[str] = None
     operator: Optional[str] = None
@@ -85,6 +87,8 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
             error_list.append("rule {} has unknown method {}".format(entry.rule_id, entry.method))
         if entry.quantifiable not in QUANTIFIABLE_SET:
             error_list.append("rule {} has unknown quantifiable {}".format(entry.rule_id, entry.quantifiable))
+        if entry.backtestable not in BACKTESTABLE_SET:
+            error_list.append("rule {} has unknown backtestable {}".format(entry.rule_id, entry.backtestable))
         if entry.operator is not None and entry.operator not in OPERATOR_SET:
             error_list.append("rule {} has unknown operator {}".format(entry.rule_id, entry.operator))
         if entry.operator not in (None, "is_true") and entry.value is None:

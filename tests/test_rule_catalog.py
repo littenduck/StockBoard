@@ -24,7 +24,7 @@ def test_project_catalog_and_strategies_are_valid():
 
 def build_entry(rule_id, **overrides):
     fields = dict(name=LocalizedText("n", "名"), description=LocalizedText("d", "述"), method="computed",
-                  quantifiable="yes", status="built", indicator="x", operator="less_than", value=1)
+                  quantifiable="yes", backtestable="yes", status="built", indicator="x", operator="less_than", value=1)
     fields.update(overrides)
     return RuleCatalogEntry(rule_id, **fields)
 
@@ -65,8 +65,16 @@ def test_catalog_validation_finds_problems():
                             build_entry("TST-03", band_of="TST-77"),
                             build_entry("TST-04", operator="near"),
                             build_entry("TST-05", value=None),
+                            build_entry("TST-06", backtestable="maybe"),
                             build_entry("ZZZ-01", indicator="x"))
-    assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})) == 6
+    assert len(rule_catalog_validate_rule_catalog_against_known_indicators(catalog, {"x"})) == 7
+
+
+def test_manual_rules_are_never_backtestable():
+    catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
+    for entry in catalog.rule_entry_by_id.values():
+        if entry.method == "manual" and entry.rule_id != "EVT-04":  # EVT-04 is a fixed date list, not an answer from you
+            assert entry.backtestable == "no", entry.rule_id
 
 
 def test_todo_rule_may_name_an_indicator_that_does_not_exist_yet():
