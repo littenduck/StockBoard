@@ -72,7 +72,7 @@ rule_list:
     legacy_id: ["A06"]
   - rule_id: MAC-03
     name: {en: "10Y yield", zh: "10Y 收益率"}
-    description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10 (10-year Treasury constant maturity rate), updated daily with about one business day of delay. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb).", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列（10 年期国债固定期限收益率），每日更新，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。"}
+    description: {en: "Yield on the 10-year US Treasury note, the benchmark rate the market uses to discount future earnings. The higher it is, the harder it is for stocks to hold their valuations. Source: FRED series DGS10 (10-year Treasury constant maturity rate), updated daily with about one business day of delay. Typical values: about 0.5% to 5.0% over the last 20 years; above 4.5% is often seen as pressure on stocks (rule of thumb). Scoring levels (the first matching level wins): below 4.5% earns the full weight; below 5% earns half of the weight; anything else earns nothing.", zh: "10 年期美国国债收益率，是市场给未来盈利折现的基准利率。越高，股票越难守住估值。数据来源：FRED 的 DGS10 序列（10 年期国债固定期限收益率），每日更新，约滞后 1 个工作日。常见情形：过去 20 年大致在 0.5%–5.0%；高于 4.5% 常被视为对股市有压力（经验）。计分档位（按顺序，第一个匹配的档位生效）：低于 4.5% 拿满权重；低于 5% 拿一半权重；其余不得分。"}
     weight: 4
     method: "api_fetch"
     quantifiable: "yes"
@@ -341,7 +341,7 @@ rule_list:
   # SEN · Sentiment and positioning
   - rule_id: SEN-01
     name: {en: "VIX", zh: "VIX 恐慌指数"}
-    description: {en: "The VIX (Cboe Volatility Index) shows how much volatility the options market expects for the S&P 500 over the next 30 days; it is called the fear gauge. Too low and options pay little; too high and the market is panicking, so sellers must be careful. Source: Yahoo Finance symbol ^VIX via yfinance; delayed about 15 minutes during trading. Typical values: long-run average about 19 to 20; below 12 is complacent, 20 to 30 tense, above 30 panic, above 40 extreme (market convention).", zh: "VIX（Cboe 波动率指数）反映期权市场预期标普 500 未来 30 天的波动，俗称恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，盘中约延迟 15 分钟。常见情形：长期均值约 19–20；低于 12 自满，20–30 紧张，高于 30 恐慌，高于 40 极端（业界惯例）。"}
+    description: {en: "The VIX (Cboe Volatility Index) shows how much volatility the options market expects for the S&P 500 over the next 30 days; it is called the fear gauge. Too low and options pay little; too high and the market is panicking, so sellers must be careful. Source: Yahoo Finance symbol ^VIX via yfinance; delayed about 15 minutes during trading. Typical values: long-run average about 19 to 20; below 12 is complacent, 20 to 30 tense, above 30 panic, above 40 extreme (market convention). Scoring levels (the first matching level wins): 15 to 25 earns the full weight; 12 to 15 earns half of the weight; 25 to 30 earns half of the weight; anything else earns nothing.", zh: "VIX（Cboe 波动率指数）反映期权市场预期标普 500 未来 30 天的波动，俗称恐慌指数。太低期权不值钱，太高说明市场恐慌，卖方要小心。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，盘中约延迟 15 分钟。常见情形：长期均值约 19–20；低于 12 自满，20–30 紧张，高于 30 恐慌，高于 40 极端（业界惯例）。计分档位（按顺序，第一个匹配的档位生效）：15–25 拿满权重；12–15 拿一半权重；25–30 拿一半权重；其余不得分。"}
     weight: 5
     method: "api_fetch"
     quantifiable: "yes"
@@ -371,7 +371,7 @@ rule_list:
     note: {en: "Indicator exists; no levels yet", zh: "指标已有，暂无分档"}
   - rule_id: SEN-04
     name: {en: "Fear and Greed", zh: "恐惧贪婪指数"}
-    description: {en: "CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (needs Referer and Origin headers); it may change at any time. Updated daily, close to real time.", zh: "CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（需要 Referer 和 Origin 请求头），随时可能变化。每日更新，接近实时。"}
+    description: {en: "CNN's Fear and Greed Index, 0 to 100, combines seven market indicators (including momentum, VIX and junk bond demand). Low means fear, which some sellers treat as an opportunity. CNN bands: 0-24 extreme fear, 25-44 fear, 45-55 neutral, 56-75 greed, 76-100 extreme greed. Source: CNN's unofficial data endpoint (needs Referer and Origin headers); it may change at any time. Updated daily, close to real time. Scoring levels (the first matching level wins): below 25 earns the full weight; below 45 earns 75% of the weight; below 55 earns half of the weight; anything else earns nothing.", zh: "CNN 的恐惧贪婪指数，0–100，由七个市场指标合成（包括动量、VIX、垃圾债需求等）。越低越恐惧，一些卖方把它当作机会。CNN 分档：0–24 极度恐惧，25–44 恐惧，45–55 中性，56–75 贪婪，76–100 极度贪婪。数据来源：CNN 的非官方数据接口（需要 Referer 和 Origin 请求头），随时可能变化。每日更新，接近实时。计分档位（按顺序，第一个匹配的档位生效）：低于 25 拿满权重；低于 45 拿 75% 的权重；低于 55 拿一半权重；其余不得分。"}
     weight: 3
     method: "scrape"
     quantifiable: "yes"
@@ -467,7 +467,7 @@ rule_list:
     legacy_id: ["T03"]
   - rule_id: TRD-06
     name: {en: "Near 52-week high", zh: "接近 52 周高点"}
-    description: {en: "How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, already wired in. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio).", zh: "价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。"}
+    description: {en: "How far the price is below its 52-week high. The closer it is, the stronger the stock, and breaking a new high has no trapped sellers above. Source: Yahoo Finance via yfinance, already wired in. Typical values: within 5% means near a new high and within 15% is still strong (rule of thumb; George and Hwang 2004 used the 52-week-high ratio). Scoring levels (the first matching level wins): 5% or below earns the full weight; 15% or below earns half of the weight; anything else earns nothing.", zh: "价格离 52 周最高价有多远。越近说明股票越强，突破新高时上方没有套牢盘。数据来源：通过 yfinance 取 Yahoo Finance，已接入。常见情形：5% 以内算接近新高，15% 以内仍算强势（经验；George 与 Hwang 2004 年的研究用了 52 周高点比）。计分档位（按顺序，第一个匹配的档位生效）：不超过 5% 拿满权重；不超过 15% 拿一半权重；其余不得分。"}
     weight: 4
     method: "computed"
     quantifiable: "yes"
@@ -477,7 +477,7 @@ rule_list:
     legacy_id: ["M02", "T05"]
   - rule_id: TRD-07
     name: {en: "52-week range position", zh: "52 周区间位置"}
-    description: {en: "Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance, already wired in.", zh: "价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    description: {en: "Where the price sits within its 52-week low-to-high range, from 0 (at the low) to 100 (at the high). Low suits the Wheel strategy (sell puts, get assigned, then sell covered calls); high suits momentum strategies. Source: Yahoo Finance via yfinance, already wired in. Scoring levels (the first matching level wins): 25 or below earns the full weight; 50 or below earns half of the weight; anything else earns nothing.", zh: "价格在过去 52 周最低到最高区间中的位置，0 表示在最低点，100 表示在最高点。位置低适合 Wheel 策略（卖 Put、被行权后再卖 Covered Call），位置高适合动量策略。数据来源：通过 yfinance 取 Yahoo Finance，已接入。计分档位（按顺序，第一个匹配的档位生效）：不超过 25 拿满权重；不超过 50 拿一半权重；其余不得分。"}
     weight: 3
     method: "computed"
     quantifiable: "yes"
@@ -517,7 +517,7 @@ rule_list:
     legacy_id: ["M03"]
   - rule_id: TRD-11
     name: {en: "RSI(14)", zh: "RSI(14)"}
-    description: {en: "RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, already wired in.", zh: "14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。"}
+    description: {en: "RSI (Relative Strength Index) over 14 days measures the strength of recent gains versus losses on a 0 to 100 scale. Above 70 is conventionally overbought, below 30 oversold; 40 to 70 means a healthy trend. Source: Yahoo Finance via yfinance, calculated, already wired in. Scoring levels (the first matching level wins): 40 to 70 earns the full weight; 70 to 80 earns half of the weight; anything else earns nothing.", zh: "14 日 RSI（相对强弱指数）用 0–100 衡量近期涨幅与跌幅的力度。习惯上高于 70 为超买，低于 30 为超卖，40–70 代表趋势健康。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。计分档位（按顺序，第一个匹配的档位生效）：40–70 拿满权重；70–80 拿一半权重；其余不得分。"}
     weight: 3
     method: "computed"
     quantifiable: "yes"
@@ -527,7 +527,7 @@ rule_list:
     legacy_id: ["T04", "M04"]
   - rule_id: TRD-12
     name: {en: "RSI(2) oversold", zh: "RSI(2) 超卖"}
-    description: {en: "RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, already wired in.", zh: "只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。"}
+    description: {en: "RSI over just 2 days (the Larry Connors method) is very sensitive. Below 10 means the stock has dropped too far too fast, a classic buy point for short-term mean reversion (the idea that prices snap back). Source: Yahoo Finance via yfinance, calculated, already wired in. Scoring levels (the first matching level wins): below 5 earns the full weight; below 10 earns 75% of the weight; anything else earns nothing.", zh: "只看 2 天的 RSI（Larry Connors 方法）非常敏感。低于 10 说明短期跌得过快过多，是短线均值回归（价格会弹回均值的想法）的经典买点。数据来源：通过 yfinance 取 Yahoo Finance 后计算，已接入。计分档位（按顺序，第一个匹配的档位生效）：低于 5 拿满权重；低于 10 拿 75% 的权重；其余不得分。"}
     weight: 4
     method: "computed"
     quantifiable: "yes"
@@ -718,7 +718,7 @@ rule_list:
   # VOL · Volatility
   - rule_id: VOL-01
     name: {en: "IV percentile", zh: "IV 百分位"}
-    description: {en: "Where today's IV (implied volatility, the volatility priced into options) sits within the past year, as a percentile. A high reading means options are expensive, which favors sellers. Needs a year of daily IV history that no free source provides, so it has to be recorded daily and builds up over a year. VIX percentile can be a stopgap.", zh: "当前 IV（隐含波动率，期权价格里包含的波动率）在过去一年中处于什么百分位。数值高说明期权偏贵，对卖方有利。需要一年的每日 IV 历史，免费数据源都没有，只能自己每天记录，攒满一年才可用。VIX 的百分位可以做临时替代。"}
+    description: {en: "Where today's IV (implied volatility, the volatility priced into options) sits within the past year, as a percentile. A high reading means options are expensive, which favors sellers. Needs a year of daily IV history that no free source provides, so it has to be recorded daily and builds up over a year. VIX percentile can be a stopgap. Scoring levels (the first matching level wins): 70 or above earns the full weight; 50 or above earns 75% of the weight; 40 or above earns half of the weight; anything else earns nothing.", zh: "当前 IV（隐含波动率，期权价格里包含的波动率）在过去一年中处于什么百分位。数值高说明期权偏贵，对卖方有利。需要一年的每日 IV 历史，免费数据源都没有，只能自己每天记录，攒满一年才可用。VIX 的百分位可以做临时替代。计分档位（按顺序，第一个匹配的档位生效）：不低于 70 拿满权重；不低于 50 拿 75% 的权重；不低于 40 拿一半权重；其余不得分。"}
     weight: 5
     method: "computed"
     quantifiable: "yes"
@@ -761,7 +761,7 @@ rule_list:
   # CTR · Contract selection
   - rule_id: CTR-01
     name: {en: "Delta", zh: "Delta"}
-    description: {en: "Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance, already wired in.", zh: "卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance，已接入。"}
+    description: {en: "Delta of the option you sell is roughly the chance it ends up in the money (gets assigned). A smaller |Delta| is safer but collects less premium. Sellers often use 0.15 to 0.30. Calculated with the Black-Scholes model from the option chain. Source: Yahoo Finance via yfinance, already wired in. Scoring levels (the first matching level wins): 0.15 to 0.2 earns the full weight; 0.15 to 0.3 earns 75% of the weight; 0.3 or below earns half of the weight; anything else earns nothing.", zh: "卖出期权的 Delta 近似于它最终价内（被行权）的概率。|Delta| 越小越安全，但收到的权利金也越少。卖方常用 0.15–0.30。用 Black-Scholes 模型根据期权链计算。数据来源：通过 yfinance 取 Yahoo Finance，已接入。计分档位（按顺序，第一个匹配的档位生效）：0.15–0.2 拿满权重；0.15–0.3 拿 75% 的权重；不超过 0.3 拿一半权重；其余不得分。"}
     weight: 5
     method: "computed"
     quantifiable: "yes"
@@ -771,7 +771,7 @@ rule_list:
     legacy_id: ["B03", "B04", "F08"]
   - rule_id: CTR-02
     name: {en: "Days to expiration", zh: "到期天数"}
-    description: {en: "Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, already wired in. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard).", zh: "到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，已接入。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。"}
+    description: {en: "Days to expiration (DTE). 30 to 45 days is a common sweet spot where time value decays quickly without the option being too short. Source: option expiration dates from Yahoo Finance via yfinance, already wired in. Typical values: 45 DTE is a common choice among options sellers (the tastytrade standard). Scoring levels (the first matching level wins): 30 to 45 days earns the full weight; 14 to 45 days earns half of the weight; above 30 days earns half of the weight; anything else earns nothing.", zh: "到期天数（DTE）。30–45 天是常见的甜区：时间价值衰减较快，又不至于太短。数据来源：通过 yfinance 取 Yahoo Finance 的期权到期日，已接入。常见情形：期权卖方常用 45 DTE（tastytrade 的标准做法）。计分档位（按顺序，第一个匹配的档位生效）：30–45 天 拿满权重；14–45 天 拿一半权重；高于 30 天 拿一半权重；其余不得分。"}
     weight: 4
     method: "computed"
     quantifiable: "yes"
@@ -845,7 +845,7 @@ rule_list:
   # RET · Return and payoff
   - rule_id: RET-01
     name: {en: "Annualized return", zh: "年化收益"}
-    description: {en: "The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, already wired in; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers.", zh: "把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，已接入；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。"}
+    description: {en: "The premium collected converted to an annual return (bid divided by strike, scaled to 365 days). Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance, already wired in; no bid when the market is closed. Typical values: 8% to 20% a year is the range used here for put sellers. Scoring levels (the first matching level wins): 20% or above earns the full weight; 8% or above earns half of the weight; anything else earns nothing.", zh: "把收到的权利金换算成年化收益（买价除以行权价，折算到 365 天）。太低不值得冒风险，太高往往说明风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链，已接入；休市时没有买价。常见情形：这里对卖 Put 采用的范围是年化 8%–20%。计分档位（按顺序，第一个匹配的档位生效）：不低于 20% 拿满权重；不低于 8% 拿一半权重；其余不得分。"}
     weight: 4
     method: "computed"
     quantifiable: "yes"
@@ -855,7 +855,7 @@ rule_list:
     legacy_id: ["A21", "E08", "B09"]
   - rule_id: RET-02
     name: {en: "Monthly premium", zh: "月化权利金"}
-    description: {en: "The premium as a share of the strike, scaled to one month. Monthly 2% to 4% is common for put sellers. Source: Yahoo Finance option chain via yfinance, calculated.", zh: "权利金占行权价的比例，折算成每月。卖 Put 常见的月化是 2%–4%。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。"}
+    description: {en: "The premium as a share of the strike, scaled to one month. Monthly 2% to 4% is common for put sellers. Source: Yahoo Finance option chain via yfinance, calculated. Scoring levels (the first matching level wins): 4% or above earns the full weight; 2% or above earns half of the weight; anything else earns nothing.", zh: "权利金占行权价的比例，折算成每月。卖 Put 常见的月化是 2%–4%。数据来源：通过 yfinance 取 Yahoo Finance 的期权链后计算。计分档位（按顺序，第一个匹配的档位生效）：不低于 4% 拿满权重；不低于 2% 拿一半权重；其余不得分。"}
     weight: 3
     method: "computed"
     quantifiable: "yes"
