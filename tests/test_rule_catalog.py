@@ -23,7 +23,7 @@ def test_project_catalog_and_strategies_are_valid():
 
 
 def build_entry(rule_id, **overrides):
-    fields = dict(rule_name="n", description=LocalizedText("d", "述"), method="computed",
+    fields = dict(rule_name=rule_id.lower().replace("-", "_"), description=LocalizedText("d", "述"), method="computed",
                   quantifiable="yes", backtestable="yes", status="built", indicator="x", operator="less_than", value=1)
     fields.update(overrides)
     return RuleCatalogEntry(rule_id, **fields)
@@ -37,7 +37,7 @@ def build_catalog(*entry_list):
 def test_strategy_rule_takes_the_test_from_the_catalog_and_the_weight_from_the_strategy():
     catalog = build_catalog(build_entry("TST-01"))
     rule = strategy_loader_build_rule_definition_from_catalog({"rule_id": "TST-01", "weight": 2}, catalog)
-    assert (rule.rule_name, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("n", "x", "less_than", 1, 2, False)
+    assert (rule.rule_name, rule.indicator, rule.operator, rule.value, rule.weight, rule.veto) == ("tst_01", "x", "less_than", 1, 2, False)
     assert strategy_loader_build_rule_definition_from_catalog(
         {"rule_id": "TST-01", "weight": 5, "veto": True}, catalog).veto is True
 
