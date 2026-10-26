@@ -1,6 +1,6 @@
 # Design
 
-Claude-style warm palette, Apple-level clarity. Two pages (`static/index.html` dashboard, `static/rules.html` rule catalog) sharing `static/base.css` for tokens and type; vanilla JS and CSS, no framework, no chart library, no web font, no CDN.
+Claude-style warm palette, Apple-level clarity. Five pages sharing `static/base.css`: the dashboard (`index.html`, `/`) and four catalog pages (`strategies.html` `/strategies`, `strategy.html` `/strategies/{id}`, `rules.html` `/rules`, `indicators.html` `/indicators`) for tokens and type; vanilla JS and CSS, no framework, no chart library, no web font, no CDN.
 Light theme is the default; the user can switch to dark with the button in the sidebar header.
 
 ## Colors
@@ -14,7 +14,7 @@ CSS custom properties on `:root` (light) and `:root[data-theme="dark"]`. Every t
 | `--fill` | `#F0EEE6` | `#3A3A37` | hover and selected row (selected adds the accent bar) |
 | `--separator` | `#E8E6DC` | `#3D3D3A` | 1px lines, placeholder rows |
 | `--text` | `#141413` | `#F5F4EE` | primary text |
-| `--text-secondary` | `#6B6A64` | `#A8A69D` | small text, English companions, unknown, not applicable |
+| `--text-secondary` | `#6B6A64` | `#A8A69D` | small text, unknown, not applicable |
 | `--accent` | `#C96442` | `#D97757` | selection bar, focus ring, theme button. Never body text |
 | `--positive` | `#146C35` | `#4ADE80` | up, 通过 |
 | `--negative` | `#B42318` | `#FF8A8A` | down, 否决, 未通过 |
@@ -35,7 +35,7 @@ System font only: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif`. Al
 | `##` H2 | `h2` | 20 / 600 / 24 | app name, popover title, rule group titles |
 | `###` H3 | `h3` | 15 / 600 / 20 | gate titles, strategy name, the summary sentence |
 | body | `p`, `li` | 15 / 400 / 20 | everything else that is read |
-| small | `small` | 12 / 400 / 16, `--text-secondary` | labels, timestamps, notes, every English companion |
+| small | `small` | 12 / 400 / 16, `--text-secondary` | labels, timestamps, notes |
 | bold | `strong` | weight 600, same size as its parent | emphasis inside a line |
 | link | `a` | see Links below | all links |
 
@@ -46,7 +46,6 @@ Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 **Vertical rhythm** (inside any `.box`, the popover and the explanation box included):
 - `.box > * + * { margin-top: 12px }`
 - `.box > h2 + * { margin-top: 8px }`
-- `small[lang="en"] { margin-top: 4px }`, so an English companion hugs the Chinese line it translates.
 
 ## Space and shape
 
@@ -116,16 +115,23 @@ Layout-only containers (not elements, styled by the page only for layout): page 
 
 Each rule row on the dashboard has a small help icon (a link) after its id. Hovering it for one second, or focusing it with the keyboard, opens `#rule-card`, a `.box` popover with the rule's id (`small`), `rule_name` (`h3`, breaking after underscores), pass sentence (`p`) and, under them, the text of its indicator and every line of that measure (`small`: `I-003 lines: R-MAC-03 < 4.5 · R-MAC-13 < 5.0`), so nothing needs a click-through. It closes the moment the pointer leaves, on blur and on Escape, and never takes the pointer itself (`pointer-events: none`).
 
-The rule catalog page lists the rules of a category under topic headings (`h3`); the other lines of a measure are indented under their main rule (`data-tier`). A row shows the id, `rule_name`, pass sentence, the indicator text and lines (the same `ruleTextRenderIndicator` as the card, with links), then a grid of every other field in `config/rules.yaml` order (a `small` field name above a `p` value, a gray dash when empty, `band_of` as a link, identifiers breaking at underscores) and a last line for `note` and `used_by` (strategy chips with weight and veto). The grid fills as many columns as fit, two on a phone. Built by `static/rule-card.js` and `static/rule-text.js` from `/api/v1/rules`.
+## Catalog pages
+
+The four catalog pages share one frame (`main.catalog`, styles in `base.css`): a top bar with `nav` links (Dashboard, Strategies, Rules, Indicators; the current one has `aria-current="page"`) and the language button, a page header (`h1` and a `small` summary), and the entries. `static/page.js` holds what they share: the nav, the entries of a rule and of an indicator, a line of facts and the row named by the URL hash (`.is-target`).
+
+**An entry is a card laid flat, not a grid of cells.** A `.row` with the id in a 88px column and the content beside it: `rule_name` or `indicator_name` (`h3`, breaking after underscores), the pass sentence or description (`p`), then `small` lines indented under it, one per kind of fact. A fact line shows only the facts that exist (`label: value · label: value`), so there are no dashes and no half-empty cells. The lines: the indicator text with every line of its measure (rules only, and only under the main rule: the other lines of a measure are indented under it with `data-tier`, and share its text); the data facts (method, quantifiable, status, backtestable with its history, fetch every, max age); older ids and the indicator (rules) or the scope (indicators); the note; and the links: the strategies that use a rule (to their page, with weight and veto) and the rules that test an indicator (to the rules page). Every link between the three catalogs is an anchor (`#rule-R-MAC-03`, `#indicator-I-003`).
+
+- **Strategies** (`/strategies`): one `.box` per strategy with its name (a link), summary, the number of gates, rules and vetoes, and the source.
+- **Strategy** (`/strategies/{id}`): the name, summary, full explanation and source, a `.box` that explains the score and the veto, a link back to the dashboard, then one `entry-group` per gate. A rule row has the id (link to the rules page), name, pass sentence and its line, and on the right its weight and veto as `small.box` tags (under the text on a phone). Rules that are not built are marked. The page shows what the strategy is, not live results; those stay on the dashboard.
+- **Rules** (`/rules`): grouped by category and topic (`h3`); a `details` at the top holds how ids, lines and backtests work; a filter select.
+- **Indicators** (`/indicators`): grouped by the category of the first rule that tests the indicator, then an "no rule yet" group (market bar only or unused); a filter select; each entry names its unit and the rule lines that test it.
+
+Page budgets: the dashboard 354 lines, every catalog page 140 (a test checks both).
 
 ## Language
 
-English is the default; Chinese mode shows Chinese with the English underneath. Glossary and writing rules: `docs/language.md`.
+English is the default. Each language stands alone: Chinese mode shows only Chinese, English mode only English, with no English line under the Chinese. Names (`rule_name`, `indicator_name`) and technical terms stay English in both. Glossary and writing rules: `docs/language.md`.
 
-**The one English rule (no exceptions):** in Chinese mode the English text is `<small lang="en">`, always on its own line directly under the Chinese line it translates, always 12px gray. That covers titles, labels, rule descriptions and every help paragraph. There are no `translation*` classes.
-
-English appears under: sidebar section labels, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result labels, expiration window lines, the rules page explanation.
-Never doubled: status words, numbers, prices, percentages, times, symbols, the status bar, buttons, select options, aria-labels.
-`<html lang>` is `en` or `zh-Hans`; every English line in Chinese mode carries `lang="en"`.
+`<html lang>` is `en` or `zh-Hans`.
 
 The language button (Tabler `language` icon) is an `icon-button`; one click toggles English and Chinese, and its aria-label and tooltip say what a click does. Technical terms stay English in both languages: VIX, SPX, DTE, IV, RV30, GATE, bp. Times are exchange time, labelled `ET`.

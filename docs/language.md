@@ -1,7 +1,7 @@
 # Language
 
 The interface has two languages, English (`en`, default) and Chinese (`zh`, shown as `zh-Hans`).
-In Chinese mode Chinese is the main text and the English appears underneath in small gray type (see `docs/design.md`, Language).
+Each language stands alone: Chinese mode shows only the Chinese text and English mode only the English (see `docs/design.md`, Language). Names such as `rule_name` and `indicator_name` stay English in both.
 
 ## Writing both languages
 
@@ -9,7 +9,7 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 - English must not contain Chinese characters. Use the glossary below; do not invent variants.
 - Technical terms stay English in both languages: GATE, VIX, SPX, DTE, IV, RV30, FGI, HY, bp, Delta, Put, Call.
 - Interface strings live in `static/language.js` (`UI_TEXT`), with the same rule.
-- **The one English rule (no exceptions):** in Chinese mode the English text is `<small lang="en">`, always on its own line directly under the Chinese line it translates, always 12px gray, including every help paragraph. Do not use any other English style.
+- Both texts are still written for every string, but a page shows one of them, never both.
 
 ## Glossary
 

@@ -47,7 +47,6 @@ h2 { font-size:20px; line-height:24px; font-weight:600; }
 h3 { font-size:15px; line-height:20px; font-weight:600; }
 p, li { font-size:15px; line-height:20px; }
 small { font-size:12px; line-height:16px; font-weight:400; color:var(--text-secondary); }
-small[lang="en"] { display:block; margin-top:var(--space-1); }
 strong { font-weight:600; }
 h1 .icon { width:28px; height:28px; }
 a { position:relative; color:var(--text-secondary); text-decoration:none; }
@@ -59,3 +58,15 @@ a::after { content:""; position:absolute; left:calc(-1 * var(--space-2)); right:
 small.box { display:inline-block; padding:0 var(--space-2); white-space:nowrap; }
 .box > * + * { margin-top:var(--space-3); }
 .box > h2 + * { margin-top:var(--space-2); }
+
+/* Catalog pages (strategies, strategy, rules, indicators): top bar, page header, filter, entries. */
+main.catalog { max-width:960px; margin:0 auto; padding:var(--space-6); }
+.top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2); } .top-row nav { display:flex; flex-wrap:wrap; gap:0 var(--space-5); }
+nav a[aria-current="page"] { color:var(--text); text-decoration:underline; text-underline-offset:3px; }
+.page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6); padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
+.filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
+.entry-group { margin-bottom:var(--space-6); } .entry-group > header { margin-bottom:var(--space-2); } .entry-group > header > small, .entry-group .row > div > small { display:block; } .entry-group .row > div > small { margin-top:var(--space-1); }
+.entry-group h3 { margin:var(--space-5) var(--space-2) var(--space-1); } details > summary { cursor:pointer; color:var(--text-secondary); font-size:12px; line-height:16px; }
+.entry-group .row { display:grid; grid-template-columns:88px 1fr; gap:var(--space-3); align-items:baseline; margin:0; border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
+.entry-group .row > :first-child { white-space:nowrap; } .entry-group .row[data-tier="1"] { margin-left:var(--space-5); } .entry-group .row[data-weight] { grid-template-columns:88px 1fr auto; }
+@media (max-width:899px) { main.catalog { padding:var(--space-5) var(--space-4); } }

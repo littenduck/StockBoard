@@ -3,122 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rule catalog · StockBoard</title>
+<title>Rules · StockBoard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/base.css">
 <style>
-  main { max-width:960px; margin:0 auto; padding:var(--space-6); }
-  .top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2); }
-  .page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:var(--space-2) var(--space-6);
-    padding-bottom:var(--space-5); margin-bottom:var(--space-5); border-bottom:1px solid var(--separator); }
   #explanation { margin-bottom:var(--space-5); } #explanation ul { display:flex; flex-wrap:wrap; gap:var(--space-1) var(--space-4); }
-  .filter-row { display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); }
-  .rule-group { margin-bottom:var(--space-6); }
-  .rule-group > header { margin-bottom:var(--space-2); }
-  .rule-group h3 { margin:var(--space-5) var(--space-2) var(--space-1); } .rule-group .row[data-tier="1"] { margin-left:var(--space-5); }
-  .rule-group .row { display:grid; grid-template-columns:88px 1fr; gap:var(--space-3); align-items:baseline; margin:0;
-    border-top:1px solid var(--separator); scroll-margin-top:var(--space-6); }
-  .rule-group .row > :first-child { white-space:nowrap; } .rule-group > header > small, .rule-group .row > div > small { display:block; } .rule-group .row > div > small { margin-top:var(--space-1); }
-  .rule-meta { display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:var(--space-2) var(--space-4); margin-top:var(--space-3); }
-  .rule-meta small { display:block; } .rule-meta p { overflow-wrap:break-word; }
-  .usage { display:flex; flex-wrap:wrap; gap:var(--space-1); } .usage .box { white-space:normal; }
-  @media (max-width:899px) {
-    main { padding:var(--space-5) var(--space-4); }
-  }
+  #explanation > div { margin-top:var(--space-3); }
 </style>
 </head>
 <body data-title-key="rules_title">
-<main>
-  <div class="top-row"><small><a id="back-link" href="/"></a></small>
+<main class="catalog">
+  <div class="top-row"><nav id="page-nav"></nav>
     <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
   <header class="page-header">
     <h1 id="page-heading"></h1>
     <small id="summary"></small>
   </header>
-  <section class="box" id="explanation"></section>
+  <details id="explanation"><summary id="explanation-title"></summary><div id="explanation-body"></div></details>
   <div class="filter-row">
     <small><label for="filter-select" id="filter-label"></label></small>
     <span class="field"><select id="filter-select"><option value="all"></option><option value="used"></option><option value="built"></option><option value="backtest"></option></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
   </div>
-  <div id="rule-group-list"><small id="loading-rules"></small></div>
+  <div id="group-list"><small id="loading"></small></div>
 </main>
 <script src="/language.js"></script>
 <script src="/rule-text.js"></script>
+<script src="/page.js"></script>
 <script>
-const STATUS_COLOR = { built:'positive', todo:'caution', no_data:'muted' }; const escapeText = languageEscape;
-const primaryText = localizedText => localizedText[languageGetActive()];
 let ruleCatalog = null, loadFailed = false;
-
-function markTargetRow() {
-  document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target'));
-  const row = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-  if (row) row.classList.add('is-target');
-  return row;
-}
-window.addEventListener('hashchange', markTargetRow);
-function renderRuleRow(rule) {
-  const field = name => `<div><small>${name}</small>${ruleTextRenderFieldValue(rule, name, STATUS_COLOR)}</div>`;
-  const usage = rule.used_by.map(use => `<small class="box">${escapeText(primaryText(use.display_name))} · W${use.weight}${use.veto ? ' · ' + escapeText(languageText('veto')) : ''}</small>`).join('');
-  return `<div class="row" id="rule-${rule.rule_id}" data-tier="${rule.band_of ? 1 : 0}"><small>${rule.rule_id}</small>
-    <div>${languageRenderName(rule.rule_name)}<small>${languageRenderText(rule.description)}</small>${ruleTextRenderIndicator(rule, true)}
-      <div class="rule-meta">${RULE_TEXT_FIELD_LIST.map(field).join('')}</div>
-      <div class="rule-meta"><div><small>note</small>${rule.note ? `<p>${languageRenderText(rule.note)}</p>` : RULE_TEXT_DASH}</div>
-        <div><small>used_by</small>${usage ? `<div class="usage">${usage}</div>` : RULE_TEXT_DASH}</div></div></div></div>`;
-}
+const allRuleList = () => ruleCatalog.group_list.flatMap(group => group.rule_list);
 
 function renderStaticText() {
-  document.getElementById('back-link').textContent = languageText('back_to_dashboard');
+  pageRenderNav('/rules');
   document.getElementById('page-heading').innerHTML = languageRenderText(languageLocalize('rule_catalog'));
   document.getElementById('filter-label').textContent = languageText('show');
   [...document.getElementById('filter-select').options].forEach(option =>
     option.textContent = languageText({ all:'all_rules', used:'used_rules', built:'built_rules', backtest:'backtest_rules' }[option.value]));
-  document.getElementById('explanation').innerHTML = languageRenderParagraphs(languageLocalize('id_explanation'))
-    + languageRenderParagraphs(languageLocalize('gap_explanation'))
-    + languageRenderParagraphs(languageLocalize('backtest_explanation'))
+  document.getElementById('explanation-title').textContent = languageText('how_to_read');
+  document.getElementById('explanation-body').innerHTML = ['id_explanation', 'gap_explanation', 'backtest_explanation'].map(key => languageRenderParagraphs(languageLocalize(key))).join('')
     + `<small>${languageRenderText(languageLocalize('status_label'))}</small><ul>`
-    + Object.keys(STATUS_COLOR).map(key => `<li><small><span class="${STATUS_COLOR[key]}">${escapeText(languageText(key))}</span>: ${escapeText(languageText(key + '_explanation'))}</small></li>`).join('') + '</ul>';
-  const loading = document.getElementById('loading-rules');
+    + Object.keys(PAGE_STATUS_COLOR).map(key => `<li><small><span class="${PAGE_STATUS_COLOR[key]}">${languageEscape(languageText(key))}</span>: ${languageEscape(languageText(key + '_explanation'))}</small></li>`).join('') + '</ul>';
+  const loading = document.getElementById('loading');
   if (loading) loading.textContent = languageText('loading_rules');
 }
 
 function renderSummary() {
-  if (!ruleCatalog) return;
-  const ruleList = ruleCatalog.group_list.flatMap(group => group.rule_list);
-  document.getElementById('summary').textContent = languageText('rule_summary', { total:ruleList.length,
-    built:ruleList.filter(rule => rule.status === 'built').length, backtest:ruleList.filter(rule => rule.backtestable === 'yes').length,
-    used:ruleList.filter(rule => rule.used_by.length).length });
-}
-
-function handleLanguageChange() {
-  renderStaticText();
-  if (loadFailed) { renderLoadFailure(); return; }
-  if (ruleCatalog) { renderSummary(); renderRuleCatalog(false); }
-}
-
-function renderLoadFailure() {
-  document.getElementById('rule-group-list').innerHTML = `<small class="negative">${escapeText(languageText('rules_failed'))}</small>`;
+  const ruleList = allRuleList();
+  document.getElementById('summary').textContent = languageText('rule_summary', { total:ruleList.length, built:ruleList.filter(rule => rule.status === 'built').length,
+    backtest:ruleList.filter(rule => rule.backtestable === 'yes').length, used:ruleList.filter(rule => rule.used_by.length).length });
 }
 
 function renderRuleCatalog(shouldScrollToTarget = true) {
   const filter = document.getElementById('filter-select').value;
   const keepRule = rule => filter === 'all' || (filter === 'used' ? rule.used_by.length > 0 : filter === 'backtest' ? rule.backtestable === 'yes' : rule.status === 'built');
-  document.getElementById('rule-group-list').innerHTML = ruleCatalog.group_list.map(group => {
+  document.getElementById('group-list').innerHTML = ruleCatalog.group_list.map(group => {
     const ruleList = group.rule_list.filter(keepRule);
     if (!ruleList.length) return '';
     const topicName = Object.fromEntries(group.topic_list.map(topic => [topic.topic_id, topic.display_name]));
-    return `<section class="rule-group"><header><h2>${languageRenderText(group.display_name)}</h2><small>${languageRenderText(group.description)}</small></header>
-      ${ruleList.map((rule, index) => (index && ruleList[index - 1].topic === rule.topic || !topicName[rule.topic] ? '' : `<h3>${languageRenderText(topicName[rule.topic])}</h3>`)
-        + renderRuleRow(rule)).join('')}</section>`;
+    return `<section class="entry-group"><header><h2>${languageRenderText(group.display_name)}</h2><small>${languageRenderText(group.description)}</small></header>
+      ${ruleList.map((rule, index) => (index && ruleList[index - 1].topic === rule.topic || !topicName[rule.topic] ? '' : `<h3>${languageRenderText(topicName[rule.topic])}</h3>`) + pageRenderRuleEntry(rule)).join('')}</section>`;
   }).join('');
-  const target = markTargetRow();
+  const target = pageMarkTarget();
   if (target && shouldScrollToTarget) target.scrollIntoView({ block:'center' });
 }
 
-async function loadRuleCatalog() {
-  ruleCatalog = await (await fetch('/api/v1/rules')).json();
-  languageApplyServerDefault(ruleCatalog.default_language, handleLanguageChange);
-  renderSummary();
-  renderRuleCatalog();
+function handleLanguageChange() {
+  renderStaticText();
+  if (loadFailed) { document.getElementById('group-list').innerHTML = `<small class="negative">${languageEscape(languageText('rules_failed'))}</small>`; return; }
+  if (ruleCatalog) { renderSummary(); renderRuleCatalog(false); }
 }
 
 try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
@@ -126,7 +78,9 @@ languageInitialize('en');
 languageBindSwitch(handleLanguageChange);
 renderStaticText();
 document.getElementById('filter-select').onchange = () => renderRuleCatalog(false);
-loadRuleCatalog().catch(() => { loadFailed = true; renderLoadFailure(); });
+fetch('/api/v1/rules').then(response => response.json()).then(data => {
+  ruleCatalog = data; languageApplyServerDefault(data.default_language, handleLanguageChange); renderSummary(); renderRuleCatalog();
+}).catch(() => { loadFailed = true; handleLanguageChange(); });
 </script>
 </body>
 </html>

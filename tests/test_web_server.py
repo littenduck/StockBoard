@@ -127,6 +127,58 @@ def test_the_rule_list_carries_the_indicator_text_and_the_lines_of_the_measure()
     assert rule_by_id["R-POS-01"]["indicator_description"] is None and rule_by_id["R-POS-01"]["indicator_line_list"] == []
 
 
+def test_indicator_catalog_lists_every_indicator_once_with_its_rules():
+    response = web_server.web_server_get_indicator_catalog()
+    indicator_list = [indicator for group in response["group_list"] for indicator in group["indicator_list"]]
+    registry = web_server.application_rule_catalog.indicator_registry
+    assert sorted(item["indicator_id"] for item in indicator_list) == sorted(item.indicator_id for item in registry.indicator_by_name.values())
+    rule_id_set = set(web_server.application_rule_catalog.rule_entry_by_id)
+    by_id = {item["indicator_id"]: item for item in indicator_list}
+    assert [item["rule_id"] for item in by_id["I-003"]["rule_list"]] == ["R-MAC-03", "R-MAC-04"]
+    assert by_id["I-003"]["rule_list"][0]["line"]["en"] == "< 4.5%" and by_id["I-003"]["unit"] == "%"
+    assert all(rule["rule_id"] in rule_id_set for item in indicator_list for rule in item["rule_list"])
+    group_of = {item["indicator_id"]: group["group_id"] for group in response["group_list"] for item in group["indicator_list"]}
+    assert group_of["I-003"] == "MAC" and group_of["I-052"] == "OTHER"  # VXN is on the market bar only
+    assert by_id["I-052"]["on_market_bar"] and by_id["I-052"]["rule_list"] == []
+
+
+def test_strategy_list_carries_gates_with_weights_and_vetoes():
+    strategy = next(item for item in web_server.web_server_get_strategy_list()["strategy_list"] if item["strategy_id"] == STRATEGY_ID)
+    rule_list = [rule for gate in strategy["gate_list"] for rule in gate["rule_list"]]
+    assert strategy["max_unknown_weight_ratio"] == 0.20 and strategy["gate_list"][0]["gate_id"].startswith("gate_0")
+    assert any(rule["rule_id"] == "R-EVT-01" and rule["veto"] and rule["weight"] == 5 for rule in rule_list)
+    assert all(rule["rule_id"] in web_server.application_rule_catalog.rule_entry_by_id and rule["line"]["en"] for rule in rule_list)
+
+
+def test_strategy_page_needs_a_known_strategy():
+    with pytest.raises(HTTPException) as error:
+        web_server.web_server_get_strategy_page("nope")
+    assert error.value.status_code == 404
+
+
+STATIC_DIRECTORY = os.path.join(web_server.PROJECT_DIRECTORY, "static")
+PAGE_FILE_NAME_LIST = ["index.html", "rules.html", "indicators.html", "strategies.html", "strategy.html"]
+
+
+def test_every_page_loads_only_files_the_server_serves_and_stays_short():
+    import re
+    route_path_set = {route.path for route in web_server.app.routes}
+    for file_name in PAGE_FILE_NAME_LIST:
+        text = open(os.path.join(STATIC_DIRECTORY, file_name), encoding="utf8").read()
+        for path in re.findall(r'(?:src|href)="(/[a-z.\-]*)(?:[#"])', text):
+            assert path == "/" or path in route_path_set, "{} loads {}".format(file_name, path)
+        assert text.count("\n") <= (354 if file_name == "index.html" else 140), file_name
+
+
+def test_the_catalog_pages_use_only_known_text_keys():
+    import re
+    language_text = open(os.path.join(STATIC_DIRECTORY, "language.js"), encoding="utf8").read()
+    key_set = set(re.findall(r"^\s*(?:\w+: \{.*\},\s*)?(\w+): \{ en:", language_text, re.M)) | set(re.findall(r"\b(\w+): \{ en:", language_text))
+    for file_name in ["rules.html", "indicators.html", "strategies.html", "strategy.html", "page.js"]:
+        text = open(os.path.join(STATIC_DIRECTORY, file_name), encoding="utf8").read()
+        for key in re.findall(r"language(?:Text|Localize)\('(\w+)'", text) + re.findall(r"data-title-key=\"(\w+)\"", text):
+            assert key in key_set, "{} uses the unknown text {}".format(file_name, key)
+
 def test_the_version_is_read_from_the_version_file_only():
     with open(os.path.join(web_server.PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
         version = version_file.read().strip()

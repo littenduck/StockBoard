@@ -29,12 +29,14 @@ const UI_TEXT = {
   close: { en:'Close', zh:'关闭说明' },
   source: { en:'Source: {source}', zh:'来源：{source}' },
   see_all_rules: { en:'See all rules and how IDs work →', zh:'查看全部规则和编号说明 →' },
+  open_strategy: { en:'Strategy page →', zh:'策略页面 →' },
+  catalog_link: { en:'Strategies, rules, indicators', zh:'策略、规则、指标' },
   best_window: { en:'Expiration {label} days (best) · Gate score {score}', zh:'到期窗口 {label} 天（最佳） · 本层分数 {score}' },
   alternative_window: { en:'Alternative expiration {label} days · Gate score {score}', zh:'备选到期窗口 {label} 天 · 本层分数 {score}' },
   rule_details: { en:'Show all fields of {id}', zh:'查看 {id} 的全部字段' },
   open_rule: { en:'Open {id} in the rule catalog', zh:'在规则目录中查看 {id}' },
   dashboard_title: { en:'StockBoard', zh:'StockBoard' },
-  rules_title: { en:'Rule catalog · StockBoard', zh:'规则目录 · StockBoard' },
+  rules_title: { en:'Rules · StockBoard', zh:'规则 · StockBoard' },
   back_to_dashboard: { en:'← Back to dashboard', zh:'← 返回看板' },
   rule_summary: { en:'{total} rules · {built} built · {backtest} can be backtested · {used} used by strategies', zh:'共 {total} 条规则 · 已接入 {built} 条 · 可回测 {backtest} 条 · 被策略使用 {used} 条' },
   backtest_rules: { en:'Can be backtested', zh:'可以回测的规则' },
@@ -53,6 +55,26 @@ const UI_TEXT = {
   not_used: { en:'Not used', zh:'未被使用' },
   loading_rules: { en:'Loading rules…', zh:'正在读取规则…' },
   rules_failed: { en:'Could not load rules. Check that the server is running.', zh:'读取规则失败，请确认服务正在运行。' },
+  nav_dashboard: { en:'Dashboard', zh:'看板' }, nav_strategies: { en:'Strategies', zh:'策略' }, nav_rules: { en:'Rules', zh:'规则' }, nav_indicators: { en:'Indicators', zh:'指标' },
+  strategies_title: { en:'Strategies · StockBoard', zh:'策略 · StockBoard' }, indicators_title: { en:'Indicators · StockBoard', zh:'指标 · StockBoard' },
+  strategy_title: { en:'Strategy · StockBoard', zh:'策略 · StockBoard' },
+  strategies_heading: { en:'Strategies', zh:'策略' }, indicators_heading: { en:'Indicator catalog', zh:'指标目录' },
+  strategy_summary: { en:'{count} strategies', zh:'共 {count} 个策略' },
+  strategy_facts: { en:'{gates} gates · {rules} rules · {veto} veto', zh:'{gates} 个关卡 · {rules} 条规则 · {veto} 条否决' },
+  indicator_summary: { en:'{total} indicators · {built} built · {backtest} can be backtested · {bar} on the market bar', zh:'共 {total} 个指标 · 已接入 {built} 个 · 可回测 {backtest} 个 · 大盘栏 {bar} 个' },
+  all_indicators: { en:'All indicators', zh:'全部指标' }, built_indicators: { en:'Built (the dashboard computes them)', zh:'已接入（看板在计算）的指标' },
+  backtest_indicators: { en:'Can be backtested', zh:'可以回测的指标' },
+  loading_indicators: { en:'Loading indicators…', zh:'正在读取指标…' }, indicators_failed: { en:'Could not load indicators. Check that the server is running.', zh:'读取指标失败，请确认服务正在运行。' },
+  loading_strategies: { en:'Loading strategies…', zh:'正在读取策略…' }, strategies_failed: { en:'Could not load strategies. Check that the server is running.', zh:'读取策略失败，请确认服务正在运行。' },
+  how_to_read: { en:'How to read this page', zh:'怎么读这个页面' }, all_strategies: { en:'← All strategies', zh:'← 全部策略' },
+  open_in_dashboard: { en:'Open in the dashboard →', zh:'在看板中打开 →' }, source_label: { en:'Source', zh:'来源' },
+  weight: { en:'W{weight}', zh:'权重 {weight}' }, veto_flag: { en:'Veto', zh:'否决' }, not_built: { en:'Not built', zh:'未接入' },
+  scoring_title: { en:'How the score works', zh:'分数怎么算' },
+  scoring_text: { en:'Each rule that passes adds its weight; each rule that fails adds nothing; unknown rules are left out. The score is the passed weight as a share of the weight of the rules that passed or failed. A veto rule that fails makes the whole result a fail, whatever the score. When more than {ratio}% of the weight is unknown, the dashboard greys the score as data insufficient. The gates are checked in order; the contract gate is checked once per expiration window and the best window wins.',
+    zh:'通过的规则加上它的权重，不通过的规则不加分，未知的规则不计入。分数等于通过的权重占（通过加不通过）规则总权重的比例。一票否决的规则不通过时，不管分数多少，结果都是不通过。未知权重超过 {ratio}% 时，看板把分数置灰，提示数据不足。关卡按顺序检查；合约关卡对每个到期窗口各检查一次，取最好的窗口。' },
+  used_by_label: { en:'Used by', zh:'使用它的策略' }, tested_by_label: { en:'Tested by', zh:'测试它的规则' }, on_market_bar: { en:'on the market bar', zh:'在大盘栏显示' },
+  line_label: { en:'Line', zh:'分界线' },
+  also_known_as: { en:'Older ids', zh:'旧编号' },
   built: { en:'Built', zh:'已接入' },
   built_explanation: { en:'the dashboard already computes it', zh:'看板已经在计算' },
   todo: { en:'To do', zh:'待实现' },
@@ -97,22 +119,17 @@ function languageApplyDocument() {
   const languageButton = document.getElementById('language-button');
   if (languageButton) { languageButton.setAttribute('aria-label', languageText('switch_language')); languageButton.title = languageText('switch_language'); }
 }
-/* In Chinese mode the English goes in <small lang="en">, always on its own line directly under the Chinese. */
+/* Each language stands alone: Chinese mode shows only the Chinese text, English mode only the English. Names (rule_name, indicator_name) stay English. */
 /* A rule_name or indicator_name, escaped, with a place to break after each underscore so a long name wraps instead of overflowing. */
 function languageRenderName(name) {
   return languageEscape(name).replace(/_/g, '_<wbr>');
 }
 function languageRenderText(localizedText) {
-  const primary = languageEscape(localizedText[activeLanguage]);
-  if (activeLanguage !== 'zh') return primary;
-  return `${primary}<small lang="en">${languageEscape(localizedText.en)}</small>`;
+  return languageEscape(localizedText[activeLanguage]);
 }
 function languageRenderParagraphs(localizedText) {
   const split = text => text.split(/\n\s*\n/).map(paragraph => paragraph.trim()).filter(Boolean);
-  const englishList = split(localizedText.en);
-  if (activeLanguage !== 'zh') return englishList.map(paragraph => `<p>${languageEscape(paragraph)}</p>`).join('');
-  return split(localizedText.zh).map((paragraph, index) => `<p>${languageEscape(paragraph)}</p>`
-    + (englishList[index] ? `<small lang="en">${languageEscape(englishList[index])}</small>` : '')).join('');
+  return split(localizedText[activeLanguage]).map(paragraph => `<p>${languageEscape(paragraph)}</p>`).join('');
 }
 function languageBindSwitch(onChange) {
   document.getElementById('language-button').onclick = () => languageApply(activeLanguage === 'zh' ? 'en' : 'zh', onChange);

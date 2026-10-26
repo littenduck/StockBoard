@@ -77,7 +77,7 @@
     <ul id="indicator-list"></ul>
     <small id="symbols-heading"></small>
     <ul id="symbol-list"><li class="row placeholder"></li><li class="row placeholder"></li><li class="row placeholder"></li></ul>
-    <a class="row" id="catalog-link" href="/rules"><small></small></a>
+    <a class="row" id="catalog-link" href="/strategies"><small></small></a>
   </aside>
   <main id="strategy-panel" tabindex="-1"><small id="select-symbol-hint"></small></main>
 </div>
@@ -202,10 +202,10 @@ function renderStrategyOptions() {
 }
 
 function renderStaticText() {
-  document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'));
-  document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'));
-  document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'));
-  document.querySelector('#catalog-link small').textContent = languageText('rule_catalog');
+  document.getElementById('strategy-heading').innerHTML = `<a href="/strategies">${escapeText(languageText('strategy'))}</a>`;
+  document.getElementById('market-heading').innerHTML = `<a href="/indicators">${escapeText(languageText('market'))}</a>`;
+  document.getElementById('symbols-heading').innerHTML = `<a href="#symbol-list">${escapeText(languageText('symbols'))}</a>`; document.getElementById('symbols-heading').onclick = event => { event.preventDefault(); document.querySelector('#symbol-list [data-symbol]')?.focus(); };
+  document.querySelector('#catalog-link small').textContent = languageText('catalog_link');
   document.getElementById('theme-button').setAttribute('aria-label', languageText('switch_theme'));
   const hint = document.getElementById('select-symbol-hint');
   if (hint) hint.textContent = languageText('select_symbol');
@@ -230,7 +230,7 @@ function renderStrategyHelp() {
       <button class="icon-button" popovertarget="strategy-help" popovertargetaction="hide" aria-label="${escapeText(languageText('close'))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-close"/></svg></button></header>
     <h3>${languageRenderText(strategy.summary)}</h3>${languageRenderParagraphs(strategy.help_text)}
     <small>${escapeText(languageText('source', { source:primaryText(strategy.source) }))}</small>
-    <p><a href="/rules">${escapeText(languageText('see_all_rules'))}</a></p>`;
+    <p><a href="/strategies/${encodeURIComponent(strategy.strategy_id)}">${escapeText(languageText('open_strategy'))}</a> · <a href="/rules">${escapeText(languageText('see_all_rules'))}</a></p>`;
 }
 
 async function loadDashboardSnapshot() {
