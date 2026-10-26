@@ -13,10 +13,15 @@ FINRA_PAGE_LIMIT = 5000
 FINRA_TIMEOUT_SECONDS = 60
 
 
+def finra_data_convert_symbol_to_finra_symbol(symbol: str) -> str:
+    """FINRA writes a share class without the separator: Yahoo's BRK-B is BRKB there."""
+    return symbol.upper().replace("-", "").replace(".", "")
+
+
 def finra_data_build_short_interest_request_body(symbol: str, offset: int = 0) -> bytes:
     return json.dumps({
         "limit": FINRA_PAGE_LIMIT, "offset": offset,
-        "compareFilters": [{"compareType": "EQUAL", "fieldName": "symbolCode", "fieldValue": symbol.upper()}],
+        "compareFilters": [{"compareType": "EQUAL", "fieldName": "symbolCode", "fieldValue": finra_data_convert_symbol_to_finra_symbol(symbol)}],
     }).encode()
 
 
