@@ -39,6 +39,7 @@ class ApplicationSettings:
     target_absolute_delta: float
     macro_event_calendar: list
     stale_after_minutes: int = 60
+    fetch_dolthub_iv_history: bool = False
     allowed_origin_list: List[str] = field(default_factory=list)
     max_requests_per_second: float = 30
     market_holiday_date_set: FrozenSet[datetime.date] = frozenset()
@@ -89,6 +90,7 @@ def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> App
         macro_event_calendar=raw.get("macro_event_calendar") or [],
         macro_event_covered_until=raw.get("macro_event_covered_until") or {},
         stale_after_minutes=raw.get("stale_after_minutes", 60),
+        fetch_dolthub_iv_history=bool(raw.get("fetch_dolthub_iv_history", False)),
         allowed_origin_list=raw.get("allowed_origin_list") or [],
         max_requests_per_second=raw.get("max_requests_per_second", 30),
         default_language=settings_loader_validate_language_code(raw.get("default_language", "en")),

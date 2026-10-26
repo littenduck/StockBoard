@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from stockboard_backend.indicator_registry import IndicatorRegistry
+from stockboard_backend.fetch_store import fetch_store_load_answers, fetch_store_save_answer
 from stockboard_backend.run_log import run_log_write
 
 NEW_YORK_TIME_ZONE = ZoneInfo("America/New_York")
@@ -21,11 +22,16 @@ RAISE = object()
 class FetchCache:
     """Keeps the last answer of every (group, key) pair. A key is a symbol for per-symbol groups and None for market wide groups."""
 
-    def __init__(self, registry: IndicatorRegistry, market_is_open: Callable[[float], bool], clock: Callable[[], float] = time.time):
+    def __init__(self, registry: IndicatorRegistry, market_is_open: Callable[[float], bool], clock: Callable[[], float] = time.time,
+                 store_directory: Optional[str] = None):
         self.registry = registry
         self.market_is_open = market_is_open
         self.clock = clock
         self._entry_by_key: Dict[Tuple[str, Optional[str]], Tuple[float, Any]] = {}
+        self.store_directory = store_directory
+        if store_directory:  # what an earlier run downloaded; it is asked again only when it is due
+            self._entry_by_key.update(fetch_store_load_answers(store_directory))
+            run_log_write("store loaded {} answers from {}".format(len(self._entry_by_key), store_directory))
         self._retry_after_by_key: Dict[Tuple[str, Optional[str]], float] = {}
         self._forced_due_key_set = set()
         self._lock_by_key: Dict[Tuple[str, Optional[str]], threading.Lock] = {}
@@ -89,6 +95,11 @@ class FetchCache:
             self._forced_due_key_set.discard(cache_key)
             self.request_count_by_group[group_id] = self.request_count_by_group.get(group_id, 0) + 1
             self._entry_by_key[cache_key] = (now, value)
+            if self.store_directory:
+                try:
+                    fetch_store_save_answer(self.store_directory, group_id, key, now, value)
+                except Exception as error:  # a full disk must not stop the app
+                    run_log_write("store failed {} {} {}".format(group_id, key or "-", str(error)[:100]))
             return value, now
 
     def peek(self, group_id: str, key: Optional[str], default: Any = None) -> Any:

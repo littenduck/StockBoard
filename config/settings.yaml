@@ -8,6 +8,9 @@ allowed_origin_list: []
 # Most requests the whole server answers per second; the rest get HTTP 429. Raise it on a bigger machine, 0 turns it off.
 max_requests_per_second: 30
 default_strategy_id: sell_put_four_in_one
+# The IV history (I-100 IV percentile, I-101 IV against a month ago) comes from the free DoltHub database, which is slow and often times out.
+# No strategy uses it yet, so it is off: those two indicators read unknown. Set true to fetch it again.
+fetch_dolthub_iv_history: false
 
 # First row of the page: the indicators to show, in order. Their names and whether a higher value is risky are in config/indicators.yaml.
 market_indicator_list: [I-051, I-052, I-053, I-003, I-007]  # vix_level, vxn_level, vvix_level, treasury_ten_year_yield, high_yield_credit_spread_basis_points

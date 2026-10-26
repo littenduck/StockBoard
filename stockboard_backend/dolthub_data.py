@@ -14,13 +14,13 @@ from typing import Dict, List
 import pandas
 
 DOLTHUB_QUERY_URL = "https://www.dolthub.com/api/v1alpha1/post-no-preference/options/master?q="
-DOLTHUB_TIMEOUT_SECONDS = 60
+DOLTHUB_TIMEOUT_SECONDS = 20
 SYMBOL_PATTERN = re.compile(r"^[A-Z][A-Z.\-]{0,5}$")
 HISTORY_DAY_COUNT = 400
 PERCENTILE_WINDOW = 252
 MINIMUM_PERCENTILE_DAY_COUNT = 120
 MAX_AGE_DAYS = 7
-ATTEMPT_COUNT = 3
+ATTEMPT_COUNT = 2
 RETRY_PAUSE_SECONDS = 3
 ONE_MONTH_DAYS = 30
 

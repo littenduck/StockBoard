@@ -6,16 +6,17 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from stockboard_backend import (company_indicators, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
+from stockboard_backend import (company_indicators, fetch_store, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
                                 option_chain, snapshot_storage, strategy_evaluation, yahoo_company, yahoo_gate)
 from stockboard_backend.fetch_cache import FetchCache
 from stockboard_backend.run_log import run_log_write
 from stockboard_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
 from stockboard_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
 
-SNAPSHOT_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "data", "latest_snapshot.json")
+DATA_DIRECTORY = os.path.join(PROJECT_DIRECTORY, "data")
+SNAPSHOT_FILE_PATH = os.path.join(DATA_DIRECTORY, "latest_snapshot.json")
 SECTOR_ETF_SYMBOL_LIST = sorted(set(company_indicators.SECTOR_ETF_BY_SECTOR_NAME.values()))
 MARKET_GAUGE_SYMBOL_LIST = ["^VIX", "^VXN", "^VVIX", "^VIX3M", "^GSPC", "CL=F", "DX-Y.NYB", "SPY", "RSP"] + SECTOR_ETF_SYMBOL_LIST
 SUPPORT_LOW_TRADING_DAY_COUNT = 60
@@ -28,7 +29,7 @@ SPARKLINE_TRADING_DAY_COUNT = 60
 TREASURY_INDICATOR_NAME_LIST = ["treasury_ten_year_yield", "treasury_ten_year_yield_twenty_day_change_basis_points"]
 HIGH_YIELD_INDICATOR_NAME_LIST = ["high_yield_credit_spread_basis_points"]
 fetch_cache_holder: Dict[str, Optional[FetchCache]] = {"cache": None}
-price_reload_state: Dict[str, Optional[datetime.date]] = {"day": None}
+price_reload_state: Dict[str, Any] = {"day": None, "missing": None}
 
 
 def refresh_scheduler_get_fetch_cache(settings: ApplicationSettings) -> FetchCache:
@@ -37,7 +38,8 @@ def refresh_scheduler_get_fetch_cache(settings: ApplicationSettings) -> FetchCac
         yahoo_gate.yahoo_gate_install()
         registry = indicator_registry.indicator_registry_load_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"))
         fetch_cache_holder["cache"] = FetchCache(registry, lambda now: market_data.market_data_determine_whether_us_market_is_open(
-            datetime.datetime.fromtimestamp(now, datetime.timezone.utc), settings.market_holiday_date_set, settings.market_early_close_date_set))
+            datetime.datetime.fromtimestamp(now, datetime.timezone.utc), settings.market_holiday_date_set, settings.market_early_close_date_set),
+            store_directory=DATA_DIRECTORY)
     return fetch_cache_holder["cache"]
 
 
@@ -148,7 +150,8 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     company_indicator_value_by_name.update(live_indicators.live_indicators_fetch_short_interest_indicator_value_by_name(
         fetch_cache, symbol, shares_outstanding, today))
     company_indicator_value_by_name.update(live_indicators.live_indicators_fetch_edgar_indicator_value_by_name(fetch_cache, symbol, today))
-    company_indicator_value_by_name.update(live_indicators.live_indicators_fetch_implied_volatility_indicator_value_by_name(fetch_cache, symbol, today))
+    if settings.fetch_dolthub_iv_history:  # off by default: no strategy uses the IV history and the free server is slow
+        company_indicator_value_by_name.update(live_indicators.live_indicators_fetch_implied_volatility_indicator_value_by_name(fetch_cache, symbol, today))
     spmo_rank = live_indicators.live_indicators_fetch_spmo_rank_by_symbol(fetch_cache).get(symbol)
     if spmo_rank is not None:
         company_indicator_value_by_name["spmo_holding_rank"] = IndicatorValue("spmo_holding_rank", spmo_rank, "yfinance SPMO", observed_at=now)
@@ -220,6 +223,11 @@ def refresh_scheduler_load_price_history_by_symbol(
         return market_data.market_data_fetch_daily_price_history_for_symbol_list(symbol_list, HISTORY_PERIOD)
 
     history_by_symbol, history_fetched_at = fetch_cache.get("yahoo_history", "all", download, default={})
+    missing_symbol_list = [symbol for symbol in symbol_list if symbol not in history_by_symbol]
+    if missing_symbol_list and price_reload_state["missing"] != missing_symbol_list:  # a symbol added since the history was kept: load it once now
+        price_reload_state["missing"] = missing_symbol_list
+        fetch_cache.force_due("yahoo_history", "all")
+        history_by_symbol, history_fetched_at = fetch_cache.get("yahoo_history", "all", download, default={})
     quote_by_symbol, quote_fetched_at = fetch_cache.get(
         "yahoo_quote", "all", lambda: market_data.market_data_fetch_latest_quote_by_symbol(symbol_list), default={})
     if not quote_by_symbol:
@@ -323,6 +331,9 @@ def refresh_scheduler_refresh_snapshot_file(
     started = time.perf_counter()
     snapshot = refresh_scheduler_build_dashboard_snapshot(settings, strategy_definition_by_id)
     snapshot_storage.snapshot_storage_save_snapshot_to_json_file(snapshot, SNAPSHOT_FILE_PATH)
+    for symbol_result in snapshot["symbol_result_list"]:  # the same results, one file per symbol: data/symbols/<SYMBOL>/result.json
+        snapshot_storage.snapshot_storage_save_snapshot_to_json_file(symbol_result, os.path.join(
+            DATA_DIRECTORY, "symbols", fetch_store.fetch_store_safe_name(symbol_result["symbol"]), "result.json"))
     run_log_write("refresh done {:.1f}s symbols ok {} failed {} {}".format(
         time.perf_counter() - started, len(snapshot["symbol_result_list"]), len(snapshot["failed_symbol_list"]), snapshot["failed_symbol_list"]))
     return snapshot
