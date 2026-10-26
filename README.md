@@ -17,6 +17,8 @@ Open http://localhost:8000. Data refreshes in the background every `refresh_inte
 
 Test: `.venv/bin/python -m pytest tests`
 
+**Version and license.** The version is written in one place, the `VERSION` file (`MAJOR.MINOR.PATCH`); the page header and `GET /api/v1/version` read it from there, so a release changes that file and nothing else (then tag `v<version>`). The code is under the MIT license, see `LICENSE`.
+
 Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.js is only needed to update them: `npm install` (installs `@tabler/icons` at the pinned version), then `.venv/bin/python scripts/build_icons.py` rewrites `static/icons.svg`, `static/favicon.svg` and the license copy. `node_modules/` is git-ignored and is not deployed.
 
 ## Layout

@@ -67,7 +67,7 @@
 <body data-title-key="dashboard_title">
 <div class="layout">
   <aside>
-    <header><h2>StockBoard</h2>
+    <header><h2>StockBoard <small id="app-version"></small></h2>
       <div><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
       <button class="icon-button" id="theme-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-theme"/></svg></button></div></header>
     <div class="status-bar" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><small></small></div>
@@ -154,7 +154,7 @@ function renderStatusBar() {
   }
   statusBar.className = `status-bar ${color}` + (statusBar.classList.contains('is-loading') ? ' is-loading' : '');
   statusBar.lastElementChild.className = color;
-  statusBar.title = title;
+  statusBar.title = title; document.getElementById('app-version').textContent = status && status.version ? `v${status.version}` : '';
   statusBar.lastElementChild.textContent = text;
 }
 
