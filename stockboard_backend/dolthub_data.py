@@ -14,7 +14,7 @@ from typing import Dict, List
 import pandas
 
 DOLTHUB_QUERY_URL = "https://www.dolthub.com/api/v1alpha1/post-no-preference/options/master?q="
-DOLTHUB_TIMEOUT_SECONDS = 20
+DOLTHUB_TIMEOUT_SECONDS = 10
 SYMBOL_PATTERN = re.compile(r"^[A-Z][A-Z.\-]{0,5}$")
 HISTORY_DAY_COUNT = 400
 PERCENTILE_WINDOW = 252
