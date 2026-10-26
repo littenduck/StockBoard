@@ -1,28 +1,44 @@
-# Indicator catalog: every measured quantity the app can use, defined once. A rule (config/rules.yaml) points at an indicator by id and adds
-# the line to test (operator and value); a strategy (config/strategies/*.yaml) weights rules. Several rules can share one indicator.
-#
-# Fields of every indicator:
-#   indicator_id    the short id people write, I-001 onward
-#   indicator_name  the long name the code uses, lower case words joined by underscores
-#   unit            the unit shown after the number of a rule line (%, bp, pp, USD ...); "" for a pure ratio or index. Required for every indicator a rule tests with a number
-#   scope           market (same for every symbol), symbol (one value per stock) or window (one value per option expiration window)
-#   method          how the value is obtained, the hardest step wins: api_fetch (a stable API or CSV), scrape (an unofficial endpoint, page or file that
-#                   needs parsing), computed (worked out from fetched prices, series or option chains), ai_search (an AI reads pages or news)
-#   quantifiable    yes, part or no (English only): whether it is a number or a yes/no test
-#   backtestable    yes or no (English only): whether free history can rebuild what it would have said on a past date; history_source is
-#                   "source:detail" of that history and history_start its first year, month or day. Left out when no rule uses the indicator.
-#   status          built (the app computes it) or todo (the data is free, the code is not written yet)
-#   fetch_group, fetch_every, max_age   given only to built indicators (a todo one gets them when it is written)
-#   fetch_group     the family of requests it comes from; indicators of one group are fetched together (see fetch_group_list)
-#   fetch_every     how often the source is asked again: 10m, 1h, 6h, 1d, 7d ... A value that is not due is not fetched again.
-#                   The interval of a group is the shortest fetch_every among its indicators.
-#   max_age         how old the newest observation may be; past it the value reads unknown. Never shorter than fetch_every.
-#   display_name, is_higher_value_risky   only for the indicators on the sidebar (config/settings.yaml lists which); a rising value is colored as bad
-#
-# fetch_group_list: market_hours_only groups are fetched only while the US market is open; fetch_at lists New York times of day at which the
-# group is also fetched once even if fetch_every has not passed (prices after the close, slow data before the open). A group that changes only
-# while the market trades (prices, option quotes, company estimates, Fear and Greed) is market_hours_only, so nothing is asked overnight except at its fetch_at time.
+# ------------------------------------------------------------------------------
+# Indicator catalog
+# ------------------------------------------------------------------------------
+# Every measured quantity the app can use, defined once: what it means, where it comes from, how it is read and how often it is fetched.
+# A rule (config/rules.yaml) points at an indicator by indicator_id and adds the line to test; a strategy (config/strategies/*.yaml) weights rules.
+# Several rules can share one indicator. Every text a person reads is {en, zh}; see docs/language.md.
 
+# ------------------------------------------------------------------------------
+# Fields of every indicator
+# ------------------------------------------------------------------------------
+# indicator_id     the short id people write (I-001 onward), unique; ids follow the first rule that uses the indicator.
+# indicator_name   the long lower case name the code keys on (words joined by underscores), unique.
+# description      {en, zh} what it measures, how it is read, where the value comes from and typical values.
+# unit             the unit shown after the number of a rule line (%, bp, pp, USD ...); "" for a pure ratio or index. Required for every indicator
+#                  a rule tests with a number.
+# scope            market (the same for every symbol), symbol (one value per stock) or window (one value per option expiration window).
+# method           how the value is obtained, the hardest step wins: api_fetch (a stable API or CSV), scrape (an unofficial endpoint, page or
+#                  file that needs parsing), computed (worked out from fetched prices, series or option chains), ai_search (an AI reads pages).
+# quantifiable     yes, part or no: whether it is a number or a yes/no test (English only).
+# backtestable     yes or no: whether free history can rebuild what it would have said on a past date (English only).
+# history_source   "source:detail" of that history, and history_start its first year, month or day. Left out when no rule uses the indicator.
+# status           built (the app computes it) or todo (the data is free, the code is not written yet).
+# fetch_group      the family of requests it comes from (see fetch_group_list); indicators of one group are fetched together.
+# fetch_every      how often the source is asked again: 10m, 1h, 6h, 1d, 7d ... A value that is not due is not fetched again.
+#                  The interval of a group is the shortest fetch_every among its indicators.
+# max_age          how old the newest observation may be; past it the value reads unknown. Never shorter than fetch_every.
+#                  fetch_group, fetch_every and max_age are given only to built indicators (a todo one gets them when it is written).
+# display_name, is_higher_value_risky
+#                  only for the indicators on the sidebar (config/settings.yaml lists which): the short name, and whether a rising value is
+#                  colored as bad.
+
+# ------------------------------------------------------------------------------
+# Fetch groups
+# ------------------------------------------------------------------------------
+# Which requests are made together and when. Each entry:
+# fetch_group_id     the name an indicator gives in fetch_group.
+# market_hours_only  true: asked only while the US market is open (prices, option quotes, company estimates, Fear and Greed).
+# fetch_at           New York times of day at which the group is also asked once even if fetch_every has not passed
+#                    (prices after the close, slow data before the open). Nothing is asked overnight except at these times.
+# fetch_every        optional: the interval of a group that has no indicator of its own.
+# note               what the group is.
 fetch_group_list:
   - {fetch_group_id: yahoo_history, market_hours_only: false, fetch_at: ["16:30"], fetch_every: "1d", note: "Daily price history of every symbol (an internal job, no indicator): loaded once a day and again after the close"}
   - {fetch_group_id: yahoo_quote, market_hours_only: true, fetch_at: ["16:20"], note: "Prices and everything computed from them; the latest price of every symbol comes from one batched request and replaces today's bar of the daily history"}
@@ -39,7 +55,15 @@ fetch_group_list:
   - {fetch_group_id: spmo_holdings, market_hours_only: false, fetch_at: ["06:00"], note: "SPMO top holdings"}
   - {fetch_group_id: edgar, market_hours_only: false, fetch_at: ["06:00"], note: "SEC EDGAR filings (needs the EDGAR_CONTACT setting)"}
 
+# ------------------------------------------------------------------------------
+# Indicators
+# ------------------------------------------------------------------------------
+# Ordered by id, in blocks by the category of the first rule that tests them.
 indicator_list:
+  # ----------------------------------------------------------------------------
+  # MAC · Macro  (I-001 to I-019)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the MAC category.
   - indicator_id: I-001
     indicator_name: "federal_funds_target_rate_not_raised_in_182_days"
     description: {en: "Whether the Fed has left its federal funds target rate (the upper bound) unchanged or lower than it was 182 days ago. Rising rates push stock valuations down and make selling puts riskier. Source: FRED series DFEDTARU (2008 onward) joined to DFEDTAR (1982 to 2008). Typical values: a hiking cycle is a run of increases of 25bp (basis points) or more.", zh: "美联储的联邦基金目标利率（上限）与 182 天前相比，是不是没有上调。利率上升会压低股票估值，让卖 Put 更危险。数据来源：FRED 的 DFEDTARU 序列（2008 年起）接 DFEDTAR（1982 到 2008）。常见情形：加息周期指连续上调 25bp（基点）或以上。"}
@@ -309,6 +333,11 @@ indicator_list:
     fetch_group: fred
     fetch_every: 1d
     max_age: 16d
+
+  # ----------------------------------------------------------------------------
+  # IND · Industry  (I-020 to I-021)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the IND category.
   - indicator_id: I-020
     indicator_name: "sector_etf_return_minus_spy_return_one_hundred_twenty_six_day"
     description: {en: "The 126-day (about 6 months) return of the sector ETF of the stock's industry minus SPY's, in percentage points. A sector ETF is a fund that holds one industry, such as XLK for technology, and SPY is the fund tracking the S&P 500. A strong industry lifts its stocks. Source: Yahoo Finance via yfinance. Typical values: a sector ETF that beats SPY over 6 months is seen as strong.", zh: "股票所在行业的行业 ETF 在 126 个交易日（约 6 个月）里的涨幅减去 SPY 的涨幅，单位是百分点。行业 ETF 是只持有一个行业的基金，例如科技的 XLK；SPY 是跟踪标普 500 的基金。强势行业会带动其中的股票。数据来源：通过 yfinance 取 Yahoo Finance。常见情形：6 个月里跑赢 SPY 的行业 ETF 被视为强势。"}
@@ -334,6 +363,11 @@ indicator_list:
     history_source: "dolthub:earnings"
     history_start: "2017-10-26"
     status: todo
+
+  # ----------------------------------------------------------------------------
+  # QUA · Company quality  (I-022 to I-035)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the QUA category.
   - indicator_id: I-022
     indicator_name: "trailing_twelve_month_eps"
     description: {en: "EPS (earnings per share) over the last 12 months (TTM, trailing twelve months). Loss-making companies swing more and are riskier to be assigned. Source: Yahoo Finance via yfinance (history from SEC EDGAR company facts).", zh: "最近 12 个月（TTM）的 EPS（每股收益）。亏损的公司波动更大，被行权接货的风险更高。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR 公司财务数据）。"}
@@ -530,6 +564,11 @@ indicator_list:
     fetch_group: yahoo_company
     fetch_every: 1h
     max_age: 3d
+
+  # ----------------------------------------------------------------------------
+  # MGT · Management and governance  (I-036 to I-040)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the MGT category.
   - indicator_id: I-036
     indicator_name: "insider_net_open_market_selling_percent_of_shares_180_days"
     description: {en: "Net open-market selling by insiders over the last 180 days (shares sold, transaction code S, minus shares bought, code P), as a percent of the shares outstanding. Selling is often just stock compensation, so lines on it are loose. Source: Yahoo Finance insider transactions via yfinance, where sales and purchases are told apart by their text (history from SEC Form 3, 4 and 5 data sets, filed within 2 business days).", zh: "内部人最近 180 天在公开市场上的净卖出（卖出股数，交易代码 S，减去买入股数，代码 P），占总股数的百分比。卖出常常只是股权激励，所以这类线定得比较宽松。数据来源：通过 yfinance 取 Yahoo Finance 的内部人交易，按文字区分卖出和买入（历史来自 SEC Form 3、4、5 数据集，须在 2 个工作日内披露）。"}
@@ -599,6 +638,11 @@ indicator_list:
     fetch_group: edgar
     fetch_every: 1d
     max_age: 120d
+
+  # ----------------------------------------------------------------------------
+  # VAL · Valuation  (I-041 to I-050)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the VAL category.
   - indicator_id: I-041
     indicator_name: "sp500_forward_pe"
     description: {en: "The forward PE (price-to-earnings ratio using analysts' expected earnings for the next 12 months) of the S&P 500, and where it sits in its own history. It tells whether the whole market is expensive. The only free source is the weekly FactSet Earnings Insight PDF, read by hand or by an AI. Typical values: long-run average about 16 to 17; above 22 is expensive (rule of thumb).", zh: "标普 500 的 Forward PE（用分析师预期的未来 12 个月盈利算的市盈率）及其在历史中的位置，用来判断整个市场贵不贵。唯一的免费来源是 FactSet 每周发布的 Earnings Insight PDF，只能人工或用 AI 读取。常见情形：长期均值约 16–17；高于 22 偏贵（经验）。"}
@@ -736,6 +780,11 @@ indicator_list:
     fetch_group: yahoo_company
     fetch_every: 1h
     max_age: 3d
+
+  # ----------------------------------------------------------------------------
+  # SEN · Sentiment and positioning  (I-051 to I-062)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the SEN category.
   - indicator_id: I-051
     indicator_name: "vix_level"
     description: {en: "The VIX (Cboe Volatility Index) shows how much volatility the options market expects for the S&P 500 over the next 30 days; it is called the fear gauge. Too low and options pay little; too high and the market is panicking, so sellers must be careful. Source: Yahoo Finance ^VIX via yfinance, delayed about 15 minutes during trading (history from Cboe VIX_History). Typical values: long-run average about 19 to 20; below 12 is complacent, 20 to 30 tense, above 30 panic, above 40 extreme (market convention).", zh: "VIX（Cboe 波动率指数）反映期权市场预期标普 500 未来 30 天的波动有多大，被称为恐慌指数。太低，期权没什么收益；太高，市场在恐慌，卖方必须小心。数据来源：通过 yfinance 取 Yahoo Finance 的 ^VIX，交易时段内延迟约 15 分钟（历史来自 Cboe 的 VIX_History）。常见情形：长期均值约 19–20；低于 12 自满，20–30 紧张，高于 30 恐慌，高于 40 极端（市场惯例）。"}
@@ -892,6 +941,11 @@ indicator_list:
     history_source: "ritter:ipo-data"
     history_start: "1990"
     status: todo
+
+  # ----------------------------------------------------------------------------
+  # TRD · Trend and momentum  (I-063 to I-081)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the TRD category.
   - indicator_id: I-063
     indicator_name: "spx_above_two_hundred_day_average"
     description: {en: "True when the S&P 500 closes above its 200-day moving average (the average close of the last 200 trading days), the most common line between an uptrend and a downtrend for the whole market. Source: Yahoo Finance ^GSPC via yfinance (history from 1927-12-30).", zh: "标普 500 收盘价在它的 200 日均线（最近 200 个交易日收盘价的平均）之上时为真，这是判断整个市场处于上升还是下降趋势最常用的分界线。数据来源：通过 yfinance 取 Yahoo Finance 的 ^GSPC（历史自 1927-12-30）。"}
@@ -1148,6 +1202,11 @@ indicator_list:
     fetch_group: spmo_holdings
     fetch_every: 1d
     max_age: 7d
+
+  # ----------------------------------------------------------------------------
+  # EVT · Events  (I-082 to I-094)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the EVT category.
   - indicator_id: I-082
     indicator_name: "no_earnings_before_expiration"
     description: {en: "True when the stock's next earnings date is later than the end of the standard option window (45 days from today). Earnings make the stock gap up or down, the most common veto for option sellers. Source: the Yahoo Finance calendar via yfinance; the date is an estimate until the company confirms it (history from SEC EDGAR 8-K Item 2.02 filing dates).", zh: "股票下一次财报日晚于标准期权窗口的最后一天（从今天起 45 天）时为真。财报会让股价向上或向下跳空，是期权卖方最常用的否决项。数据来源：通过 yfinance 取 Yahoo Finance 的日历；在公司确认之前，日期只是估计（历史来自 SEC EDGAR 8-K 第 2.02 项的披露日期）。"}
@@ -1314,6 +1373,11 @@ indicator_list:
     fetch_group: reference_files
     fetch_every: 1d
     max_age: 14d
+
+  # ----------------------------------------------------------------------------
+  # LIQ · Liquidity  (I-095 to I-099)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the LIQ category.
   - indicator_id: I-095
     indicator_name: "market_capitalization_billion_usd"
     description: {en: "Market capitalization (share price times shares outstanding), in billions of dollars. Big companies trade freely and are less likely to be hit by extreme moves. Source: Yahoo Finance via yfinance, with the live quote's market cap each refresh (history from SEC EDGAR share counts times the price).", zh: "市值（股价乘以总股数），单位十亿美元。大公司交易顺畅，也不太容易遭遇极端行情。数据来源：通过 yfinance 取 Yahoo Finance，每次刷新用实时报价里的市值（历史来自 SEC EDGAR 的股数乘以股价）。"}
@@ -1380,6 +1444,11 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
+
+  # ----------------------------------------------------------------------------
+  # VOL · Volatility  (I-100 to I-105)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the VOL category.
   - indicator_id: I-100
     indicator_name: "implied_volatility_percentile"
     description: {en: "Where the stock's IV (implied volatility, the volatility priced into options) sits within the past year, as the percent of days with a lower IV. A high reading means options are expensive, which favors sellers. Source: the community DoltHub database (volatility_history, the 30-day IV of the whole option chain, a day or two behind the market).", zh: "这只股票的 IV（隐含波动率，期权价格里隐含的波动率）在过去一年中的位置，即 IV 更低的天数所占的百分比。读数高说明期权贵，对卖方有利。数据来源：社区 DoltHub 数据库（volatility_history，整条期权链的 30 天 IV，比市场晚一两天）。"}
@@ -1463,6 +1532,11 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
+
+  # ----------------------------------------------------------------------------
+  # CTR · Contract selection  (I-106 to I-115)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the CTR category.
   - indicator_id: I-106
     indicator_name: "selected_put_absolute_delta"
     description: {en: "The absolute Delta of the selected put: in each expiration window, the out-of-the-money put whose Delta is closest to the target 0.25 among contracts with a live bid and ask. Delta of the option you sell is roughly the chance it ends up in the money (gets assigned); a smaller value is safer but collects less premium. It is calculated with the Black-Scholes model, with the IV solved from the mid price. Source: Yahoo Finance option chain via yfinance. Typical values: sellers often use 0.15 to 0.30.", zh: "所选 Put 的 Delta 绝对值：在每个到期窗口里，从有有效买卖价的合约中，选出 Delta 最接近目标 0.25 的虚值 Put。你卖出的期权的 Delta，大致就是它最终变成实值（被行权）的概率；越小越安全，但收的权利金也越少。用 Black-Scholes 模型计算，IV 由中间价反推。数据来源：通过 yfinance 取 Yahoo Finance 的期权链。常见情形：卖方常用 0.15 到 0.30。"}
@@ -1599,6 +1673,11 @@ indicator_list:
     fetch_group: yahoo_options
     fetch_every: 10m
     max_age: 1d
+
+  # ----------------------------------------------------------------------------
+  # RET · Return and payoff  (I-116 to I-120)
+  # ----------------------------------------------------------------------------
+  # Indicators whose first rule is in the RET category.
   - indicator_id: I-116
     indicator_name: "selected_put_annualized_return_percent"
     description: {en: "The premium of the selected put (the mid of its bid and ask) divided by the strike, scaled to 365 days, in percent a year. Too low is not worth the risk; too high usually means high risk. Source: Yahoo Finance option chain via yfinance; it needs a live bid and ask. Typical values: 8% to 20% a year is the range used here for put sellers.", zh: "所选的 Put 的权利金（买价和卖价的中间价）除以行权价，折算成 365 天，单位 % 每年。太低不值得冒这个险；太高通常意味着风险也高。数据来源：通过 yfinance 取 Yahoo Finance 的期权链；需要有效的买价和卖价。常见情形：这里给卖 Put 的人用的是每年 8% 到 20%。"}
@@ -1666,6 +1745,11 @@ indicator_list:
     history_source: "dolthub:options"
     history_start: "2019-02-09"
     status: todo
+
+  # ----------------------------------------------------------------------------
+  # Indicators no rule tests  (I-121 to I-122)
+  # ----------------------------------------------------------------------------
+  # Read by the dashboard but tested by no rule (last price, realized volatility).
   - indicator_id: I-121
     indicator_name: "last_price"
     description: {en: "The latest price of the stock in dollars, with the change from the previous close; the row of each symbol on the sidebar shows it. Source: Yahoo Finance via yfinance.", zh: "股票的最新价，单位美元，并带有相对前一个收盘价的涨跌；侧栏里每只股票那一行显示它。数据来源：通过 yfinance 取 Yahoo Finance。"}

@@ -1,0 +1,83 @@
+# ------------------------------------------------------------------------------
+# Symbols the dashboard follows
+# ------------------------------------------------------------------------------
+# The second row of the page, in the order written here. One symbol per line: a Yahoo Finance ticker, then a free-text # comment.
+# Add a line to follow a symbol, remove or comment out a line to stop. US-listed only; long, 2x and 3x long funds only (no inverse funds).
+# Read when the server starts: restart after a change. A changed list makes the next refresh start at once.
+# Delete a symbol's folder in data/symbols/ to forget what was downloaded for it.
+
+symbol_list:
+  # ----------------------------------------------------------------------------
+  # ETFs
+  # ----------------------------------------------------------------------------
+  # An ETF has no company figures, so its rules on earnings, margins and so on read unknown; that is normal.
+  # S&P 500
+  - SPY    # SPDR S&P 500 ETF
+  - VOO    # Vanguard S&P 500 ETF
+  - SPXL   # Direxion Daily S&P 500 Bull 3x
+  - SPMO   # Invesco S&P 500 Momentum ETF
+
+  # Nasdaq-100 and growth
+  - QQQ    # Invesco QQQ
+  - TQQQ   # ProShares UltraPro QQQ, 3x long
+  - VGT    # Vanguard Information Technology ETF
+
+  # Semiconductors, memory, space
+  - SOXX   # iShares Semiconductor ETF
+  - SMH    # VanEck Semiconductor ETF
+  - SOXL   # Direxion Daily Semiconductor Bull 3x
+  - DRAM   # Roundhill Memory ETF
+  - RAM    # Roundhill T-REX 2X Long DRAM, 2x long
+  - MUU    # Direxion Daily MU Bull 2X, 2x long Micron (you hold it)
+  - SNXX   # Tradr 2X Long SNDK Daily, 2x long Sandisk (you hold it)
+  - UFO    # Procure Space ETF
+
+  # ----------------------------------------------------------------------------
+  # Stocks
+  # ----------------------------------------------------------------------------
+  # Semiconductors
+  - NVDA   # Nvidia
+  - AMD    # Advanced Micro Devices
+  - AVGO   # Broadcom
+  - MRVL   # Marvell
+  - INTC   # Intel
+  - QCOM   # Qualcomm
+  - TSM    # TSMC
+  - ASML   # ASML
+  - ARM    # Arm Holdings
+  - CBRS   # Cerebras
+
+  # Optical and AI networking
+  - LITE   # Lumentum
+  - AAOI   # Applied Optoelectronics
+  - COHR   # Coherent
+  - ALAB   # Astera Labs
+
+  # Memory
+  - MU     # Micron
+  - SNDK   # Sandisk
+  - SKHY   # SK hynix (Nasdaq)
+
+  # Space
+  - SPCX   # SpaceX (Space Exploration Technologies)
+  - RKLB   # Rocket Lab
+  - ASTS   # AST SpaceMobile
+  - LUNR   # Intuitive Machines
+
+  # Big technology
+  - AAPL   # Apple
+  - MSFT   # Microsoft
+  - GOOGL  # Alphabet (Google)
+  - AMZN   # Amazon
+  - META   # Meta Platforms
+  - NFLX   # Netflix
+  - TSLA   # Tesla
+
+  # Other, mostly for options
+  - PLTR   # Palantir
+  - HOOD   # Robinhood
+  - BRK-B  # Berkshire Hathaway, class B (class A costs about $800,000 a share)
+  - BE     # Bloom Energy (Pelosi, summer 2026)
+  - COIN   # Coinbase (ARK)
+  - CRCL   # Circle (ARK)
+  - BEAM   # Beam Therapeutics (ARK)

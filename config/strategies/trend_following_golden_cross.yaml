@@ -1,10 +1,30 @@
+# ------------------------------------------------------------------------------
+# Strategy: Trend following (golden cross)
+# ------------------------------------------------------------------------------
+# One strategy: which rules it uses and how much each counts. Rules and indicators are defined once, in rules.yaml and indicators.yaml.
+# Read when the server starts; the page address is /strategies/<strategy_id>.
+
+# The id of the strategy: the same as the file name; used in the API and in the page address /strategies/<id>.
 strategy_id: trend_following_golden_cross
+# The name shown on the page, in both languages.
 display_name: {en: "Trend following (golden cross)", zh: "趋势跟踪（黄金交叉）"}
+# Where the idea comes from, in both languages; shown on the strategy page.
 source: {en: "Classic 50/200-day moving average cross; see the Quantified Strategies S&P 500 backtest and thinkorswim Golden Cross Breakouts", zh: "经典 50/200 日均线交叉规则；参考 Quantified Strategies 对 S&P 500 的回测与 thinkorswim Golden Cross Breakouts"}
+
+# ------------------------------------------------------------------------------
+# Scoring
+# ------------------------------------------------------------------------------
+# max_unknown_weight_ratio: when more than this share of the weight is unknown, the dashboard greys the score as data insufficient (0.20 is 20%).
 thresholds: {max_unknown_weight_ratio: 0.20}
+
+# ------------------------------------------------------------------------------
+# Text on the strategy page and in the help popover (both languages)
+# ------------------------------------------------------------------------------
+# summary: one or two sentences.
 summary:
   en: "Hold only in a long-term uptrend: the 50-day average is above the 200-day average, the price is above the 50-day average, and the whole market is trending up."
   zh: "只在长期上升趋势里持有：50 日均线在 200 日均线之上，价格站在 50 日线上方，市场整体也在上升趋势中。"
+# help: the full explanation; paragraphs are separated by a blank line.
 help:
   en: |
     This is the most common trend-following rule. When the 50-day average crosses above the 200-day average it is called a golden cross and signals a stronger medium-term trend; as long as the 50-day stays above the 200-day, the uptrend is considered intact.
@@ -22,18 +42,34 @@ help:
     评估顺序：GATE 0 市场环境（SPX 在 200 日线上方、VIX 不处于恐慌区）→ GATE 1 趋势确认（50 日线高于 200 日线是一票否决条件，价格高于 50 日线和 200 日线）→ GATE 2 入场时机（RSI(14) 在 40-70 之间不过热，距 52 周高点不超过 15%）。
 
     常见的离场规则是收盘跌破 50 日线，或 50 日线下穿 200 日线（死亡交叉）。本页面只做筛选，不给出离场信号。不构成投资建议。
+
+# ------------------------------------------------------------------------------
+# Gates and rules
+# ------------------------------------------------------------------------------
+# A gate is a group of rules checked together; gates are checked in order. A rule is defined once in config/rules.yaml; here it has only its id,
+# this strategy's weight and an optional veto: true (a failed veto rule fails the whole result). The name after # is the rule_name, for reading.
+# A measure with several lines (VIX, Delta, DTE ...) is listed as several rules; each line the value passes adds its weight.
 gates:
+  # ----------------------------------------------------------------------------
+  # GATE 0 Market
+  # ----------------------------------------------------------------------------
   - gate_id: gate_0_market
     display_name: {en: "GATE 0 Market", zh: "GATE 0 市场环境"}
     rules:
       - {rule_id: R-TRD-01, weight: 4}   # market_above_200_day
       - {rule_id: R-SEN-04, weight: 2}   # vix_below_25
+  # ----------------------------------------------------------------------------
+  # GATE 1 Trend
+  # ----------------------------------------------------------------------------
   - gate_id: gate_1_trend
     display_name: {en: "GATE 1 Trend", zh: "GATE 1 趋势确认"}
     rules:
       - {rule_id: R-TRD-07, weight: 5, veto: true}   # golden_cross_state
       - {rule_id: R-TRD-08, weight: 4}   # above_50_day
       - {rule_id: R-TRD-05, weight: 3}   # stock_above_200_day
+  # ----------------------------------------------------------------------------
+  # GATE 2 Timing
+  # ----------------------------------------------------------------------------
   - gate_id: gate_2_timing
     display_name: {en: "GATE 2 Timing", zh: "GATE 2 入场时机"}
     rules:

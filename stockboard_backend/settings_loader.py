@@ -39,6 +39,7 @@ class ApplicationSettings:
     target_absolute_delta: float
     macro_event_calendar: list
     stale_after_minutes: int = 60
+    fetch_dolthub_iv_history: bool = False
     allowed_origin_list: List[str] = field(default_factory=list)
     max_requests_per_second: float = 30
     market_holiday_date_set: FrozenSet[datetime.date] = frozenset()
@@ -66,19 +67,30 @@ def settings_loader_build_sidebar_indicator_list(indicator_id_list: list, settin
     return sidebar_list
 
 
+def settings_loader_validate_symbol_list(symbol_list) -> List[str]:
+    if not symbol_list or not all(isinstance(symbol, str) and symbol.strip() for symbol in symbol_list):
+        raise ValueError("config/symbols.yaml needs a non-empty symbol_list of tickers")
+    if len(set(symbol_list)) != len(symbol_list):
+        raise ValueError("config/symbols.yaml lists a symbol twice")
+    return list(symbol_list)
+
+
 def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> ApplicationSettings:
     with open(settings_file_path) as settings_file:
         raw = yaml.safe_load(settings_file)
+    with open(os.path.join(os.path.dirname(settings_file_path), "symbols.yaml")) as symbols_file:
+        symbol_list = settings_loader_validate_symbol_list(yaml.safe_load(symbols_file)["symbol_list"])
     return ApplicationSettings(
         refresh_interval_minutes=raw["refresh_interval_minutes"],
         default_strategy_id=raw["default_strategy_id"],
         market_indicator_list=settings_loader_build_sidebar_indicator_list(raw["market_indicator_list"], settings_file_path),
-        watchlist_symbol_list=raw["watchlist_symbol_list"],
+        watchlist_symbol_list=symbol_list,
         option_expiration_window_list=[ExpirationWindowSetting(**item) for item in raw["option_expiration_window_list"]],
         target_absolute_delta=raw["target_absolute_delta"],
         macro_event_calendar=raw.get("macro_event_calendar") or [],
         macro_event_covered_until=raw.get("macro_event_covered_until") or {},
         stale_after_minutes=raw.get("stale_after_minutes", 60),
+        fetch_dolthub_iv_history=bool(raw.get("fetch_dolthub_iv_history", False)),
         allowed_origin_list=raw.get("allowed_origin_list") or [],
         max_requests_per_second=raw.get("max_requests_per_second", 30),
         default_language=settings_loader_validate_language_code(raw.get("default_language", "en")),

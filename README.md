@@ -27,7 +27,10 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 |---|---|
 | `config/indicators.yaml` | every measured quantity, defined once: source, method, history, status, and the fetch schedule (`fetch_group`, `fetch_every`, `max_age`) |
 | `config/rules.yaml` | every rule, defined once, in 15 categories from macro to detail (190 rules: 156 on an indicator, 34 manual); a rule is an indicator plus the line to test; strategies reference rules by id |
-| `config/settings.yaml` | refresh interval, which indicators fill the sidebar cards, watchlist, option expiration windows, the release calendar |
+| `config/settings.yaml` | refresh interval, which indicators fill the sidebar cards, option expiration windows, the release calendar |
+| `data/symbols/<SYMBOL>/`, `data/market/` | what was downloaded, one file per answer (latest only; not in git): a restart reads it and asks a source again only when it is due. `result.json` in a symbol's folder is that symbol's computed result. Delete a folder to forget a symbol |
+| `data/logs/stockboard.log` | written on every run (not in git): one line per fetch with its seconds, one per symbol, one summary per refresh; `grep "refresh done" data/logs/stockboard.log` |
+| `config/symbols.yaml` | the symbols the dashboard follows, in order |
 | `config/strategies/*.yaml` | strategies: gates, rules, per-strategy weights and veto flags (see `docs/strategy.md`) |
 | `docs/design.md` | page design rules (colors, type, shape and states, five element families, status badges, layout) |
 | `docs/indicator.md` | the three levels (indicator, rule, strategy), every indicator, its meaning and source, the fetch schedule |
