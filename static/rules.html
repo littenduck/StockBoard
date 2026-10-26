@@ -55,7 +55,7 @@ function markTargetRow() {
   return row;
 }
 window.addEventListener('hashchange', markTargetRow);
-const RECORD_FIELD_LIST = ['indicator', 'operator', 'value', 'band_of', 'method', 'quantifiable', 'status', 'backtestable', 'history_source', 'history_start', 'legacy_id'];
+const RECORD_FIELD_LIST = ['indicator', 'operator', 'value', 'band_of', 'method', 'quantifiable', 'status', 'backtestable', 'history_source', 'history_start', 'fetch_every', 'max_age', 'legacy_id'];
 const DASH = '<p class="muted">—</p>';
 function renderFieldValue(rule, name) {
   const value = rule[name];

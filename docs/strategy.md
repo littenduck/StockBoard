@@ -1,6 +1,6 @@
 # Strategy
 
-A strategy is one YAML file in `strategies/`. The app loads every file in that folder at startup and refuses to start if a rule refers to an unknown indicator.
+A strategy is one YAML file in `config/strategies/`. The app loads every file in that folder at startup and refuses to start if a rule refers to an unknown indicator.
 
 > **Status (branch `refactor/rule-catalog-by-theme`):** the catalog, the four strategy files, the loader, the evaluator, the API (`schema_version` 4) and the two pages all use the new design: theme-based ids, one rule per tier line, weights and veto flags in the strategy files.
 

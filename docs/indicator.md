@@ -1,7 +1,27 @@
 # Indicator
 
-Every indicator a strategy rule can use. A rule refers to an indicator by its `indicator_id`.
-A value that cannot be fetched is `unknown` (shown as ❓, left out of the score).
+Three levels, three kinds of file:
+
+| Level | What it is | Where it is written |
+|---|---|---|
+| **Indicator** | one measured quantity (a number or a yes/no), with where it comes from and how often it is fetched | `config/indicators.yaml` |
+| **Rule** | a judgment on one indicator: an operator and a line (`MAC-03`: the 10-year yield is below 4.5). Several rules can share an indicator | `config/rules.yaml` |
+| **Strategy** | which rules, with what weight and veto | `config/strategies/*.yaml` |
+
+A rule refers to an indicator by its `indicator_id`. A value that cannot be fetched, or is older than the indicator's `max_age`, is `unknown` (shown as ❓, left out of the score).
+
+### The indicator file
+
+Each indicator has `scope` (market, symbol, or window for one option expiration window), `method`, `status`, the backtest facts (`backtestable`, `history_source`, `history_start`) and the schedule:
+
+- `fetch_group`: the family of requests it comes from. Indicators of one group are fetched together, so a group is asked as often as its most frequent indicator needs (the shortest `fetch_every`).
+- `fetch_every`: how often the source is asked again (`10m`, `1h`, `1d`). A value that is not due is not fetched again.
+- `max_age`: how old the newest observation may be. Past it the value reads unknown. Monthly series are dated the first of the month and published a month or two later, so their limit is long; prices get 4 days so a weekend does not blank them.
+- The group list at the top sets `market_hours_only` (prices and option quotes are asked only while the market is open) and `fetch_at` (New York times at which the group is also asked once: prices at 16:20 after the close, slow data at 06:00 before the open).
+
+Rules take `method`, `backtestable`, `history_*` and `status` from their indicator, so these facts are written once. A manual rule has no indicator and keeps them itself. The code lists the indicators it makes in `PRODUCED_INDICATOR_ID_SET`; a test fails if that list and the built indicators of the YAML differ.
+
+How a refresh works: the background loop wakes every minute; a refresh is due when the market is open and the snapshot is older than `refresh_interval_minutes`, or when any fetched answer is due again (also after the close, at the `fetch_at` times). A refresh rebuilds the snapshot from the cache and asks only the groups that are due. A failed fetch keeps the old value and waits 15 minutes before trying again. `scripts/count_requests.py --ticks 3` shows the requests per refresh.
 
 ## Volatility (market, same for every symbol)
 
@@ -121,7 +141,7 @@ The archive copies can be weeks behind the live sites and the archive answers 42
 
 ## Live indicators on the dashboard
 
-Each refresh (every 10 minutes while the market is open) adds these to the indicators above. A source that fails or is too old only turns its own rules to Unknown.
+Each refresh adds these to the indicators above, asking each source only when it is due (see the schedule above and `config/indicators.yaml`; the Kept for column shows the usual interval). A source that fails or is too old only turns its own rules to Unknown.
 
 | What | Source | Kept for | Newest value counts for |
 |---|---|---|---|

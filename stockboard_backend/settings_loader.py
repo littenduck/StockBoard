@@ -6,6 +6,7 @@ from typing import FrozenSet, List
 
 import yaml
 
+from stockboard_backend import indicator_registry
 from stockboard_backend.localized_text import LANGUAGE_CODE_SET, LocalizedText, localized_text_build_from_raw_value
 
 PROJECT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,14 +53,26 @@ def settings_loader_validate_language_code(language_code: str) -> str:
     return language_code
 
 
+def settings_loader_build_sidebar_indicator_list(indicator_id_list: list, settings_file_path: str) -> List[MarketIndicatorSetting]:
+    """The sidebar shows these indicators; their display name and whether a higher value is risky live in config/indicators.yaml."""
+    registry = indicator_registry.indicator_registry_load_from_yaml_file(
+        os.path.join(os.path.dirname(settings_file_path), "indicators.yaml"))
+    sidebar_list = []
+    for indicator_id in indicator_id_list:
+        indicator = registry.indicator_by_id.get(indicator_id)
+        if indicator is None or indicator.display_name is None:
+            raise ValueError("sidebar indicator {} needs a display_name in config/indicators.yaml".format(indicator_id))
+        sidebar_list.append(MarketIndicatorSetting(indicator_id, indicator.display_name, indicator.is_higher_value_risky))
+    return sidebar_list
+
+
 def settings_loader_load_settings_from_yaml_file(settings_file_path: str) -> ApplicationSettings:
     with open(settings_file_path) as settings_file:
         raw = yaml.safe_load(settings_file)
     return ApplicationSettings(
         refresh_interval_minutes=raw["refresh_interval_minutes"],
         default_strategy_id=raw["default_strategy_id"],
-        market_indicator_list=[MarketIndicatorSetting(**{**item, "display_name": localized_text_build_from_raw_value(
-            item.get("display_name"), "indicator {} name".format(item["indicator_id"]))}) for item in raw["market_indicator_list"]],
+        market_indicator_list=settings_loader_build_sidebar_indicator_list(raw["market_indicator_list"], settings_file_path),
         watchlist_symbol_list=raw["watchlist_symbol_list"],
         option_expiration_window_list=[ExpirationWindowSetting(**item) for item in raw["option_expiration_window_list"]],
         target_absolute_delta=raw["target_absolute_delta"],

@@ -5,7 +5,7 @@ In Chinese mode Chinese is the main text and the English appears underneath in s
 
 ## Writing both languages
 
-- Every text in `config/rules.yaml`, `strategies/*.yaml` and `config/settings.yaml` that a person reads is an object `{en: "...", zh: "..."}`. Both are required and non-empty; the app refuses to start otherwise. A rule has a short `name` and a longer `description`, both `{en, zh}`; the description spells out every abbreviation (FOMC, CPI, IV and so on) and names the data source. The `quantifiable` field is English only.
+- Every text in `config/rules.yaml`, `config/strategies/*.yaml` and `config/settings.yaml` that a person reads is an object `{en: "...", zh: "..."}`. Both are required and non-empty; the app refuses to start otherwise. A rule has a short `name` and a longer `description`, both `{en, zh}`; the description spells out every abbreviation (FOMC, CPI, IV and so on) and names the data source. The `quantifiable` field is English only.
 - English must not contain Chinese characters. Use the glossary below; do not invent variants.
 - Technical terms stay English in both languages: GATE, VIX, SPX, DTE, IV, RV30, FGI, HY, bp, Delta, Put, Call.
 - Interface strings live in `static/language.js` (`UI_TEXT`), with the same rule.

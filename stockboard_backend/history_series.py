@@ -1,6 +1,6 @@
 """Time series of the indicator values behind the rules, rebuilt from free history (FRED and Cboe).
 
-Each indicator id used in config/rules.yaml maps to a function that returns a pandas.Series indexed by date, with the value the
+Each indicator id in config/indicators.yaml maps to a function that returns a pandas.Series indexed by date, with the value the
 rule's operator tests. A backtest reads these series; the live dashboard will use the same definitions.
 Run `python -m stockboard_backend.history_series` to fetch every series and compare it with the catalog.
 """
@@ -172,12 +172,10 @@ def history_series_build_point_in_time_cpi_year_over_year(as_of_date_list) -> pa
 
 def history_series_check_against_catalog() -> None:
     import yaml
-    with open(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"), encoding="utf8") as catalog_file:
-        rule_list = yaml.safe_load(catalog_file)["rule_list"]
-    rule_list_by_indicator: Dict[str, list] = {}
-    for rule in rule_list:
-        if rule.get("indicator") in HISTORY_SERIES_BUILDER_BY_INDICATOR_ID:
-            rule_list_by_indicator.setdefault(rule["indicator"], []).append(rule)
+    with open(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"), encoding="utf8") as indicator_file:
+        indicator_list = yaml.safe_load(indicator_file)["indicator_list"]
+    rule_list_by_indicator: Dict[str, list] = {
+        indicator["indicator_id"]: [indicator] for indicator in indicator_list if indicator["indicator_id"] in HISTORY_SERIES_BUILDER_BY_INDICATOR_ID}
     print(f"{'indicator':62s} {'catalog start':13s} {'first':10s} {'last':10s} {'rows':>6s}  last value")
     for indicator_id, builder in HISTORY_SERIES_BUILDER_BY_INDICATOR_ID.items():
         rules = rule_list_by_indicator.get(indicator_id, [])

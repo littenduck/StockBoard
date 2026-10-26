@@ -17,6 +17,7 @@ class IndicatorValue:
     source: str
     change_value: Optional[float] = None
     change_unit: Optional[str] = None  # "percent" or "basis_points"
+    observed_at: Optional[float] = None  # epoch seconds of the observation; a value older than the indicator's max_age is dropped
 
 
 @dataclass

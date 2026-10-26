@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from stockboard_backend import (indicator_calculation, market_data, refresh_scheduler, request_limiter, rule_catalog,
+from stockboard_backend import (indicator_calculation, indicator_registry, market_data, refresh_scheduler, request_limiter, rule_catalog,
                                 settings_loader, snapshot_storage, strategy_loader)
 
 PROJECT_DIRECTORY = settings_loader.PROJECT_DIRECTORY
@@ -18,13 +18,17 @@ application_settings = settings_loader.settings_loader_load_settings_from_yaml_f
 application_rule_catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(
     os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
 strategy_definition_by_id = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
-    os.path.join(PROJECT_DIRECTORY, "strategies"), application_rule_catalog)
+    os.path.join(PROJECT_DIRECTORY, "config", "strategies"), application_rule_catalog)
 
-validation_error_list = rule_catalog.rule_catalog_validate_rule_catalog_against_known_indicators(
-    application_rule_catalog, indicator_calculation.KNOWN_INDICATOR_ID_SET) + [
+built_indicator_id_set = application_rule_catalog.indicator_registry.built_indicator_id_set()
+validation_error_list = indicator_registry.indicator_registry_validate(application_rule_catalog.indicator_registry) + [
+    "built indicator {} is not produced by the code".format(name)
+    for name in sorted(built_indicator_id_set - indicator_calculation.PRODUCED_INDICATOR_ID_SET)
+] + rule_catalog.rule_catalog_validate_rule_catalog_against_known_indicators(
+    application_rule_catalog, built_indicator_id_set) + [
     error for strategy_definition in strategy_definition_by_id.values()
     for error in strategy_loader.strategy_loader_validate_strategy_definition_against_known_indicators(
-        strategy_definition, indicator_calculation.KNOWN_INDICATOR_ID_SET)]
+        strategy_definition, built_indicator_id_set)]
 if validation_error_list or application_settings.default_strategy_id not in strategy_definition_by_id:
     raise SystemExit("Invalid configuration: " + "; ".join(validation_error_list or ["default strategy missing"]))
 
@@ -73,11 +77,12 @@ def web_server_find_strategy_id_or_raise(strategy_id: Optional[str]) -> str:
     return chosen_strategy_id
 
 
-def web_server_build_status(generated_at: Optional[str]) -> dict:
+def web_server_build_status(generated_at: Optional[str], prices_as_of: Optional[str] = None) -> dict:
     """Computed per request so clients can judge freshness against the server clock, not their own."""
     return {
         "server_time": refresh_scheduler.refresh_scheduler_get_current_exchange_time_text(),
         "generated_at": generated_at,
+        "prices_as_of": prices_as_of or generated_at,  # when the prices were taken; the snapshot is also rebuilt after the close
         "market_is_open": market_data.market_data_determine_whether_us_market_is_open(
             datetime.datetime.now(datetime.timezone.utc), application_settings.market_holiday_date_set,
             application_settings.market_early_close_date_set),
@@ -144,7 +149,7 @@ def web_server_get_rule_catalog() -> dict:
             "description": dataclasses.asdict(entry.description), "method": entry.method,
             "quantifiable": entry.quantifiable, "backtestable": entry.backtestable,
             "history_source": entry.history_source, "history_start": entry.history_start, "status": entry.status,
-            "indicator": entry.indicator,
+            "indicator": entry.indicator, "fetch_group": entry.fetch_group, "fetch_every": entry.fetch_every, "max_age": entry.max_age,
             "operator": entry.operator, "value": entry.value, "band_of": entry.band_of, "legacy_id": entry.legacy_id,
             "note": dataclasses.asdict(entry.note) if entry.note else None,
             "used_by": usage_list_by_rule_id.get(entry.rule_id, []),
@@ -181,7 +186,7 @@ def web_server_get_dashboard_snapshot(strategy_id: Optional[str] = None) -> dict
         })
     return {
         "schema_version": snapshot["schema_version"],
-        "status": web_server_build_status(snapshot["generated_at"]),
+        "status": web_server_build_status(snapshot["generated_at"], snapshot.get("prices_as_of")),
         "strategy_id": chosen_strategy_id,
         "max_unknown_weight_ratio": strategy_definition_by_id[chosen_strategy_id].thresholds.max_unknown_weight_ratio,
         "market_indicator_card_list": snapshot["market_indicator_card_list"],

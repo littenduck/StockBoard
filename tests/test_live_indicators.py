@@ -1,28 +1,32 @@
 import datetime
+import os
 
 import pandas
 import pytest
 
 from stockboard_backend import indicator_calculation as I
+from stockboard_backend import indicator_registry
+from stockboard_backend.settings_loader import PROJECT_DIRECTORY
 from stockboard_backend import live_indicators, history_series, option_chain
 
 
-def test_a_series_is_used_only_while_its_newest_value_is_recent():
+def test_the_newest_value_of_a_series_comes_with_the_time_it_was_observed():
     series = pandas.Series([1.0, 2.5], index=pandas.to_datetime(["2026-10-01", "2026-10-20"]))
-    today = datetime.date(2026, 10, 25)
-    assert live_indicators.live_indicators_extract_latest_value(series, 10, today) == 2.5
-    assert live_indicators.live_indicators_extract_latest_value(series, 3, today) is None
-    assert live_indicators.live_indicators_extract_latest_value(pandas.Series(dtype=float), 10, today) is None
+    value, observed_at = live_indicators.live_indicators_extract_latest_value(series)
+    assert value == 2.5 and observed_at == datetime.datetime(2026, 10, 20, tzinfo=datetime.timezone.utc).timestamp()
+    assert live_indicators.live_indicators_extract_latest_value(pandas.Series(dtype=float)) is None
     flags = pandas.Series([True, False], index=series.index)
-    assert live_indicators.live_indicators_extract_latest_value(flags, 10, today) is False
+    assert live_indicators.live_indicators_extract_latest_value(flags)[0] is False
 
 
-def test_every_live_series_indicator_has_a_builder_and_is_known():
-    for indicator_id in live_indicators.MAX_AGE_DAYS_BY_SERIES_INDICATOR_ID:
-        assert indicator_id in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID
-        assert indicator_id in I.KNOWN_INDICATOR_ID_SET
+def test_every_series_indicator_of_the_registry_has_a_builder_and_every_edgar_one_is_produced():
+    registry = indicator_registry.indicator_registry_load_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml"))
+    for indicator in registry.indicator_by_id.values():
+        if indicator.fetch_group in live_indicators.SERIES_GROUP_ID_LIST and indicator.status == "built" \
+                and indicator.indicator_id not in live_indicators.MADE_WITH_PRICE_FIGURES_INDICATOR_ID_SET:
+            assert indicator.indicator_id in history_series.HISTORY_SERIES_BUILDER_BY_INDICATOR_ID, indicator.indicator_id
     for indicator_id in live_indicators.EDGAR_INDICATOR_ID_LIST:
-        assert indicator_id in I.KNOWN_INDICATOR_ID_SET
+        assert indicator_id in I.PRODUCED_INDICATOR_ID_SET
 
 
 def test_short_interest_percent_uses_the_latest_filing_and_ignores_an_old_one():

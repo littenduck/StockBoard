@@ -94,8 +94,10 @@ Funnel needs no domain, no inbound port and hides the server's own IP. It only s
 ```bash
 systemctl status stockboard
 journalctl -u stockboard -f
-cd ~/StockBoard && git pull && sudo systemctl restart stockboard
+cd ~/StockBoard && git pull && .venv/bin/pip install -r requirements.txt && sudo systemctl restart stockboard
 ```
+
+The fetch cache lives in memory, so the first refresh after a restart asks every source once (about 180 requests, most of them Yahoo); later refreshes during market hours make about 70. The log prints a line every hour with the Yahoo request counts and any rate-limit or error answers: watch it for 429 and 401 after a change.
 
 After `requirements.txt` changes run `~/StockBoard/.venv/bin/pip install -r requirements.txt`, then restart the service. Turn the public address off with `sudo tailscale funnel --https=443 off`.
 

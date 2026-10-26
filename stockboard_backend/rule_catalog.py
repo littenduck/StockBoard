@@ -1,10 +1,13 @@
-"""Load config/rules.yaml: the one place where every rule is defined. A rule has no weight; strategies give it one."""
+"""Load config/rules.yaml: the one place where every rule is defined. A rule has no weight; strategies give it one.
+A rule that names an indicator takes that indicator's method, history and status from config/indicators.yaml."""
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
+from stockboard_backend.indicator_registry import IndicatorRegistry, indicator_registry_load_from_yaml_file
 from stockboard_backend.localized_text import (
     LocalizedText, localized_text_build_from_raw_value, localized_text_build_optional_from_raw_value,
 )
@@ -54,6 +57,9 @@ class RuleCatalogEntry:
     history_start: Optional[str] = None
     legacy_id: List[str] = field(default_factory=list)
     note: Optional[LocalizedText] = None
+    fetch_group: Optional[str] = None  # the three below come from the indicator
+    fetch_every: Optional[str] = None
+    max_age: Optional[str] = None
 
     @property
     def group_id(self) -> str:
@@ -65,13 +71,34 @@ class RuleCatalog:
     rule_group_list: List[RuleGroup]
     rule_entry_by_id: Dict[str, RuleCatalogEntry]
     retired_rule_list: List[RetiredRule] = field(default_factory=list)
+    indicator_registry: Optional[IndicatorRegistry] = None
 
 
-def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str) -> RuleCatalog:
+INDICATOR_OWNED_FIELD_LIST = ["method", "quantifiable", "backtestable", "history_source", "history_start", "status"]
+
+
+def rule_catalog_merge_indicator_fields(raw_rule: dict, registry: Optional[IndicatorRegistry]) -> dict:
+    """The facts a rule shares with its indicator. A rule must not repeat them, so they can never disagree."""
+    indicator = registry.indicator_by_id.get(raw_rule.get("indicator")) if registry and raw_rule.get("indicator") else None
+    if indicator is None:
+        return raw_rule
+    repeated = [name for name in INDICATOR_OWNED_FIELD_LIST if name in raw_rule]
+    if repeated:
+        raise ValueError("rule {} repeats {} that indicator {} owns; delete them from config/rules.yaml".format(
+            raw_rule["rule_id"], ", ".join(repeated), indicator.indicator_id))
+    return {**raw_rule, **{name: getattr(indicator, name) for name in INDICATOR_OWNED_FIELD_LIST},
+            "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age}
+
+
+def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str, indicator_file_path: Optional[str] = None) -> RuleCatalog:
+    """indicator_file_path defaults to indicators.yaml next to the rule file; without one the rules must carry their own fields."""
+    indicator_file_path = indicator_file_path or os.path.join(os.path.dirname(rule_catalog_file_path), "indicators.yaml")
+    registry = (indicator_registry_load_from_yaml_file(indicator_file_path)
+                if os.path.exists(indicator_file_path) else None)
     with open(rule_catalog_file_path, encoding="utf8") as rule_catalog_file:
         raw = yaml.safe_load(rule_catalog_file)
     entry_list = [RuleCatalogEntry(**{
-        **raw_rule,
+        **rule_catalog_merge_indicator_fields(raw_rule, registry),
         "name": localized_text_build_from_raw_value(raw_rule.get("name"), "rule {} name".format(raw_rule["rule_id"])),
         "description": localized_text_build_from_raw_value(raw_rule.get("description"), "rule {} description".format(raw_rule["rule_id"])),
         "note": localized_text_build_optional_from_raw_value(raw_rule.get("note"), "rule {} note".format(raw_rule["rule_id"])),
@@ -90,6 +117,7 @@ def rule_catalog_load_rule_catalog_from_yaml_file(rule_catalog_file_path: str) -
         rule_group_list=group_list,
         rule_entry_by_id={entry.rule_id: entry for entry in entry_list},
         retired_rule_list=retired_rule_list,
+        indicator_registry=registry,
     )
 
 
@@ -100,6 +128,7 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
     An indicator only has to exist for a rule that is already built; a todo rule may name one that is not written yet."""
     error_list = []
     group_id_set = {group.group_id for group in rule_catalog.rule_group_list}
+    registry = rule_catalog.indicator_registry
     for entry in rule_catalog.rule_entry_by_id.values():
         if entry.group_id not in group_id_set:
             error_list.append("rule {} has no group {}".format(entry.rule_id, entry.group_id))
@@ -121,6 +150,8 @@ def rule_catalog_validate_rule_catalog_against_known_indicators(
             error_list.append("rule {} has unknown history source {}".format(entry.rule_id, entry.history_source))
         if entry.history_start is not None and not HISTORY_START_PATTERN.match(str(entry.history_start)):
             error_list.append("rule {} has a bad history_start {}".format(entry.rule_id, entry.history_start))
+        if registry is not None and entry.indicator and entry.indicator not in registry.indicator_by_id:
+            error_list.append("rule {} uses indicator {} that is not in config/indicators.yaml".format(entry.rule_id, entry.indicator))
         if entry.band_of and entry.band_of not in rule_catalog.rule_entry_by_id:
             error_list.append("rule {} points to missing rule {}".format(entry.rule_id, entry.band_of))
         if entry.status == "built":
