@@ -14,7 +14,7 @@ CSS custom properties on `:root` (light) and `:root[data-theme="dark"]`. Every t
 | `--fill` | `#F0EEE6` | `#3A3A37` | hover and selected row (selected adds the accent bar) |
 | `--separator` | `#E8E6DC` | `#3D3D3A` | 1px lines, placeholder rows |
 | `--text` | `#141413` | `#F5F4EE` | primary text |
-| `--text-secondary` | `#6B6A64` | `#A8A69D` | small text, English companions, unknown, not applicable |
+| `--text-secondary` | `#6B6A64` | `#A8A69D` | small text, unknown, not applicable |
 | `--accent` | `#C96442` | `#D97757` | selection bar, focus ring, theme button. Never body text |
 | `--positive` | `#146C35` | `#4ADE80` | up, 通过 |
 | `--negative` | `#B42318` | `#FF8A8A` | down, 否决, 未通过 |
@@ -35,7 +35,7 @@ System font only: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif`. Al
 | `##` H2 | `h2` | 20 / 600 / 24 | app name, popover title, rule group titles |
 | `###` H3 | `h3` | 15 / 600 / 20 | gate titles, strategy name, the summary sentence |
 | body | `p`, `li` | 15 / 400 / 20 | everything else that is read |
-| small | `small` | 12 / 400 / 16, `--text-secondary` | labels, timestamps, notes, every English companion |
+| small | `small` | 12 / 400 / 16, `--text-secondary` | labels, timestamps, notes |
 | bold | `strong` | weight 600, same size as its parent | emphasis inside a line |
 | link | `a` | see Links below | all links |
 
@@ -46,7 +46,6 @@ Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 **Vertical rhythm** (inside any `.box`, the popover and the explanation box included):
 - `.box > * + * { margin-top: 12px }`
 - `.box > h2 + * { margin-top: 8px }`
-- `small[lang="en"] { margin-top: 4px }`, so an English companion hugs the Chinese line it translates.
 
 ## Space and shape
 
@@ -131,12 +130,8 @@ Page budgets: the dashboard 354 lines, every catalog page 140 (a test checks bot
 
 ## Language
 
-English is the default; Chinese mode shows Chinese with the English underneath. Glossary and writing rules: `docs/language.md`.
+English is the default. Each language stands alone: Chinese mode shows only Chinese, English mode only English, with no English line under the Chinese. Names (`rule_name`, `indicator_name`) and technical terms stay English in both. Glossary and writing rules: `docs/language.md`.
 
-**The one English rule (no exceptions):** in Chinese mode the English text is `<small lang="en">`, always on its own line directly under the Chinese line it translates, always 12px gray. That covers titles, labels, rule descriptions and every help paragraph. There are no `translation*` classes.
-
-English appears under: sidebar section labels, strategy name, gate titles, rule descriptions and notes, rule group titles, help title, summary and paragraphs, result labels, expiration window lines, the rules page explanation.
-Never doubled: status words, numbers, prices, percentages, times, symbols, the status bar, buttons, select options, aria-labels.
-`<html lang>` is `en` or `zh-Hans`; every English line in Chinese mode carries `lang="en"`.
+`<html lang>` is `en` or `zh-Hans`.
 
 The language button (Tabler `language` icon) is an `icon-button`; one click toggles English and Chinese, and its aria-label and tooltip say what a click does. Technical terms stay English in both languages: VIX, SPX, DTE, IV, RV30, GATE, bp. Times are exchange time, labelled `ET`.

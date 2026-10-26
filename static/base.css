@@ -47,7 +47,6 @@ h2 { font-size:20px; line-height:24px; font-weight:600; }
 h3 { font-size:15px; line-height:20px; font-weight:600; }
 p, li { font-size:15px; line-height:20px; }
 small { font-size:12px; line-height:16px; font-weight:400; color:var(--text-secondary); }
-small[lang="en"] { display:block; margin-top:var(--space-1); }
 strong { font-weight:600; }
 h1 .icon { width:28px; height:28px; }
 a { position:relative; color:var(--text-secondary); text-decoration:none; }

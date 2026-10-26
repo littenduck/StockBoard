@@ -119,22 +119,17 @@ function languageApplyDocument() {
   const languageButton = document.getElementById('language-button');
   if (languageButton) { languageButton.setAttribute('aria-label', languageText('switch_language')); languageButton.title = languageText('switch_language'); }
 }
-/* In Chinese mode the English goes in <small lang="en">, always on its own line directly under the Chinese. */
+/* Each language stands alone: Chinese mode shows only the Chinese text, English mode only the English. Names (rule_name, indicator_name) stay English. */
 /* A rule_name or indicator_name, escaped, with a place to break after each underscore so a long name wraps instead of overflowing. */
 function languageRenderName(name) {
   return languageEscape(name).replace(/_/g, '_<wbr>');
 }
 function languageRenderText(localizedText) {
-  const primary = languageEscape(localizedText[activeLanguage]);
-  if (activeLanguage !== 'zh') return primary;
-  return `${primary}<small lang="en">${languageEscape(localizedText.en)}</small>`;
+  return languageEscape(localizedText[activeLanguage]);
 }
 function languageRenderParagraphs(localizedText) {
   const split = text => text.split(/\n\s*\n/).map(paragraph => paragraph.trim()).filter(Boolean);
-  const englishList = split(localizedText.en);
-  if (activeLanguage !== 'zh') return englishList.map(paragraph => `<p>${languageEscape(paragraph)}</p>`).join('');
-  return split(localizedText.zh).map((paragraph, index) => `<p>${languageEscape(paragraph)}</p>`
-    + (englishList[index] ? `<small lang="en">${languageEscape(englishList[index])}</small>` : '')).join('');
+  return split(localizedText[activeLanguage]).map(paragraph => `<p>${languageEscape(paragraph)}</p>`).join('');
 }
 function languageBindSwitch(onChange) {
   document.getElementById('language-button').onclick = () => languageApply(activeLanguage === 'zh' ? 'en' : 'zh', onChange);
