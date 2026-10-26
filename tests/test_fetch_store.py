@@ -2,8 +2,8 @@ import os
 
 import pandas
 
-from stockboard_backend import fetch_cache, fetch_store, indicator_registry
-from stockboard_backend.settings_loader import PROJECT_DIRECTORY
+from stock_benchmark_backend import fetch_cache, fetch_store, indicator_registry
+from stock_benchmark_backend.settings_loader import PROJECT_DIRECTORY
 
 
 def build_registry():

@@ -2,7 +2,7 @@ import datetime
 
 import pandas
 
-from stockboard_backend.indicator_calculation import (
+from stock_benchmark_backend.indicator_calculation import (
     indicator_calculation_build_symbol_indicator_value_by_name,
     indicator_calculation_calculate_change_over_trading_days,
     indicator_calculation_calculate_distance_from_fifty_two_week_high_percent,

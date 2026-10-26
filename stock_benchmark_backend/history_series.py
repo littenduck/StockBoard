@@ -2,15 +2,15 @@
 
 Each indicator id in config/indicators.yaml maps to a function that returns a pandas.Series indexed by date, with the value the
 rule's operator tests. A backtest reads these series; the live dashboard will use the same definitions.
-Run `python -m stockboard_backend.history_series` to fetch every series and compare it with the catalog.
+Run `python -m stock_benchmark_backend.history_series` to fetch every series and compare it with the catalog.
 """
 import os
 from typing import Callable, Dict, Optional
 
 import pandas
 
-from stockboard_backend import cboe_data, edgar_data, finra_data, fundamental_series, macro_data, reference_data, sentiment_data
-from stockboard_backend.settings_loader import PROJECT_DIRECTORY
+from stock_benchmark_backend import cboe_data, edgar_data, finra_data, fundamental_series, macro_data, reference_data, sentiment_data
+from stock_benchmark_backend.settings_loader import PROJECT_DIRECTORY
 
 PUT_CALL_CACHE_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "data", "cache", cboe_data.PUT_CALL_CACHE_FILE_NAME)
 TRADING_DAYS_PER_MONTH = 21

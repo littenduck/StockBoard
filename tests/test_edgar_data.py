@@ -1,7 +1,7 @@
 import pandas
 import pytest
 
-from stockboard_backend import edgar_data, fundamental_series
+from stock_benchmark_backend import edgar_data, fundamental_series
 
 
 def fact(start, end, val, filed, form):

@@ -1,6 +1,0 @@
----
-name: stockboard-strategy
-description: Use when writing or editing a StockBoard strategy file in config/strategies/ or adding an indicator. Covers rule format, scoring, the pass veto and indicator ids.
----
-
-Read `docs/strategy.md` for the file format and scoring, and `docs/indicator.md` for the indicator ids a rule may use. A new indicator is added to `config/indicators.yaml` at the end with the next `indicator_id` (`I-123`), its long `indicator_name`, a bilingual `description` (what it measures, how to read it, where the live value comes from, typical values), and its `fetch_group`, `fetch_every` and `max_age`; its name also goes into `PRODUCED_INDICATOR_NAME_SET` in `stockboard_backend/indicator_calculation.py`, and a test checks the YAML and the code agree. A rule goes in `config/rules.yaml` at the end of its topic with the next number of its category (`R-TRD-26`; the numbers run without gaps, so insert and renumber with a script), a short `rule_name`, a pass sentence and the indicator id (`I-063`); it only names the indicator and the line to test. Every text a person reads is written in both languages as `{en, zh}`, using the glossary in `docs/language.md`; run `pytest` to check. Function names follow `module_verb_object` with no abbreviations.

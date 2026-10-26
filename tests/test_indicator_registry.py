@@ -3,8 +3,8 @@ import os
 import pytest
 import yaml
 
-from stockboard_backend import indicator_calculation, indicator_registry, rule_catalog, settings_loader
-from stockboard_backend.settings_loader import PROJECT_DIRECTORY
+from stock_benchmark_backend import indicator_calculation, indicator_registry, rule_catalog, settings_loader
+from stock_benchmark_backend.settings_loader import PROJECT_DIRECTORY
 
 INDICATOR_FILE_PATH = os.path.join(PROJECT_DIRECTORY, "config", "indicators.yaml")
 

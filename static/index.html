@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>StockBoard</title>
+<title>Stock Benchmark</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#FAF9F5">
 <link rel="stylesheet" href="/base.css">
@@ -67,7 +67,7 @@
 <body data-title-key="dashboard_title">
 <div class="layout">
   <aside>
-    <header><h2>StockBoard <small id="app-version"></small></h2>
+    <header><h2>Stock Benchmark <small id="app-version"></small></h2>
       <div><button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button>
       <button class="icon-button" id="theme-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-theme"/></svg></button></div></header>
     <div class="status-bar" id="status-bar" role="status" aria-live="polite"><span class="status-dot"></span><small></small></div>
@@ -334,10 +334,10 @@ function handleSymbolListKeydown(event) {
 function applyTheme(themeName) {
   document.documentElement.dataset.theme = themeName;
   document.querySelector('meta[name="theme-color"]').content = themeName === 'dark' ? '#262624' : '#FAF9F5';
-  try { localStorage.setItem('stockboard-theme', themeName); } catch (error) { /* storage blocked: theme lasts this visit only */ }
+  try { localStorage.setItem('stock-benchmark-theme', themeName); } catch (error) { /* storage blocked: theme lasts this visit only */ }
 }
 
-try { applyTheme(localStorage.getItem('stockboard-theme') === 'dark' ? 'dark' : 'light'); } catch (error) { applyTheme('light'); }
+try { applyTheme(localStorage.getItem('stock-benchmark-theme') === 'dark' ? 'dark' : 'light'); } catch (error) { applyTheme('light'); }
 languageInitialize('en');
 languageBindSwitch(handleLanguageChange);
 renderStaticText();

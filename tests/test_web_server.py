@@ -4,7 +4,7 @@ import os
 import pytest
 from fastapi import HTTPException
 
-from stockboard_backend import refresh_scheduler, snapshot_storage, web_server
+from stock_benchmark_backend import refresh_scheduler, snapshot_storage, web_server
 
 STRATEGY_ID = web_server.application_settings.default_strategy_id
 
@@ -191,7 +191,7 @@ def test_nothing_else_writes_the_version_number():
     with open(os.path.join(web_server.PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
         version = version_file.read().strip()
     assert re.match(r"^\d+\.\d+\.\d+$", version)
-    for directory in ("static", "stockboard_backend"):
+    for directory in ("static", "stock_benchmark_backend"):
         for name in os.listdir(os.path.join(web_server.PROJECT_DIRECTORY, directory)):
             path = os.path.join(web_server.PROJECT_DIRECTORY, directory, name)
             if os.path.isfile(path) and name.endswith((".py", ".js", ".html")):

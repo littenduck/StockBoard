@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from stockboard_backend.localized_text import LocalizedText
+from stock_benchmark_backend.localized_text import LocalizedText
 
 STATUS_PASS = "pass"
 STATUS_FAIL = "fail"

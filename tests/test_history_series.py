@@ -3,9 +3,9 @@ import os
 import pandas
 import pytest
 
-from stockboard_backend import history_series
-from stockboard_backend.rule_catalog import rule_catalog_load_rule_catalog_from_yaml_file
-from stockboard_backend.settings_loader import PROJECT_DIRECTORY
+from stock_benchmark_backend import history_series
+from stock_benchmark_backend.rule_catalog import rule_catalog_load_rule_catalog_from_yaml_file
+from stock_benchmark_backend.settings_loader import PROJECT_DIRECTORY
 
 
 def daily(values, start="2020-01-01"):
@@ -71,7 +71,7 @@ def test_every_builder_serves_an_indicator_of_a_backtestable_rule():
 
 
 def test_company_indicator_columns_are_all_backtestable_catalog_indicators():
-    from stockboard_backend import edgar_data, fundamental_series
+    from stock_benchmark_backend import edgar_data, fundamental_series
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
     backtestable_indicator_set = {entry.indicator for entry in catalog.rule_entry_by_id.values() if entry.backtestable == "yes"}
     days = pandas.date_range("2020-01-01", periods=3, freq="D")

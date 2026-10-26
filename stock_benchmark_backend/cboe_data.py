@@ -124,7 +124,7 @@ def cboe_data_build_total_put_call_ratio_series(cache_file_path: str, old_series
 
 
 if __name__ == "__main__":
-    from stockboard_backend.settings_loader import PROJECT_DIRECTORY
+    from stock_benchmark_backend.settings_loader import PROJECT_DIRECTORY
     cache_path = os.path.join(PROJECT_DIRECTORY, "data", "cache", PUT_CALL_CACHE_FILE_NAME)
     series = cboe_data_update_total_put_call_cache(cache_path)
     print(f"{len(series)} days cached, {series.index[0].date()} to {series.index[-1].date()}, file {cache_path}")

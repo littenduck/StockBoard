@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from stockboard_backend import (indicator_calculation, indicator_registry, market_data, refresh_scheduler, request_limiter, rule_catalog,
+from stock_benchmark_backend import (indicator_calculation, indicator_registry, market_data, refresh_scheduler, request_limiter, rule_catalog,
                                 settings_loader, snapshot_storage, strategy_loader)
 
 PROJECT_DIRECTORY = settings_loader.PROJECT_DIRECTORY

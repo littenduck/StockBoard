@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Set
 
 import yaml
 
-from stockboard_backend.localized_text import LocalizedText, localized_text_build_optional_from_raw_value
+from stock_benchmark_backend.localized_text import LocalizedText, localized_text_build_optional_from_raw_value
 
 SCOPE_SET = {"market", "symbol", "window"}
 STATUS_SET = {"built", "todo"}

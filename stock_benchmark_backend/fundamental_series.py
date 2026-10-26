@@ -9,7 +9,7 @@ from typing import Optional
 import numpy
 import pandas
 
-from stockboard_backend import edgar_data
+from stock_benchmark_backend import edgar_data
 
 CONCEPT_NAME_LIST_BY_MEASURE = {
     "revenue": ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet",

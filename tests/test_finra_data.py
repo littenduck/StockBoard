@@ -3,7 +3,7 @@ import json
 import pandas
 import pytest
 
-from stockboard_backend import finra_data
+from stock_benchmark_backend import finra_data
 
 
 def row(day, short):

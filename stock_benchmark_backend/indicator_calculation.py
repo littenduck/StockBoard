@@ -6,7 +6,7 @@ from typing import Dict, Optional
 import numpy
 import pandas
 
-from stockboard_backend.strategy_evaluation import IndicatorValue
+from stock_benchmark_backend.strategy_evaluation import IndicatorValue
 
 TRADING_DAYS_PER_YEAR = 252
 

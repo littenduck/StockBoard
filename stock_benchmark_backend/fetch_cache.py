@@ -10,9 +10,9 @@ import time
 from typing import Any, Callable, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
-from stockboard_backend.indicator_registry import IndicatorRegistry
-from stockboard_backend.fetch_store import fetch_store_load_answers, fetch_store_save_answer
-from stockboard_backend.run_log import run_log_write
+from stock_benchmark_backend.indicator_registry import IndicatorRegistry
+from stock_benchmark_backend.fetch_store import fetch_store_load_answers, fetch_store_save_answer
+from stock_benchmark_backend.run_log import run_log_write
 
 NEW_YORK_TIME_ZONE = ZoneInfo("America/New_York")
 FAILED_RETRY_SECONDS = 15 * 60

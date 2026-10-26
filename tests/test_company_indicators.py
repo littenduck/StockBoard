@@ -3,7 +3,7 @@ import datetime
 import pandas
 import pytest
 
-from stockboard_backend import company_indicators as C
+from stock_benchmark_backend import company_indicators as C
 
 INFO = {"marketCap": 200e9, "enterpriseValue": 210e9, "ebitda": 14e9, "freeCashflow": 10e9, "forwardPE": 18.0, "trailingPE": 20.0,
         "trailingEps": 5.0, "revenueGrowth": 0.12, "grossMargins": 0.45, "returnOnEquity": 0.2, "totalDebt": 30e9, "totalCash": 10e9,

@@ -1,7 +1,7 @@
 import asyncio
 import types
 
-from stockboard_backend import request_limiter
+from stock_benchmark_backend import request_limiter
 
 
 async def answer_ok(scope, receive, send):
