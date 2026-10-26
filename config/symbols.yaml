@@ -1,3 +1,18 @@
 # The symbols the dashboard follows, in the order of the second row of the page: indices and stocks mixed.
-# Add a Yahoo Finance ticker here to follow it; remove one to stop. Nothing else needs to change.
-symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]
+# One symbol per line. Add a Yahoo Finance ticker to follow it, remove a line to stop; a comment after # is free text.
+# The file is read when the server starts, so restart the server after a change.
+symbol_list:
+  - SPY    # SPDR S&P 500 ETF
+  - QQQ    # Invesco QQQ, Nasdaq-100 ETF
+  - AAPL   # Apple
+  - MSFT   # Microsoft
+  - NVDA   # Nvidia
+  - AMZN   # Amazon
+  - GOOGL  # Alphabet (Google)
+  - META   # Meta Platforms
+  - TSLA   # Tesla
+  - AMD    # Advanced Micro Devices
+  - AVGO   # Broadcom
+  - NFLX   # Netflix
+  - JPM    # JPMorgan Chase
+  - XOM    # Exxon Mobil
