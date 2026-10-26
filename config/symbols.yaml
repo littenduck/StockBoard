@@ -1,0 +1,3 @@
+# The symbols the dashboard follows, in the order of the second row of the page: indices and stocks mixed.
+# Add a Yahoo Finance ticker here to follow it; remove one to stop. Nothing else needs to change.
+symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]

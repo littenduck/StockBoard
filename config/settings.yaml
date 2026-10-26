@@ -12,8 +12,7 @@ default_strategy_id: sell_put_four_in_one
 # First row of the page: the indicators to show, in order. Their names and whether a higher value is risky are in config/indicators.yaml.
 market_indicator_list: [I-051, I-052, I-053, I-003, I-007]  # vix_level, vxn_level, vvix_level, treasury_ten_year_yield, high_yield_credit_spread_basis_points
 
-# Second row of the page: indices and stocks mixed.
-watchlist_symbol_list: [SPY, QQQ, AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, AVGO, NFLX, JPM, XOM]
+# The symbols of the second row of the page are in config/symbols.yaml.
 
 # Put contracts are picked once per window. The first window is the standard one.
 option_expiration_window_list:

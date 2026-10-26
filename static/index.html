@@ -202,9 +202,9 @@ function renderStrategyOptions() {
 }
 
 function renderStaticText() {
-  document.getElementById('strategy-heading').innerHTML = languageRenderText(languageLocalize('strategy'));
-  document.getElementById('market-heading').innerHTML = languageRenderText(languageLocalize('market'));
-  document.getElementById('symbols-heading').innerHTML = languageRenderText(languageLocalize('symbols'));
+  document.getElementById('strategy-heading').innerHTML = `<a href="/strategies">${escapeText(languageText('strategy'))}</a>`;
+  document.getElementById('market-heading').innerHTML = `<a href="/indicators">${escapeText(languageText('market'))}</a>`;
+  document.getElementById('symbols-heading').innerHTML = `<a href="#symbol-list">${escapeText(languageText('symbols'))}</a>`; document.getElementById('symbols-heading').onclick = event => { event.preventDefault(); document.querySelector('#symbol-list [data-symbol]')?.focus(); };
   document.querySelector('#catalog-link small').textContent = languageText('catalog_link');
   document.getElementById('theme-button').setAttribute('aria-label', languageText('switch_theme'));
   const hint = document.getElementById('select-symbol-hint');
