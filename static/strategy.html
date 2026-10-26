@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategy · StockBoard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/base.css">
+<style>
+  #intro > * + * { margin-top:var(--space-3); } #intro { margin-bottom:var(--space-5); }
+  .weights { display:flex; flex-wrap:wrap; gap:var(--space-1); justify-content:flex-end; }
+  @media (max-width:899px) { .entry-group .row[data-weight] { grid-template-columns:72px 1fr; } .weights { grid-column:2; justify-content:flex-start; } }
+</style>
+</head>
+<body data-title-key="strategy_title">
+<main class="catalog">
+  <div class="top-row"><nav id="page-nav"></nav>
+    <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
+  <small><a href="/strategies" id="back-link"></a></small>
+  <header class="page-header">
+    <h1 id="page-heading"></h1>
+    <small id="summary"></small>
+  </header>
+  <div id="strategy-body"><small id="loading"></small></div>
+</main>
+<script src="/language.js"></script>
+<script src="/rule-text.js"></script>
+<script src="/page.js"></script>
+<script>
+let strategy = null, loadFailed = false;
+
+function renderStaticText() {
+  pageRenderNav('/strategies');
+  document.getElementById('back-link').textContent = languageText('all_strategies');
+  const loading = document.getElementById('loading');
+  if (loading) loading.textContent = languageText('loading_strategies');
+}
+
+function renderRuleRow(rule, isTier) {
+  const flags = `<span class="weights"><small class="box">${languageEscape(languageText('weight', { weight:rule.weight }))}</small>${rule.veto ? `<small class="box negative">${languageEscape(languageText('veto_flag'))}</small>` : ''}</span>`;
+  return `<div class="row" id="rule-${rule.rule_id}" data-weight="${rule.weight}" data-tier="${isTier ? 1 : 0}"><small><a href="/rules#rule-${rule.rule_id}">${rule.rule_id}</a></small>
+    <div><h3>${languageRenderName(rule.rule_name)}</h3><p>${languageRenderText(rule.description)}</p>
+      <small>${languageEscape(languageText('line_label'))} ${languageEscape(pageText(rule.line))}${rule.status === 'built' ? '' : ` · <span class="${PAGE_STATUS_COLOR[rule.status]}">${languageEscape(languageText(rule.status === 'todo' ? 'not_built' : 'no_data'))}</span>`}</small></div>${flags}</div>`;
+}
+
+function renderStrategy() {
+  const ruleList = strategy.gate_list.flatMap(gate => gate.rule_list);
+  document.getElementById('page-heading').innerHTML = languageRenderText(strategy.display_name);
+  document.title = pageText(strategy.display_name) + ' · StockBoard';
+  document.getElementById('summary').textContent = languageText('strategy_facts', { gates:strategy.gate_list.length, rules:ruleList.length, veto:ruleList.filter(rule => rule.veto).length });
+  const ratio = Math.round(strategy.max_unknown_weight_ratio * 100);
+  document.getElementById('strategy-body').innerHTML = `<section id="intro"><h3>${languageRenderText(strategy.summary)}</h3>${languageRenderParagraphs(strategy.help_text)}
+      <small>${languageEscape(languageText('source_label'))}: ${languageEscape(pageText(strategy.source))}</small>
+      <div class="box"><h3>${languageEscape(languageText('scoring_title'))}</h3><p>${languageRenderText(languageLocalize('scoring_text', { ratio }))}</p></div>
+      <p><a href="/">${languageEscape(languageText('open_in_dashboard'))}</a></p></section>`
+    + strategy.gate_list.map(gate => `<section class="entry-group"><header><h2>${languageRenderText(gate.display_name)}</h2></header>${gate.rule_list.map((rule, index) => renderRuleRow(rule, rule.band_of && gate.rule_list.slice(0, index).some(other => other.rule_id === rule.band_of || other.band_of === rule.band_of))).join('')}</section>`).join('');
+  const target = pageMarkTarget();
+  if (target) target.scrollIntoView({ block:'center' });
+}
+
+function handleLanguageChange() {
+  renderStaticText();
+  if (loadFailed) { document.getElementById('strategy-body').innerHTML = `<small class="negative">${languageEscape(languageText('strategies_failed'))}</small>`; return; }
+  if (strategy) renderStrategy();
+}
+
+try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
+languageInitialize('en');
+languageBindSwitch(handleLanguageChange);
+renderStaticText();
+const strategyId = decodeURIComponent(location.pathname.split('/').pop());
+fetch('/api/v1/strategies').then(response => response.json()).then(data => {
+  strategy = data.strategy_list.find(item => item.strategy_id === strategyId);
+  if (!strategy) throw new Error('unknown strategy');
+  languageApplyServerDefault(data.default_language, handleLanguageChange); renderStrategy();
+}).catch(() => { loadFailed = true; handleLanguageChange(); });
+</script>
+</body>
+</html>

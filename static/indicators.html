@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indicators · StockBoard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/base.css">
+</head>
+<body data-title-key="indicators_title">
+<main class="catalog">
+  <div class="top-row"><nav id="page-nav"></nav>
+    <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
+  <header class="page-header">
+    <h1 id="page-heading"></h1>
+    <small id="summary"></small>
+  </header>
+  <div class="filter-row">
+    <small><label for="filter-select" id="filter-label"></label></small>
+    <span class="field"><select id="filter-select"><option value="all"></option><option value="built"></option><option value="backtest"></option></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
+  </div>
+  <div id="group-list"><small id="loading"></small></div>
+</main>
+<script src="/language.js"></script>
+<script src="/rule-text.js"></script>
+<script src="/page.js"></script>
+<script>
+let indicatorCatalog = null, loadFailed = false;
+const allIndicatorList = () => indicatorCatalog.group_list.flatMap(group => group.indicator_list);
+
+function renderStaticText() {
+  pageRenderNav('/indicators');
+  document.getElementById('page-heading').innerHTML = languageRenderText(languageLocalize('indicators_heading'));
+  document.getElementById('filter-label').textContent = languageText('show');
+  [...document.getElementById('filter-select').options].forEach(option =>
+    option.textContent = languageText({ all:'all_indicators', built:'built_indicators', backtest:'backtest_indicators' }[option.value]));
+  const loading = document.getElementById('loading');
+  if (loading) loading.textContent = languageText('loading_indicators');
+}
+
+function renderSummary() {
+  const list = allIndicatorList();
+  document.getElementById('summary').textContent = languageText('indicator_summary', { total:list.length, built:list.filter(item => item.status === 'built').length,
+    backtest:list.filter(item => item.backtestable === 'yes').length, bar:list.filter(item => item.on_market_bar).length });
+}
+
+function renderIndicatorCatalog(shouldScrollToTarget = true) {
+  const filter = document.getElementById('filter-select').value;
+  const keep = item => filter === 'all' || (filter === 'backtest' ? item.backtestable === 'yes' : item.status === 'built');
+  document.getElementById('group-list').innerHTML = indicatorCatalog.group_list.map(group => {
+    const list = group.indicator_list.filter(keep);
+    return list.length ? `<section class="entry-group"><header><h2>${languageRenderText(group.display_name)}</h2><small>${languageRenderText(group.description)}</small></header>${list.map(pageRenderIndicatorEntry).join('')}</section>` : '';
+  }).join('');
+  const target = pageMarkTarget();
+  if (target && shouldScrollToTarget) target.scrollIntoView({ block:'center' });
+}
+
+function handleLanguageChange() {
+  renderStaticText();
+  if (loadFailed) { document.getElementById('group-list').innerHTML = `<small class="negative">${languageEscape(languageText('indicators_failed'))}</small>`; return; }
+  if (indicatorCatalog) { renderSummary(); renderIndicatorCatalog(false); }
+}
+
+try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
+languageInitialize('en');
+languageBindSwitch(handleLanguageChange);
+renderStaticText();
+document.getElementById('filter-select').onchange = () => renderIndicatorCatalog(false);
+fetch('/api/v1/indicators').then(response => response.json()).then(data => {
+  indicatorCatalog = data; languageApplyServerDefault(data.default_language, handleLanguageChange); renderSummary(); renderIndicatorCatalog();
+}).catch(() => { loadFailed = true; handleLanguageChange(); });
+</script>
+</body>
+</html>

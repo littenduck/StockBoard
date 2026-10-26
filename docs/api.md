@@ -38,8 +38,18 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...) and
  "default_language": "en",
  "strategy_list": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"},
                     "summary": {"en": "...", "zh": "..."}, "help_text": {"en": "paragraphs separated by blank lines", "zh": "..."},
-                    "source": "where the strategy came from"}]}
+                    "source": {"en": "...", "zh": "..."}, "max_unknown_weight_ratio": 0.2,
+                    "gate_list": [{"gate_id": "gate_0_macro", "display_name": {"en": "...", "zh": "..."}, "per_expiration_window": false,
+                                   "rule_list": [{"rule_id": "R-EVT-01", "rule_name": "no_earnings_within_45_days", "weight": 5, "veto": true,
+                                                  "description": {"en": "...", "zh": "..."}, "status": "built", "method": "computed",
+                                                  "band_of": null, "line": {"en": "yes", "zh": "是"}}]}]}]}
 ```
+
+The gate list is what the strategy page shows: each rule's weight and veto and what the rule says.
+
+## GET /api/v1/indicators
+
+Every indicator, grouped like the rules: under the category of the first rule that tests it, the rest under `OTHER` (market bar only, or no rule yet). Each indicator has `indicator_id`, `indicator_name`, bilingual `description`, `unit`, `scope`, `method`, `quantifiable`, `backtestable`, `history_source`, `history_start`, `status`, `fetch_group`, `fetch_every`, `max_age`, `on_market_bar`, and `rule_list` (`rule_id` and the bilingual `line` of every rule that tests it).
 
 ## GET /api/v1/snapshot?strategy_id=sell_put_four_in_one
 

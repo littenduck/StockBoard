@@ -154,3 +154,27 @@ def test_strategy_page_needs_a_known_strategy():
     with pytest.raises(HTTPException) as error:
         web_server.web_server_get_strategy_page("nope")
     assert error.value.status_code == 404
+
+
+STATIC_DIRECTORY = os.path.join(web_server.PROJECT_DIRECTORY, "static")
+PAGE_FILE_NAME_LIST = ["index.html", "rules.html", "indicators.html", "strategies.html", "strategy.html"]
+
+
+def test_every_page_loads_only_files_the_server_serves_and_stays_short():
+    import re
+    route_path_set = {route.path for route in web_server.app.routes}
+    for file_name in PAGE_FILE_NAME_LIST:
+        text = open(os.path.join(STATIC_DIRECTORY, file_name), encoding="utf8").read()
+        for path in re.findall(r'(?:src|href)="(/[a-z.\-]*)(?:[#"])', text):
+            assert path == "/" or path in route_path_set, "{} loads {}".format(file_name, path)
+        assert text.count("\n") <= (354 if file_name == "index.html" else 140), file_name
+
+
+def test_the_catalog_pages_use_only_known_text_keys():
+    import re
+    language_text = open(os.path.join(STATIC_DIRECTORY, "language.js"), encoding="utf8").read()
+    key_set = set(re.findall(r"^\s*(?:\w+: \{.*\},\s*)?(\w+): \{ en:", language_text, re.M)) | set(re.findall(r"\b(\w+): \{ en:", language_text))
+    for file_name in ["rules.html", "indicators.html", "strategies.html", "strategy.html", "page.js"]:
+        text = open(os.path.join(STATIC_DIRECTORY, file_name), encoding="utf8").read()
+        for key in re.findall(r"language(?:Text|Localize)\('(\w+)'", text) + re.findall(r"data-title-key=\"(\w+)\"", text):
+            assert key in key_set, "{} uses the unknown text {}".format(file_name, key)

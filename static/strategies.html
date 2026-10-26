@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategies · StockBoard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/base.css">
+<style>
+  #strategy-list { display:grid; gap:var(--space-4); }
+  #strategy-list .box > * + * { margin-top:var(--space-2); }
+</style>
+</head>
+<body data-title-key="strategies_title">
+<main class="catalog">
+  <div class="top-row"><nav id="page-nav"></nav>
+    <button class="icon-button" id="language-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-language"/></svg></button></div>
+  <header class="page-header">
+    <h1 id="page-heading"></h1>
+    <small id="summary"></small>
+  </header>
+  <div id="strategy-list"><small id="loading"></small></div>
+</main>
+<script src="/language.js"></script>
+<script src="/rule-text.js"></script>
+<script src="/page.js"></script>
+<script>
+let strategyData = null, loadFailed = false;
+
+function renderStaticText() {
+  pageRenderNav('/strategies');
+  document.getElementById('page-heading').innerHTML = languageRenderText(languageLocalize('strategies_heading'));
+  const loading = document.getElementById('loading');
+  if (loading) loading.textContent = languageText('loading_strategies');
+}
+
+function renderStrategyList() {
+  document.getElementById('summary').textContent = languageText('strategy_summary', { count:strategyData.strategy_list.length });
+  document.getElementById('strategy-list').innerHTML = strategyData.strategy_list.map(strategy => {
+    const ruleList = strategy.gate_list.flatMap(gate => gate.rule_list);
+    const facts = languageText('strategy_facts', { gates:strategy.gate_list.length, rules:ruleList.length, veto:ruleList.filter(rule => rule.veto).length });
+    return `<article class="box"><h3><a href="/strategies/${pageSlug(strategy.strategy_id)}">${languageRenderText(strategy.display_name)}</a></h3>
+      <p>${languageRenderText(strategy.summary)}</p><small>${languageEscape(facts)}</small>
+      <small>${languageEscape(languageText('source_label'))}: ${languageEscape(pageText(strategy.source))}</small></article>`;
+  }).join('');
+}
+
+function handleLanguageChange() {
+  renderStaticText();
+  if (loadFailed) { document.getElementById('strategy-list').innerHTML = `<small class="negative">${languageEscape(languageText('strategies_failed'))}</small>`; return; }
+  if (strategyData) renderStrategyList();
+}
+
+try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
+languageInitialize('en');
+languageBindSwitch(handleLanguageChange);
+renderStaticText();
+fetch('/api/v1/strategies').then(response => response.json()).then(data => {
+  strategyData = data; languageApplyServerDefault(data.default_language, handleLanguageChange); renderStrategyList();
+}).catch(() => { loadFailed = true; handleLanguageChange(); });
+</script>
+</body>
+</html>
