@@ -380,3 +380,17 @@ def test_the_lines_of_a_rule_are_scaled_and_carry_their_unit_once():
     assert line_by_id["R-LIQ-05"]["zh"] == "≥ 5000 万美元" and line_by_id["R-LIQ-01"]["zh"] == "> 2000 亿美元"
     assert line_by_id["R-RET-07"] == {"en": "≥ 10x", "zh": "≥ 10倍"}
     assert line_by_id["R-CTR-01"]["en"] == "0.15 to 0.2"
+
+
+def test_the_symbols_come_from_symbols_yaml(tmp_path):
+    import shutil
+    settings = settings_loader_load_settings_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
+    assert settings.watchlist_symbol_list[0] == "SPY" and len(set(settings.watchlist_symbol_list)) == len(settings.watchlist_symbol_list)
+    for name in ("settings.yaml", "indicators.yaml"):
+        shutil.copy(os.path.join(PROJECT_DIRECTORY, "config", name), tmp_path / name)
+    (tmp_path / "symbols.yaml").write_text("symbol_list: [SPY, SPY]\n")
+    with pytest.raises(ValueError):
+        settings_loader_load_settings_from_yaml_file(str(tmp_path / "settings.yaml"))
+    (tmp_path / "symbols.yaml").write_text("symbol_list: []\n")
+    with pytest.raises(ValueError):
+        settings_loader_load_settings_from_yaml_file(str(tmp_path / "settings.yaml"))

@@ -29,3 +29,9 @@ def test_short_percent_uses_the_latest_share_count_filed_before_each_date():
     short = finra_data.finra_data_parse_short_interest_rows([row("2026-09-15", 50), row("2026-09-30", 60)])
     shares = pandas.Series([1000.0, 500.0], index=pandas.to_datetime(["2026-08-01", "2026-09-20"]))
     assert finra_data.finra_data_calculate_short_interest_percent_of_shares(short, shares).tolist() == pytest.approx([5.0, 12.0])
+
+
+def test_a_share_class_is_written_without_a_separator_for_finra():
+    assert finra_data.finra_data_convert_symbol_to_finra_symbol("BRK-B") == "BRKB"
+    assert finra_data.finra_data_convert_symbol_to_finra_symbol("bf.b") == "BFB"
+    assert json.loads(finra_data.finra_data_build_short_interest_request_body("BRK-B"))["compareFilters"][0]["fieldValue"] == "BRKB"

@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Tuple
 from stockboard_backend import (company_indicators, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
                                 option_chain, snapshot_storage, strategy_evaluation, yahoo_company, yahoo_gate)
 from stockboard_backend.fetch_cache import FetchCache
+from stockboard_backend.run_log import run_log_write
 from stockboard_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
 from stockboard_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
 
@@ -274,12 +275,15 @@ def refresh_scheduler_build_dashboard_snapshot(
     failed_symbol_list += [s for s in settings.watchlist_symbol_list if s not in symbol_history_by_symbol]
 
     def evaluate_symbol_or_none(symbol: str) -> Optional[dict]:
+        started = time.perf_counter()
         try:
-            return refresh_scheduler_evaluate_symbol_for_all_strategies(
+            result = refresh_scheduler_evaluate_symbol_for_all_strategies(
                 symbol, symbol_history_by_symbol[symbol], shared_indicator_value_by_name, settings,
                 strategy_definition_by_id, market_history_by_symbol, fetch_cache, symbol_fetched_at)
+            run_log_write("symbol {} ok {:.2f}s".format(symbol, time.perf_counter() - started))
+            return result
         except Exception as error:  # one broken symbol must not abort the whole snapshot
-            print("symbol failed:", symbol, error)
+            run_log_write("symbol {} FAILED {:.2f}s {}".format(symbol, time.perf_counter() - started, str(error)[:120]))
             return None
 
     with ThreadPoolExecutor(max_workers=SYMBOL_WORKER_COUNT) as executor:
@@ -316,17 +320,23 @@ def refresh_scheduler_get_current_exchange_time_text() -> str:
 def refresh_scheduler_refresh_snapshot_file(
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
 ) -> dict:
+    started = time.perf_counter()
     snapshot = refresh_scheduler_build_dashboard_snapshot(settings, strategy_definition_by_id)
     snapshot_storage.snapshot_storage_save_snapshot_to_json_file(snapshot, SNAPSHOT_FILE_PATH)
+    run_log_write("refresh done {:.1f}s symbols ok {} failed {} {}".format(
+        time.perf_counter() - started, len(snapshot["symbol_result_list"]), len(snapshot["failed_symbol_list"]), snapshot["failed_symbol_list"]))
     return snapshot
 
 
 def refresh_scheduler_determine_whether_refresh_is_due(settings: ApplicationSettings, fetch_cache: Optional[FetchCache] = None) -> bool:
-    """Due when there is no snapshot yet, when the market is open and the snapshot is old enough, or when some source is due again
+    """Due when there is no snapshot yet, when its symbols are not the ones in config/symbols.yaml, when the market is open and the snapshot is old enough, or when some source is due again
     (this also catches the after-hours times in config/indicators.yaml: prices after the close, slow data before the open)."""
     snapshot = snapshot_storage.snapshot_storage_load_snapshot_from_json_file(SNAPSHOT_FILE_PATH)
     if snapshot is None or snapshot.get("schema_version") != SNAPSHOT_SCHEMA_VERSION:
         return True
+    followed_symbol_set = {card["symbol"] for card in snapshot.get("symbol_result_list", [])} | set(snapshot.get("failed_symbol_list", []))
+    if followed_symbol_set != set(settings.watchlist_symbol_list):
+        return True  # config/symbols.yaml changed: build the snapshot again now, not at the next due time
     is_market_open = market_data.market_data_determine_whether_us_market_is_open(
         datetime.datetime.now(datetime.timezone.utc), settings.market_holiday_date_set,
         settings.market_early_close_date_set)

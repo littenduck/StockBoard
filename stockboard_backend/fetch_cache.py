@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from stockboard_backend.indicator_registry import IndicatorRegistry
+from stockboard_backend.run_log import run_log_write
 
 NEW_YORK_TIME_ZONE = ZoneInfo("America/New_York")
 FAILED_RETRY_SECONDS = 15 * 60
@@ -73,14 +74,17 @@ class FetchCache:
             forced = cache_key in self._forced_due_key_set
             if entry is not None and not forced and (not self.is_due(group_id, entry[0], now) or self._retry_after_by_key.get(cache_key, 0) > now):
                 return entry[1], entry[0]
+            started = time.perf_counter()
             try:
                 value = fetch_function()
             except Exception as error:
+                run_log_write("fetch {} {} FAILED {:.2f}s {}".format(group_id, key or "-", time.perf_counter() - started, str(error)[:120]))
                 if entry is None and default is RAISE:
                     raise
                 self._retry_after_by_key[cache_key] = now + FAILED_RETRY_SECONDS
                 print("fetch failed:", group_id, key, error)
                 return (default, None) if entry is None else (entry[1], entry[0])
+            run_log_write("fetch {} {} ok {:.2f}s".format(group_id, key or "-", time.perf_counter() - started))
             self._retry_after_by_key.pop(cache_key, None)
             self._forced_due_key_set.discard(cache_key)
             self.request_count_by_group[group_id] = self.request_count_by_group.get(group_id, 0) + 1
