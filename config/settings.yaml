@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# StockBoard settings
+# Stock Benchmark settings
 # ------------------------------------------------------------------------------
 # Everything the app reads at start-up. Restart the server after a change.
 # Other config files: indicators.yaml (what is measured), rules.yaml (lines to test), strategies/*.yaml (weights), symbols.yaml (symbols).

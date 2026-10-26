@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Strategy · StockBoard</title>
+<title>Strategy · Stock Benchmark</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/base.css">
 <style>
@@ -46,7 +46,7 @@ function renderRuleRow(rule, isTier) {
 function renderStrategy() {
   const ruleList = strategy.gate_list.flatMap(gate => gate.rule_list);
   document.getElementById('page-heading').innerHTML = languageRenderText(strategy.display_name);
-  document.title = pageText(strategy.display_name) + ' · StockBoard';
+  document.title = pageText(strategy.display_name) + ' · Stock Benchmark';
   document.getElementById('summary').textContent = languageText('strategy_facts', { gates:strategy.gate_list.length, rules:ruleList.length, veto:ruleList.filter(rule => rule.veto).length });
   const ratio = Math.round(strategy.max_unknown_weight_ratio * 100);
   document.getElementById('strategy-body').innerHTML = `<section id="intro"><h3>${languageRenderText(strategy.summary)}</h3>${languageRenderParagraphs(strategy.help_text)}
@@ -64,7 +64,7 @@ function handleLanguageChange() {
   if (strategy) renderStrategy();
 }
 
-try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
+try { if (localStorage.getItem('stock-benchmark-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
 languageInitialize('en');
 languageBindSwitch(handleLanguageChange);
 renderStaticText();

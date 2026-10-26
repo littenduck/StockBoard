@@ -5,7 +5,7 @@ import urllib.error
 import pandas
 import pytest
 
-from stockboard_backend import cboe_data
+from stock_benchmark_backend import cboe_data
 
 VIX_CSV = "DATE,OPEN,HIGH,LOW,CLOSE\n01/02/1990,17.24,17.24,17.24,17.24\n01/03/1990,18.19,18.19,18.19,18.19\n"
 SKEW_CSV = "DATE,SKEW\n01/02/1990,126.09\n01/03/1990,123.54\n"

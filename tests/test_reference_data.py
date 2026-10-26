@@ -3,7 +3,7 @@ import datetime
 import pandas
 import pytest
 
-from stockboard_backend import edgar_data, option_chain, reference_data
+from stock_benchmark_backend import edgar_data, option_chain, reference_data
 
 
 def test_multpl_table_rows_become_a_series():

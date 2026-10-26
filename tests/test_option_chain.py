@@ -2,7 +2,7 @@ import datetime
 
 import pandas
 
-from stockboard_backend.option_chain import (
+from stock_benchmark_backend.option_chain import (
     option_chain_calculate_black_scholes_put_delta,
     option_chain_determine_expiration_within_day_window,
     option_chain_determine_representative_put_contract_from_table,

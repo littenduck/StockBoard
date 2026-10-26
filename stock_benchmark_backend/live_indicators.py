@@ -13,11 +13,11 @@ from typing import Dict, List, Optional, Tuple
 import pandas
 import yfinance
 
-from stockboard_backend import (cboe_data, company_indicators, dolthub_data, edgar_data, finra_data, fundamental_series, history_series,
+from stock_benchmark_backend import (cboe_data, company_indicators, dolthub_data, edgar_data, finra_data, fundamental_series, history_series,
                                 macro_data, sentiment_data, yahoo_company)
-from stockboard_backend.fetch_cache import FetchCache
-from stockboard_backend.indicator_registry import IndicatorRegistry
-from stockboard_backend.strategy_evaluation import IndicatorValue
+from stock_benchmark_backend.fetch_cache import FetchCache
+from stock_benchmark_backend.indicator_registry import IndicatorRegistry
+from stock_benchmark_backend.strategy_evaluation import IndicatorValue
 
 SERIES_WORKER_COUNT = 6
 SERIES_GROUP_ID_LIST = ["fred", "cboe_put_call", "cnn", "aaii", "reference_files"]

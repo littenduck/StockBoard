@@ -1,4 +1,4 @@
-from stockboard_backend.strategy_evaluation import (
+from stock_benchmark_backend.strategy_evaluation import (
     GateDefinition, IndicatorValue, RuleDefinition, RuleEvaluationResult, StrategyDefinition,
     StrategyThresholds, strategy_evaluation_calculate_strategy_score_percent_from_rule_results,
     strategy_evaluation_calculate_unknown_weight_ratio_from_rule_results,

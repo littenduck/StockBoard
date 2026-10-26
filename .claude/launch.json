@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "stockboard",
-      "runtimeExecutable": "/Users/kevin/StockBoard/.venv/bin/python",
-      "runtimeArgs": ["-m", "uvicorn", "stockboard_backend.web_server:app", "--app-dir", "/Users/kevin/StockBoard", "--port", "8000"],
+      "name": "stock-benchmark",
+      "runtimeExecutable": "/Users/kevin/stock-benchmark/.venv/bin/python",
+      "runtimeArgs": ["-m", "uvicorn", "stock_benchmark_backend.web_server:app", "--app-dir", "/Users/kevin/stock-benchmark", "--port", "8000"],
       "port": 8000
     }
   ]

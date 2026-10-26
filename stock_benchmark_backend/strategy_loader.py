@@ -5,9 +5,9 @@ from typing import Dict, List, Set
 
 import yaml
 
-from stockboard_backend.localized_text import localized_text_build_from_raw_value
-from stockboard_backend.rule_catalog import RuleCatalog
-from stockboard_backend.strategy_evaluation import (
+from stock_benchmark_backend.localized_text import localized_text_build_from_raw_value
+from stock_benchmark_backend.rule_catalog import RuleCatalog
+from stock_benchmark_backend.strategy_evaluation import (
     GateDefinition, RuleDefinition, StrategyDefinition, StrategyThresholds,
 )
 

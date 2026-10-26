@@ -32,7 +32,7 @@ Targets (revised after the review, see the end): one intraday tick during market
 ## 1. Config layout and the strategy move
 
 - `git mv strategies config/strategies` (history kept).
-- Paths to change: `refresh_scheduler.py`, `web_server.py`, `tests/test_rule_catalog.py` (two places), `scripts/count_requests.py` (already looks in both), `README.md`, `docs/strategy.md`, `docs/language.md`, the header of `config/rules.yaml`, `.claude/skills/stockboard-strategy/SKILL.md`. A final `git grep "strategies/"` must show only `config/strategies/`.
+- Paths to change: `refresh_scheduler.py`, `web_server.py`, `tests/test_rule_catalog.py` (two places), `scripts/count_requests.py` (already looks in both), `README.md`, `docs/strategy.md`, `docs/language.md`, the header of `config/rules.yaml`, `.claude/skills/stock-benchmark-strategy/SKILL.md`. A final `git grep "strategies/"` must show only `config/strategies/`.
 - One constant `config_directory` (`PROJECT_DIRECTORY/config`) used by all loaders.
 
 ## 2. `config/indicators.yaml`

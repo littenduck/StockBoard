@@ -1,4 +1,4 @@
-/* Shared design tokens and type for every StockBoard page. See docs/design.md. */
+/* Shared design tokens and type for every Stock Benchmark page. See docs/design.md. */
 :root {
   --background:#FAF9F5; --surface:#FFFFFF; --fill:#F0EEE6; --separator:#E8E6DC; --text:#141413; --text-secondary:#6B6A64;
   --accent:#C96442; --positive:#146C35; --negative:#B42318; --caution:#8A5A00;

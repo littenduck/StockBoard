@@ -24,7 +24,7 @@ company_facts_cache: Dict[str, dict] = {}
 
 
 def edgar_data_build_user_agent() -> str:
-    return "StockBoard research " + os.environ.get("EDGAR_CONTACT", "unset-contact")
+    return "Stock Benchmark research " + os.environ.get("EDGAR_CONTACT", "unset-contact")
 
 
 def edgar_data_fetch_json(url: str) -> dict:

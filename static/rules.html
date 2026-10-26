@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rules · StockBoard</title>
+<title>Rules · Stock Benchmark</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/base.css">
 <style>
@@ -73,7 +73,7 @@ function handleLanguageChange() {
   if (ruleCatalog) { renderSummary(); renderRuleCatalog(false); }
 }
 
-try { if (localStorage.getItem('stockboard-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
+try { if (localStorage.getItem('stock-benchmark-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (error) { /* storage blocked: light theme */ }
 languageInitialize('en');
 languageBindSwitch(handleLanguageChange);
 renderStaticText();

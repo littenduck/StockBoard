@@ -1,13 +1,13 @@
 # Deployment
 
-How StockBoard is hosted and how to set it up again. Addresses, keys and account names are left out because the repository is public.
+How Stock Benchmark is hosted and how to set it up again. Addresses, keys and account names are left out because the repository is public.
 
 ## Stack
 
 | Part | What |
 |---|---|
 | Server | Oracle Cloud Always Free VM (`VM.Standard.E2.1.Micro`, 1 GB memory), Ubuntu 24.04 LTS |
-| App | `uvicorn` running `stockboard_backend.web_server:app`, started by systemd |
+| App | `uvicorn` running `stock_benchmark_backend.web_server:app`, started by systemd |
 | Admin access | SSH over Tailscale only |
 | Public address | Tailscale Funnel: `https://<server name>.<tailnet name>.ts.net`, HTTPS certificate included |
 
@@ -33,22 +33,22 @@ Funnel needs no domain, no inbound port and hides the server's own IP. It only s
 3. **Install the app.**
 
    ```bash
-   git clone <repository url> ~/StockBoard && cd ~/StockBoard
+   git clone <repository url> ~/stock-benchmark && cd ~/stock-benchmark
    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
    ```
 
-4. **Run it as a service.** Create `/etc/systemd/system/stockboard.service`:
+4. **Run it as a service.** Create `/etc/systemd/system/stock-benchmark.service`:
 
    ```ini
    [Unit]
-   Description=StockBoard web server
+   Description=Stock Benchmark web server
    After=network-online.target
    Wants=network-online.target
 
    [Service]
    User=ubuntu
-   WorkingDirectory=/home/ubuntu/StockBoard
-   ExecStart=/home/ubuntu/StockBoard/.venv/bin/python -m uvicorn stockboard_backend.web_server:app --host 127.0.0.1 --port 8000
+   WorkingDirectory=/home/ubuntu/stock-benchmark
+   ExecStart=/home/ubuntu/stock-benchmark/.venv/bin/python -m uvicorn stock_benchmark_backend.web_server:app --host 127.0.0.1 --port 8000
    Restart=always
    RestartSec=5
    MemoryHigh=300M
@@ -62,7 +62,7 @@ Funnel needs no domain, no inbound port and hides the server's own IP. It only s
    ```
 
    ```bash
-   sudo systemctl daemon-reload && sudo systemctl enable --now stockboard
+   sudo systemctl daemon-reload && sudo systemctl enable --now stock-benchmark
    ```
 
 5. **Join Tailscale.**
@@ -92,14 +92,14 @@ Funnel needs no domain, no inbound port and hides the server's own IP. It only s
 ## Operate
 
 ```bash
-systemctl status stockboard
-journalctl -u stockboard -f
-cd ~/StockBoard && git pull && .venv/bin/pip install -r requirements.txt && sudo systemctl restart stockboard
+systemctl status stock-benchmark
+journalctl -u stock-benchmark -f
+cd ~/stock-benchmark && git pull && .venv/bin/pip install -r requirements.txt && sudo systemctl restart stock-benchmark
 ```
 
 The fetch cache lives in memory, so the first refresh after a restart asks every source once (about 180 requests, most of them Yahoo); later refreshes during market hours make about 70. The log prints a line every hour with the Yahoo request counts and any rate-limit or error answers: watch it for 429 and 401 after a change.
 
-After `requirements.txt` changes run `~/StockBoard/.venv/bin/pip install -r requirements.txt`, then restart the service. Turn the public address off with `sudo tailscale funnel --https=443 off`.
+After `requirements.txt` changes run `~/stock-benchmark/.venv/bin/pip install -r requirements.txt`, then restart the service. Turn the public address off with `sudo tailscale funnel --https=443 off`.
 
 ## Hardening: what and why
 
@@ -114,13 +114,13 @@ The page is public and has no login. The aim is that the *website* may fail and 
 A sizing method that works on any machine:
 
 1. Measure memory used by everything except the app (`free -m`, `ps`).
-2. Measure the app's idle size and its peak during one refresh: run `python -m stockboard_backend.refresh_scheduler --once` and read the child's maximum resident size (`/usr/bin/time -v`, or `resource.getrusage` in a small wrapper).
+2. Measure the app's idle size and its peak during one refresh: run `python -m stock_benchmark_backend.refresh_scheduler --once` and read the child's maximum resident size (`/usr/bin/time -v`, or `resource.getrusage` in a small wrapper).
 3. Take the cap from several independent estimates and use their median: the free-memory budget, the app's peak × 1.3 to 1.5, how much the kernel needs left for `sshd` and `tailscaled`, and the platform's limits. Estimates that rest on the same evidence count once.
 4. Lean low when estimates disagree, and never exceed a ceiling that leaves room for SSH. If the refresh peak does not fit under the ceiling, reduce the refresh work instead of raising the cap.
 
 Rules of thumb: `MemoryMax` ≈ 40% of RAM, `MemoryHigh` ≈ 75% of `MemoryMax`, `MemorySwapMax` ≈ 6% of RAM, `TasksMax` about three times the usual thread count. On the 1 GB machine used here that gives 400 MB, 300 MB and 64 MB.
 
-If something breaks: `sudo systemctl restart stockboard`, then `journalctl -u stockboard -n 50`. If the whole machine hangs, reboot the instance from the Oracle console.
+If something breaks: `sudo systemctl restart stock-benchmark`, then `journalctl -u stock-benchmark -n 50`. If the whole machine hangs, reboot the instance from the Oracle console.
 
 ## Security notes
 

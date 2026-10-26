@@ -12,7 +12,7 @@ import pickle
 import re
 from typing import Any, Dict, Optional, Tuple
 
-from stockboard_backend.run_log import run_log_write
+from stock_benchmark_backend.run_log import run_log_write
 
 SPLIT_KEY = "all"  # a batched answer: a dict by symbol, kept as one file per symbol
 MARKET_KEY_SET = {None, "treasury"}  # answers that belong to no symbol; every other key is a symbol

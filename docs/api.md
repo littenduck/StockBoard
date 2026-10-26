@@ -1,6 +1,6 @@
 # API
 
-JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any client can use it: the web page, a future SwiftUI app, scripts.
+JSON over HTTP, read only, served by `stock_benchmark_backend/web_server.py`. Any client can use it: the web page, a future SwiftUI app, scripts.
 
 ## Conventions
 

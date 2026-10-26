@@ -1,6 +1,6 @@
 ---
-name: stockboard-design
-description: Use when changing any StockBoard page (static/index.html, static/rules.html, static/base.css): layout, colors, type, buttons, rows, boxes, strategy tree. Text is plain HTML tags (h1, h2, h3, p, small, strong, a) with no text classes. Keeps one shape language and the Claude-style warm palette.
+name: stock-benchmark-design
+description: Use when changing any Stock Benchmark page (static/index.html, static/rules.html, static/base.css): layout, colors, type, buttons, rows, boxes, strategy tree. Text is plain HTML tags (h1, h2, h3, p, small, strong, a) with no text classes. Keeps one shape language and the Claude-style warm palette.
 ---
 
 Read `docs/design.md` first and follow it exactly.

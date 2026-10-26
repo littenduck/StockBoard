@@ -8,12 +8,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
 
-from stockboard_backend import (company_indicators, fetch_store, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
+from stock_benchmark_backend import (company_indicators, fetch_store, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
                                 option_chain, snapshot_storage, strategy_evaluation, yahoo_company, yahoo_gate)
-from stockboard_backend.fetch_cache import FetchCache
-from stockboard_backend.run_log import run_log_write
-from stockboard_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
-from stockboard_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
+from stock_benchmark_backend.fetch_cache import FetchCache
+from stock_benchmark_backend.run_log import run_log_write
+from stock_benchmark_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
+from stock_benchmark_backend.strategy_evaluation import IndicatorValue, StrategyDefinition
 
 DATA_DIRECTORY = os.path.join(PROJECT_DIRECTORY, "data")
 SNAPSHOT_FILE_PATH = os.path.join(DATA_DIRECTORY, "latest_snapshot.json")
@@ -375,7 +375,7 @@ def refresh_scheduler_start_background_refresh_thread(
 
 
 if __name__ == "__main__" and "--once" in sys.argv:
-    from stockboard_backend import rule_catalog, settings_loader, strategy_loader
+    from stock_benchmark_backend import rule_catalog, settings_loader, strategy_loader
     loaded_settings = settings_loader.settings_loader_load_settings_from_yaml_file(
         os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
     loaded_strategies = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(

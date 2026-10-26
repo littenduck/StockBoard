@@ -35,8 +35,8 @@ const UI_TEXT = {
   alternative_window: { en:'Alternative expiration {label} days · Gate score {score}', zh:'备选到期窗口 {label} 天 · 本层分数 {score}' },
   rule_details: { en:'Show all fields of {id}', zh:'查看 {id} 的全部字段' },
   open_rule: { en:'Open {id} in the rule catalog', zh:'在规则目录中查看 {id}' },
-  dashboard_title: { en:'StockBoard', zh:'StockBoard' },
-  rules_title: { en:'Rules · StockBoard', zh:'规则 · StockBoard' },
+  dashboard_title: { en:'Stock Benchmark', zh:'Stock Benchmark' },
+  rules_title: { en:'Rules · Stock Benchmark', zh:'规则 · Stock Benchmark' },
   back_to_dashboard: { en:'← Back to dashboard', zh:'← 返回看板' },
   rule_summary: { en:'{total} rules · {built} built · {backtest} can be backtested · {used} used by strategies', zh:'共 {total} 条规则 · 已接入 {built} 条 · 可回测 {backtest} 条 · 被策略使用 {used} 条' },
   backtest_rules: { en:'Can be backtested', zh:'可以回测的规则' },
@@ -56,8 +56,8 @@ const UI_TEXT = {
   loading_rules: { en:'Loading rules…', zh:'正在读取规则…' },
   rules_failed: { en:'Could not load rules. Check that the server is running.', zh:'读取规则失败，请确认服务正在运行。' },
   nav_dashboard: { en:'Dashboard', zh:'看板' }, nav_strategies: { en:'Strategies', zh:'策略' }, nav_rules: { en:'Rules', zh:'规则' }, nav_indicators: { en:'Indicators', zh:'指标' },
-  strategies_title: { en:'Strategies · StockBoard', zh:'策略 · StockBoard' }, indicators_title: { en:'Indicators · StockBoard', zh:'指标 · StockBoard' },
-  strategy_title: { en:'Strategy · StockBoard', zh:'策略 · StockBoard' },
+  strategies_title: { en:'Strategies · Stock Benchmark', zh:'策略 · Stock Benchmark' }, indicators_title: { en:'Indicators · Stock Benchmark', zh:'指标 · Stock Benchmark' },
+  strategy_title: { en:'Strategy · Stock Benchmark', zh:'策略 · Stock Benchmark' },
   strategies_heading: { en:'Strategies', zh:'策略' }, indicators_heading: { en:'Indicator catalog', zh:'指标目录' },
   strategy_summary: { en:'{count} strategies', zh:'共 {count} 个策略' },
   strategy_facts: { en:'{gates} gates · {rules} rules · {veto} veto', zh:'{gates} 个关卡 · {rules} 条规则 · {veto} 条否决' },
@@ -87,7 +87,7 @@ const UI_TEXT = {
   ai_search: { en:'AI search', zh:'AI 采集' },
   manual: { en:'manual', zh:'手填' },
 };
-const LANGUAGE_STORAGE_KEY = 'stockboard-language';
+const LANGUAGE_STORAGE_KEY = 'stock-benchmark-language';
 let activeLanguage = 'en', hasStoredLanguageChoice = false;
 
 const languageEscape = text => String(text ?? '').replace(/[&<>"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[character]);

@@ -4,10 +4,10 @@ import os
 import pandas
 import pytest
 
-from stockboard_backend import indicator_calculation as I
-from stockboard_backend import indicator_registry
-from stockboard_backend.settings_loader import PROJECT_DIRECTORY
-from stockboard_backend import live_indicators, history_series, option_chain
+from stock_benchmark_backend import indicator_calculation as I
+from stock_benchmark_backend import indicator_registry
+from stock_benchmark_backend.settings_loader import PROJECT_DIRECTORY
+from stock_benchmark_backend import live_indicators, history_series, option_chain
 
 
 def test_the_newest_value_of_a_series_comes_with_the_time_it_was_observed():
@@ -112,7 +112,7 @@ def test_put_skew_compares_the_ten_percent_otm_put_with_the_money_put():
 
 
 def test_dolthub_history_gives_a_percentile_and_a_one_month_ratio():
-    from stockboard_backend import dolthub_data
+    from stock_benchmark_backend import dolthub_data
     days = pandas.date_range(end="2026-10-23", periods=260, freq="B")
     series = pandas.Series([0.20 + 0.001 * index for index in range(260)], index=days)  # rising: today is the highest of the year
     value = dolthub_data.dolthub_data_build_indicator_value_by_name(series, datetime.date(2026, 10, 25))
@@ -123,7 +123,7 @@ def test_dolthub_history_gives_a_percentile_and_a_one_month_ratio():
 
 
 def test_dolthub_rows_and_symbol_check():
-    from stockboard_backend import dolthub_data
+    from stock_benchmark_backend import dolthub_data
     rows = [{"date": "2026-10-22", "iv_current": "0.27"}, {"date": "2026-10-21", "iv_current": None}, {"date": "2026-10-20", "iv_current": "0.25"}]
     assert dolthub_data.dolthub_data_parse_history_rows(rows).tolist() == [0.25, 0.27]
     assert "act_symbol='AAPL'" in dolthub_data.dolthub_data_build_history_query("AAPL", datetime.date(2026, 10, 25))

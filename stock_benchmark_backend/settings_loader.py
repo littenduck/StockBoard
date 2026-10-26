@@ -6,8 +6,8 @@ from typing import FrozenSet, List
 
 import yaml
 
-from stockboard_backend import indicator_registry
-from stockboard_backend.localized_text import LANGUAGE_CODE_SET, LocalizedText, localized_text_build_from_raw_value
+from stock_benchmark_backend import indicator_registry
+from stock_benchmark_backend.localized_text import LANGUAGE_CODE_SET, LocalizedText, localized_text_build_from_raw_value
 
 PROJECT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
