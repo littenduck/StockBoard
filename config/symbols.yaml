@@ -1,20 +1,28 @@
-# The symbols the dashboard follows, in the order of the second row of the page: ETFs first, then stocks, each grouped by theme
-# (the # headings are only for you). One symbol per line; a comment after # is free text. Add a Yahoo Finance ticker to follow it,
-# remove a line to stop. Long only: plain, 2x and 3x long funds. The file is read when the server starts, so restart the server after a change.
-# An ETF has no company figures, so its rules on earnings, margins and so on read unknown; that is normal.
+# ------------------------------------------------------------------------------
+# Symbols the dashboard follows
+# ------------------------------------------------------------------------------
+# The second row of the page, in the order written here. One symbol per line: a Yahoo Finance ticker, then a free-text # comment.
+# Add a line to follow a symbol, remove or comment out a line to stop. US-listed only; long, 2x and 3x long funds only (no inverse funds).
+# Read when the server starts: restart after a change. A changed list makes the next refresh start at once.
+# Delete a symbol's folder in data/symbols/ to forget what was downloaded for it.
+
 symbol_list:
-  # ETFs: S&P 500
+  # ----------------------------------------------------------------------------
+  # ETFs
+  # ----------------------------------------------------------------------------
+  # An ETF has no company figures, so its rules on earnings, margins and so on read unknown; that is normal.
+  # S&P 500
   - SPY    # SPDR S&P 500 ETF
   - VOO    # Vanguard S&P 500 ETF
   - SPXL   # Direxion Daily S&P 500 Bull 3x
   - SPMO   # Invesco S&P 500 Momentum ETF
 
-  # ETFs: Nasdaq-100 and growth
+  # Nasdaq-100 and growth
   - QQQ    # Invesco QQQ
   - TQQQ   # ProShares UltraPro QQQ, 3x long
   - VGT    # Vanguard Information Technology ETF
 
-  # ETFs: semiconductors, memory, space
+  # Semiconductors, memory, space
   - SOXX   # iShares Semiconductor ETF
   - SMH    # VanEck Semiconductor ETF
   - SOXL   # Direxion Daily Semiconductor Bull 3x
@@ -24,7 +32,10 @@ symbol_list:
   - SNXX   # Tradr 2X Long SNDK Daily, 2x long Sandisk (you hold it)
   - UFO    # Procure Space ETF
 
-  # Stocks: semiconductors
+  # ----------------------------------------------------------------------------
+  # Stocks
+  # ----------------------------------------------------------------------------
+  # Semiconductors
   - NVDA   # Nvidia
   - AMD    # Advanced Micro Devices
   - AVGO   # Broadcom
@@ -36,24 +47,24 @@ symbol_list:
   - ARM    # Arm Holdings
   - CBRS   # Cerebras
 
-  # Stocks: optical and AI networking
+  # Optical and AI networking
   - LITE   # Lumentum
   - AAOI   # Applied Optoelectronics
   - COHR   # Coherent
   - ALAB   # Astera Labs
 
-  # Stocks: memory
+  # Memory
   - MU     # Micron
   - SNDK   # Sandisk
   - SKHY   # SK hynix (Nasdaq)
 
-  # Stocks: space
+  # Space
   - SPCX   # SpaceX (Space Exploration Technologies)
   - RKLB   # Rocket Lab
   - ASTS   # AST SpaceMobile
   - LUNR   # Intuitive Machines
 
-  # Stocks: big technology
+  # Big technology
   - AAPL   # Apple
   - MSFT   # Microsoft
   - GOOGL  # Alphabet (Google)
@@ -62,7 +73,7 @@ symbol_list:
   - NFLX   # Netflix
   - TSLA   # Tesla
 
-  # Stocks: other, mostly for options
+  # Other, mostly for options
   - PLTR   # Palantir
   - HOOD   # Robinhood
   - BRK-B  # Berkshire Hathaway, class B (class A costs about $800,000 a share)

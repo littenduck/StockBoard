@@ -1,10 +1,30 @@
+# ------------------------------------------------------------------------------
+# Strategy: RSI(2) pullback (Connors)
+# ------------------------------------------------------------------------------
+# One strategy: which rules it uses and how much each counts. Rules and indicators are defined once, in rules.yaml and indicators.yaml.
+# Read when the server starts; the page address is /strategies/<strategy_id>.
+
+# The id of the strategy: the same as the file name; used in the API and in the page address /strategies/<id>.
 strategy_id: connors_rsi_two_pullback
+# The name shown on the page, in both languages.
 display_name: {en: "RSI(2) pullback (Connors)", zh: "RSI(2) 回调（Connors）"}
+# Where the idea comes from, in both languages; shown on the strategy page.
 source: {en: "RSI(2) mean-reversion idea from Larry Connors and Cesar Alvarez, Short Term Trading Strategies That Work (2008); thresholds are common values from secondary sources", zh: "Larry Connors 与 Cesar Alvarez《Short Term Trading Strategies That Work》(2008) 中的 RSI(2) 均值回归思路，参数取二手资料的常用值"}
+
+# ------------------------------------------------------------------------------
+# Scoring
+# ------------------------------------------------------------------------------
+# max_unknown_weight_ratio: when more than this share of the weight is unknown, the dashboard greys the score as data insufficient (0.20 is 20%).
 thresholds: {max_unknown_weight_ratio: 0.20}
+
+# ------------------------------------------------------------------------------
+# Text on the strategy page and in the help popover (both languages)
+# ------------------------------------------------------------------------------
+# summary: one or two sentences.
 summary:
   en: "Buy short-term dips inside a long-term uptrend: the close is above the 200-day average and the 2-day RSI has fallen below 10."
   zh: "在长期上升趋势里买短期超跌：收盘价在 200 日线上方，同时 2 日 RSI 跌到 10 以下。"
+# help: the full explanation; paragraphs are separated by a blank line.
 help:
   en: |
     This is a short-term mean-reversion strategy: stocks in an uptrend that are briefly pushed down often bounce within a few days. It uses the very sensitive 2-day RSI to find moments when the stock has fallen too far.
@@ -22,15 +42,31 @@ help:
     资料里的常见离场方式是收盘价回到 5 日均线上方，或 2 日 RSI 回升到 70 以上。各资料的具体阈值不完全一致，这里用的是最常见的数值。
 
     这类信号出现得比较少，大部分时间分数会偏低，这是正常的。本页面只做筛选，不给出离场信号。不构成投资建议。
+
+# ------------------------------------------------------------------------------
+# Gates and rules
+# ------------------------------------------------------------------------------
+# A gate is a group of rules checked together; gates are checked in order. A rule is defined once in config/rules.yaml; here it has only its id,
+# this strategy's weight and an optional veto: true (a failed veto rule fails the whole result). The name after # is the rule_name, for reading.
+# A measure with several lines (VIX, Delta, DTE ...) is listed as several rules; each line the value passes adds its weight.
 gates:
+  # ----------------------------------------------------------------------------
+  # GATE 0 Market
+  # ----------------------------------------------------------------------------
   - gate_id: gate_0_market
     display_name: {en: "GATE 0 Market", zh: "GATE 0 市场环境"}
     rules:
       - {rule_id: R-TRD-01, weight: 3}   # market_above_200_day
+  # ----------------------------------------------------------------------------
+  # GATE 1 Long-term trend
+  # ----------------------------------------------------------------------------
   - gate_id: gate_1_trend
     display_name: {en: "GATE 1 Long-term trend", zh: "GATE 1 长期趋势"}
     rules:
       - {rule_id: R-TRD-05, weight: 5, veto: true}   # stock_above_200_day
+  # ----------------------------------------------------------------------------
+  # GATE 2 Short-term oversold
+  # ----------------------------------------------------------------------------
   - gate_id: gate_2_pullback
     display_name: {en: "GATE 2 Short-term oversold", zh: "GATE 2 短期超跌"}
     rules:

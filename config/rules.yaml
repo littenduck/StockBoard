@@ -1,32 +1,48 @@
-# Rule catalog, by theme. Strategies in config/strategies/*.yaml pick rules from here and give each rule its own weight.
-# A rule only answers one question: does the indicator pass this line? (pass, fail or unknown). It has no weight and no score.
+# ------------------------------------------------------------------------------
+# Rule catalog, by theme
+# ------------------------------------------------------------------------------
+# A rule answers one question: does the indicator pass this line? (pass, fail or unknown). It has no weight and no score;
+# a strategy (config/strategies/*.yaml) picks rules from here and gives each its own weight.
 # What is measured, where it comes from and how often it is fetched is written once on the indicator (config/indicators.yaml).
-#
+# Every text a person reads is {en, zh}; see docs/language.md.
+
+# ------------------------------------------------------------------------------
+# How rules are numbered and written
+# ------------------------------------------------------------------------------
 # Rule id = R- + category code + two digits, for example R-TRD-05. Categories run from macro down to detail. Inside a category the numbers run
-# 01, 02, 03 ... in the order of this file with no gaps, and a category is split into topics (topic_list of its group) that are unbroken runs.
+# 01, 02, 03 ... in the order of this file with no gaps, and a category is split into topics that are unbroken runs.
 # A measure with several lines (VIX, Delta, DTE ...) is one rule per line: the main rule comes first and its other lines follow it, each with
 # band_of pointing back. A strategy lists the lines it wants, each with its own weight, so crossing one more line adds weight.
-# The ids the rules had before the renumbering (MAC-03 ...) and the older A01 to Z20 ids are kept in legacy_id, the newest first.
-# Retired rules (retired_rule_list at the end) are listed by old_id, the id they had in the old format, and that id is never given to a live rule.
-# A legacy_id is on one rule only.
-#
-# Every text a person reads is {en, zh}; see docs/language.md.
-#
-# Fields of every rule:
-#   rule_id          R-MAC-03: the permanent id
-#   rule_name        a short lower case name with underscores, unique, like an indicator_name (ten_year_below_4_5pct)
-#   topic            the topic of its group, from topic_list
-#   description      {en, zh} the pass sentence ("Passes when ..."), with abbreviations spelled out. The meaning, source, update frequency and typical
-#                    values of the measure are on the indicator, which the pages show under the rule
-#   indicator        id of the indicator in config/indicators.yaml (I-003); absent for a manual rule
-#   operator, value  the line this rule tests (less_than, less_or_equal, greater_than, greater_or_equal, between with [low, high], is_true)
-#   band_of          optional: id of the main rule when this rule is another line of the same indicator; the lines that share its operator run in one direction
-#   legacy_id        older ids this rule replaces
-#   note             optional {en, zh} remark
-#   method, quantifiable, backtestable, history_source, history_start, status   only on a manual rule (status no_data, method manual:
-#                    no data in the app, your own input, your trade plan or your brokerage account; a strategy may use it, it always shows
-#                    unknown and is left out of the score); every other rule takes them from its indicator
+# The ids the rules had before the renumbering (MAC-03 ...) and the older A01 to Z20 ids are kept in legacy_id, the newest first; a legacy_id
+# is on one rule only. Retired rules are listed at the end by old_id and that id is never given to a live rule.
 
+# ------------------------------------------------------------------------------
+# Fields of every rule
+# ------------------------------------------------------------------------------
+# rule_id          R-MAC-03: the permanent id.
+# rule_name        a short lower case name with underscores, unique, like an indicator_name (ten_year_below_4_5pct); the dashboard shows it.
+# topic            the topic of its group, from topic_list.
+# description      {en, zh} the pass sentence ("Passes when ..."), with abbreviations spelled out. The meaning, source, update frequency and typical
+#                  values of the measure are on the indicator, which the pages show under the rule.
+# indicator        id of the indicator in config/indicators.yaml (I-003); absent for a manual rule.
+# operator, value  the line this rule tests: less_than, less_or_equal, greater_than, greater_or_equal, between (value is [low, high]) or is_true.
+# band_of          optional: id of the main rule when this rule is another line of the same indicator; the lines that share its operator run
+#                  in one direction.
+# legacy_id        older ids this rule replaces.
+# note             optional {en, zh} remark.
+# method, quantifiable, backtestable, history_source, history_start, status
+#                  only on a manual rule (status no_data, method manual: no data in the app, your own input, your trade plan or your brokerage
+#                  account; a strategy may use it, it always shows unknown and is left out of the score). Every other rule takes them from its
+#                  indicator.
+
+# ------------------------------------------------------------------------------
+# Rule groups (categories)
+# ------------------------------------------------------------------------------
+# group_id       the category code in every rule id (MAC, TRD ...).
+# aspect         the wider family the page groups categories under, {en, zh}.
+# display_name   the title of the category, {en, zh}.
+# description    one line about what the category holds, {en, zh}.
+# topic_list     the topics inside the category, in order: topic_id (the value of topic in a rule) and display_name, {en, zh}.
 rule_group_list:
   - {group_id: "MAC", aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "MAC · Macro", zh: "MAC · 宏观"}, description: {en: "Policy, rates, credit, inflation, growth, dollar, oil and liquidity.", zh: "政策、利率、信用、通胀、增长、美元、油价和流动性。"}, topic_list: [{topic_id: "policy_rates", display_name: {en: "Fed and interest rates", zh: "联储与利率"}}, {topic_id: "credit", display_name: {en: "Credit", zh: "信用"}}, {topic_id: "inflation_jobs", display_name: {en: "Inflation, jobs and activity", zh: "通胀、就业与经济活动"}}, {topic_id: "dollar_oil_liquidity", display_name: {en: "Dollar, oil and liquidity", zh: "美元、油价与流动性"}}]}
   - {group_id: "IND", aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "IND · Industry", zh: "IND · 行业"}, description: {en: "Industry strength and cycle.", zh: "行业强弱与景气周期。"}, topic_list: [{topic_id: "industry_strength", display_name: {en: "Industry strength", zh: "行业强弱"}}]}
@@ -44,8 +60,17 @@ rule_group_list:
   - {group_id: "THS", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}, topic_list: [{topic_id: "why_trade", display_name: {en: "Why you trade", zh: "为什么交易"}}, {topic_id: "discipline", display_name: {en: "Discipline", zh: "纪律"}}]}
   - {group_id: "EXT", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}, topic_list: [{topic_id: "profit_stop", display_name: {en: "Take profit and stop loss", zh: "止盈与止损"}}, {topic_id: "time_rolling", display_name: {en: "Time and rolling", zh: "时间与展期"}}, {topic_id: "covered_call_exit", display_name: {en: "Covered call exits", zh: "Covered Call 退出"}}]}
 
+# ------------------------------------------------------------------------------
+# Rules
+# ------------------------------------------------------------------------------
+# In the order of the ids; a category banner and a topic comment mark where each begins.
 rule_list:
+  # ----------------------------------------------------------------------------
   # MAC · Macro
+  # ----------------------------------------------------------------------------
+  # Policy, rates, credit, inflation, growth, dollar, oil and liquidity.
+  # Topics, in order: policy_rates, credit, inflation_jobs, dollar_oil_liquidity.
+  # Topic: policy_rates
   - rule_id: R-MAC-01
     rule_name: "fed_target_not_raised"
     topic: "policy_rates"
@@ -111,6 +136,8 @@ rule_list:
     operator: "greater_than"
     value: 0
     legacy_id: ["MAC-17"]
+
+  # Topic: credit
   - rule_id: R-MAC-09
     rule_name: "hy_spread_below_400bp"
     topic: "credit"
@@ -153,6 +180,8 @@ rule_list:
     value: 3.3
     band_of: "R-MAC-12"
     legacy_id: ["MAC-23"]
+
+  # Topic: inflation_jobs
   - rule_id: R-MAC-14
     rule_name: "cpi_below_3pct"
     topic: "inflation_jobs"
@@ -193,6 +222,8 @@ rule_list:
     operator: "greater_than"
     value: -0.7
     legacy_id: ["MAC-20"]
+
+  # Topic: dollar_oil_liquidity
   - rule_id: R-MAC-19
     rule_name: "dollar_20_day_rise_below_2pct"
     topic: "dollar_oil_liquidity"
@@ -233,7 +264,13 @@ rule_list:
     operator: "greater_or_equal"
     value: 0
     legacy_id: ["MAC-21"]
+
+  # ----------------------------------------------------------------------------
   # IND · Industry
+  # ----------------------------------------------------------------------------
+  # Industry strength and cycle.
+  # Topics, in order: industry_strength.
+  # Topic: industry_strength
   - rule_id: R-IND-01
     rule_name: "sector_beats_spy"
     topic: "industry_strength"
@@ -250,7 +287,13 @@ rule_list:
     operator: "greater_than"
     value: 0
     legacy_id: ["IND-02"]
+
+  # ----------------------------------------------------------------------------
   # QUA · Company quality
+  # ----------------------------------------------------------------------------
+  # Profitability, growth, cash flow, balance sheet and analyst expectations.
+  # Topics, in order: profit_growth, cash_flow, debt, analyst_view.
+  # Topic: profit_growth
   - rule_id: R-QUA-01
     rule_name: "ttm_eps_positive"
     topic: "profit_growth"
@@ -307,6 +350,8 @@ rule_list:
     operator: "greater_or_equal"
     value: 40
     legacy_id: ["QUA-05"]
+
+  # Topic: cash_flow
   - rule_id: R-QUA-08
     rule_name: "fcf_positive"
     topic: "cash_flow"
@@ -340,6 +385,8 @@ rule_list:
     value: 0.8
     band_of: "R-QUA-10"
     legacy_id: ["QUA-16"]
+
+  # Topic: debt
   - rule_id: R-QUA-12
     rule_name: "net_debt_to_ebitda_below_2"
     topic: "debt"
@@ -365,6 +412,8 @@ rule_list:
     operator: "greater_than"
     value: 5
     legacy_id: ["QUA-12"]
+
+  # Topic: analyst_view
   - rule_id: R-QUA-15
     rule_name: "estimates_rising"
     topic: "analyst_view"
@@ -381,7 +430,13 @@ rule_list:
     operator: "greater_than"
     value: 60
     legacy_id: ["QUA-10"]
+
+  # ----------------------------------------------------------------------------
   # MGT · Management and governance
+  # ----------------------------------------------------------------------------
+  # Insider activity, buybacks, dilution and capital allocation.
+  # Topics, in order: insiders, shares_dividends, governance.
+  # Topic: insiders
   - rule_id: R-MGT-01
     rule_name: "insider_selling_small"
     topic: "insiders"
@@ -398,6 +453,8 @@ rule_list:
     operator: "greater_or_equal"
     value: 1
     legacy_id: ["MGT-05"]
+
+  # Topic: shares_dividends
   - rule_id: R-MGT-03
     rule_name: "share_count_not_rising"
     topic: "shares_dividends"
@@ -423,6 +480,8 @@ rule_list:
     operator: "less_or_equal"
     value: 0.8
     legacy_id: ["MGT-03"]
+
+  # Topic: governance
   - rule_id: R-MGT-06
     rule_name: "no_audit_red_flags"
     topic: "governance"
@@ -430,7 +489,13 @@ rule_list:
     indicator: "I-040"
     operator: "is_true"
     legacy_id: ["MGT-04"]
+
+  # ----------------------------------------------------------------------------
   # VAL · Valuation
+  # ----------------------------------------------------------------------------
+  # Market and stock valuation, and your own margin of safety.
+  # Topics, in order: market_valuation, stock_valuation.
+  # Topic: market_valuation
   - rule_id: R-VAL-01
     rule_name: "sp500_forward_pe_below_22"
     topic: "market_valuation"
@@ -480,6 +545,8 @@ rule_list:
     value: 150
     band_of: "R-VAL-05"
     legacy_id: ["VAL-14"]
+
+  # Topic: stock_valuation
   - rule_id: R-VAL-07
     rule_name: "pe_below_own_median"
     topic: "stock_valuation"
@@ -538,7 +605,13 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["VAL-09", "A16"]
+
+  # ----------------------------------------------------------------------------
   # SEN · Sentiment and positioning
+  # ----------------------------------------------------------------------------
+  # VIX, VXN, Fear and Greed, surveys, manager positioning, put/call, short interest.
+  # Topics, in order: volatility_index, fear_greed, surveys, positioning.
+  # Topic: volatility_index
   - rule_id: R-SEN-01
     rule_name: "vix_at_least_15"
     topic: "volatility_index"
@@ -614,6 +687,8 @@ rule_list:
     operator: "less_than"
     value: 1.3
     legacy_id: ["SEN-03"]
+
+  # Topic: fear_greed
   - rule_id: R-SEN-10
     rule_name: "fear_and_greed_below_25"
     topic: "fear_greed"
@@ -650,6 +725,8 @@ rule_list:
     value: 75
     band_of: "R-SEN-10"
     legacy_id: ["SEN-18", "D03"]
+
+  # Topic: surveys
   - rule_id: R-SEN-14
     rule_name: "aaii_bulls_minus_bears_below_0"
     topic: "surveys"
@@ -683,6 +760,8 @@ rule_list:
     value: 40
     band_of: "R-SEN-16"
     legacy_id: ["SEN-21"]
+
+  # Topic: positioning
   - rule_id: R-SEN-18
     rule_name: "put_call_at_least_0_7"
     topic: "positioning"
@@ -724,7 +803,13 @@ rule_list:
     indicator: "I-062"
     operator: "is_true"
     legacy_id: ["SEN-08", "A05"]
+
+  # ----------------------------------------------------------------------------
   # TRD · Trend and momentum
+  # ----------------------------------------------------------------------------
+  # Market and stock trend, breadth, momentum, pullback and support.
+  # Topics, in order: market_trend, stock_trend, highs_lows, momentum, support_volatility, spmo.
+  # Topic: market_trend
   - rule_id: R-TRD-01
     rule_name: "market_above_200_day"
     topic: "market_trend"
@@ -756,6 +841,8 @@ rule_list:
     indicator: "I-065"
     operator: "is_true"
     legacy_id: ["TRD-22"]
+
+  # Topic: stock_trend
   - rule_id: R-TRD-05
     rule_name: "stock_above_200_day"
     topic: "stock_trend"
@@ -784,6 +871,8 @@ rule_list:
     indicator: "I-069"
     operator: "is_true"
     legacy_id: ["TRD-05", "T03"]
+
+  # Topic: highs_lows
   - rule_id: R-TRD-09
     rule_name: "within_5pct_of_52_week_high"
     topic: "highs_lows"
@@ -819,6 +908,8 @@ rule_list:
     value: 50
     band_of: "R-TRD-11"
     legacy_id: ["TRD-18", "F03"]
+
+  # Topic: momentum
   - rule_id: R-TRD-13
     rule_name: "six_month_gain_above_10pct"
     topic: "momentum"
@@ -884,6 +975,8 @@ rule_list:
     indicator: "I-077"
     operator: "is_true"
     legacy_id: ["TRD-13", "R03"]
+
+  # Topic: support_volatility
   - rule_id: R-TRD-21
     rule_name: "within_3pct_of_60_day_low"
     topic: "support_volatility"
@@ -908,6 +1001,8 @@ rule_list:
     operator: "less_or_equal"
     value: 3
     legacy_id: ["TRD-15"]
+
+  # Topic: spmo
   - rule_id: R-TRD-24
     rule_name: "spmo_top_20"
     topic: "spmo"
@@ -925,7 +1020,13 @@ rule_list:
     value: 1
     band_of: "R-TRD-24"
     legacy_id: ["TRD-25"]
+
+  # ----------------------------------------------------------------------------
   # EVT · Events
+  # ----------------------------------------------------------------------------
+  # Earnings, central bank, data releases, policy and calendar effects.
+  # Topics, in order: company_events, scheduled_releases, calendar, uncertainty.
+  # Topic: company_events
   - rule_id: R-EVT-01
     rule_name: "no_earnings_within_45_days"
     topic: "company_events"
@@ -954,6 +1055,8 @@ rule_list:
     indicator: "I-085"
     operator: "is_true"
     legacy_id: ["EVT-11", "Z16"]
+
+  # Topic: scheduled_releases
   - rule_id: R-EVT-05
     rule_name: "no_fomc"
     topic: "scheduled_releases"
@@ -975,6 +1078,8 @@ rule_list:
     indicator: "I-088"
     operator: "is_true"
     legacy_id: ["EVT-05", "Z13"]
+
+  # Topic: calendar
   - rule_id: R-EVT-08
     rule_name: "no_election"
     topic: "calendar"
@@ -996,6 +1101,8 @@ rule_list:
     indicator: "I-091"
     operator: "is_true"
     legacy_id: ["EVT-13"]
+
+  # Topic: uncertainty
   - rule_id: R-EVT-11
     rule_name: "trade_uncertainty_low"
     topic: "uncertainty"
@@ -1020,7 +1127,13 @@ rule_list:
     operator: "less_than"
     value: 90
     legacy_id: ["EVT-08", "Z10"]
+
+  # ----------------------------------------------------------------------------
   # LIQ · Liquidity
+  # ----------------------------------------------------------------------------
+  # Stock size and volume, option spread and open interest.
+  # Topics, in order: size, trading_value, option_liquidity.
+  # Topic: size
   - rule_id: R-LIQ-01
     rule_name: "market_cap_above_usd_200b"
     topic: "size"
@@ -1047,6 +1160,8 @@ rule_list:
     value: 10
     band_of: "R-LIQ-01"
     legacy_id: ["LIQ-06"]
+
+  # Topic: trading_value
   - rule_id: R-LIQ-04
     rule_name: "daily_value_at_least_usd_100m"
     topic: "trading_value"
@@ -1064,6 +1179,8 @@ rule_list:
     value: 50000000
     band_of: "R-LIQ-04"
     legacy_id: ["LIQ-08"]
+
+  # Topic: option_liquidity
   - rule_id: R-LIQ-06
     rule_name: "bid_ask_spread_at_most_5pct"
     topic: "option_liquidity"
@@ -1088,7 +1205,13 @@ rule_list:
     operator: "greater_or_equal"
     value: 100
     legacy_id: ["LIQ-09"]
+
+  # ----------------------------------------------------------------------------
   # VOL · Volatility
+  # ----------------------------------------------------------------------------
+  # IV percentile, IV against realized, event volatility, skew.
+  # Topics, in order: iv_level, volatility_premium, expected_move_skew.
+  # Topic: iv_level
   - rule_id: R-VOL-01
     rule_name: "iv_percentile_at_least_70"
     topic: "iv_level"
@@ -1123,6 +1246,8 @@ rule_list:
     operator: "greater_than"
     value: 1.0
     legacy_id: ["VOL-08"]
+
+  # Topic: volatility_premium
   - rule_id: R-VOL-05
     rule_name: "vix_above_its_average"
     topic: "volatility_premium"
@@ -1138,6 +1263,8 @@ rule_list:
     indicator: "I-103"
     operator: "is_true"
     legacy_id: ["VOL-03", "Z05"]
+
+  # Topic: expected_move_skew
   - rule_id: R-VOL-07
     rule_name: "expected_move_below_10pct"
     topic: "expected_move_skew"
@@ -1154,7 +1281,13 @@ rule_list:
     operator: "less_or_equal"
     value: 5
     legacy_id: ["VOL-05"]
+
+  # ----------------------------------------------------------------------------
   # CTR · Contract selection
+  # ----------------------------------------------------------------------------
+  # Delta, expiration, strike and Covered Call terms.
+  # Topics, in order: put_delta_expiration, put_strike, covered_call, option_buyer.
+  # Topic: put_delta_expiration
   - rule_id: R-CTR-01
     rule_name: "delta_0_15_to_0_20"
     topic: "put_delta_expiration"
@@ -1214,6 +1347,8 @@ rule_list:
     indicator: "I-108"
     operator: "is_true"
     legacy_id: ["CTR-04", "B08"]
+
+  # Topic: put_strike
   - rule_id: R-CTR-08
     rule_name: "strike_10pct_to_15pct_below"
     topic: "put_strike"
@@ -1243,6 +1378,8 @@ rule_list:
     indicator: "I-112"
     operator: "is_true"
     legacy_id: ["CTR-07", "D07"]
+
+  # Topic: covered_call
   - rule_id: R-CTR-12
     rule_name: "call_strike_8pct_to_12pct_above"
     topic: "covered_call"
@@ -1259,6 +1396,8 @@ rule_list:
     operator: "between"
     value: [25, 35]
     legacy_id: ["CTR-09", "E12"]
+
+  # Topic: option_buyer
   - rule_id: R-CTR-14
     rule_name: "buyer_dte_60_to_90"
     topic: "option_buyer"
@@ -1267,7 +1406,13 @@ rule_list:
     operator: "between"
     value: [60, 90]
     legacy_id: ["CTR-03", "D06"]
+
+  # ----------------------------------------------------------------------------
   # RET · Return and payoff
+  # ----------------------------------------------------------------------------
+  # Annualized return, premium, leverage, breakeven and win probability.
+  # Topics, in order: premium_return, risk_payoff.
+  # Topic: premium_return
   - rule_id: R-RET-01
     rule_name: "annualized_return_at_least_20pct"
     topic: "premium_return"
@@ -1302,6 +1447,8 @@ rule_list:
     value: 2
     band_of: "R-RET-03"
     legacy_id: ["RET-07", "B10", "E06"]
+
+  # Topic: risk_payoff
   - rule_id: R-RET-05
     rule_name: "breakeven_10pct_below"
     topic: "risk_payoff"
@@ -1326,7 +1473,13 @@ rule_list:
     operator: "greater_or_equal"
     value: 10
     legacy_id: ["RET-03", "D05"]
+
+  # ----------------------------------------------------------------------------
   # POS · Position, account and portfolio
+  # ----------------------------------------------------------------------------
+  # Option level, cash, exposure caps, loss limits and portfolio Greeks.
+  # Topics, in order: account_leverage, exposure_limits, sizing_building, portfolio_risk.
+  # Topic: account_leverage
   - rule_id: R-POS-01
     rule_name: "option_level"
     topic: "account_leverage"
@@ -1372,6 +1525,8 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["POS-15"]
+
+  # Topic: exposure_limits
   - rule_id: R-POS-06
     rule_name: "total_put_exposure"
     topic: "exposure_limits"
@@ -1408,6 +1563,8 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["POS-08", "Z03"]
+
+  # Topic: sizing_building
   - rule_id: R-POS-10
     rule_name: "single_option_size"
     topic: "sizing_building"
@@ -1453,6 +1610,8 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["POS-13", "E13"]
+
+  # Topic: portfolio_risk
   - rule_id: R-POS-15
     rule_name: "portfolio_greeks"
     topic: "portfolio_risk"
@@ -1471,7 +1630,13 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["POS-16"]
+
+  # ----------------------------------------------------------------------------
   # THS · Thesis and discipline
+  # ----------------------------------------------------------------------------
+  # Why you trade, what proves you wrong, and your own limits.
+  # Topics, in order: why_trade, discipline.
+  # Topic: why_trade
   - rule_id: R-THS-01
     rule_name: "circle_of_competence"
     topic: "why_trade"
@@ -1508,6 +1673,8 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["THS-04", "E16"]
+
+  # Topic: discipline
   - rule_id: R-THS-05
     rule_name: "falsification"
     topic: "discipline"
@@ -1535,7 +1702,13 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["THS-07", "D04"]
+
+  # ----------------------------------------------------------------------------
   # EXT · Management and exit
+  # ----------------------------------------------------------------------------
+  # Take profit, stop loss, time stop, roll and Wheel management.
+  # Topics, in order: profit_stop, time_rolling, covered_call_exit.
+  # Topic: profit_stop
   - rule_id: R-EXT-01
     rule_name: "seller_take_profit"
     topic: "profit_stop"
@@ -1572,6 +1745,8 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["EXT-04", "D14"]
+
+  # Topic: time_rolling
   - rule_id: R-EXT-05
     rule_name: "time_stop_or_roll"
     topic: "time_rolling"
@@ -1599,6 +1774,8 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["EXT-07", "C02"]
+
+  # Topic: covered_call_exit
   - rule_id: R-EXT-08
     rule_name: "covered_call_plan"
     topic: "covered_call_exit"
@@ -1627,10 +1804,18 @@ rule_list:
     status: "no_data"
     legacy_id: ["EXT-10", "E15", "F12"]
 
+# ------------------------------------------------------------------------------
+# Retired rules
+# ------------------------------------------------------------------------------
+# Rules removed after they were first added. old_id: the id they had in the old format (never given to a live rule). legacy_id: older ids
+# it carried. reason: why it was retired, {en, zh}.
 retired_rule_list:
   - {old_id: "VAL-02", legacy_id: [], reason: {en: "No free history and not a well-known indicator; market valuation is covered by R-VAL-01, R-VAL-03 and R-VAL-04.", zh: "没有免费历史，也不是知名指标；大盘估值由 R-VAL-01、R-VAL-03 和 R-VAL-04 覆盖。"}}
   - {old_id: "EVT-09", legacy_id: ["Z11"], reason: {en: "Could not be measured: a pending regulation event is news, not a number. R-EVT-12 (policy uncertainty) measures the nearest thing.", zh: "无法量化：待决的监管事件是新闻，不是数字。R-EVT-12（政策不确定性）度量最接近的东西。"}}
   - {old_id: "LIQ-02", legacy_id: [], reason: {en: "A ranking line drifts over time and needs point-in-time data for 500 stocks. Replaced by the fixed size line R-LIQ-02 (market cap above $100 billion), which also took the old id D01.", zh: "排名分界线会随时间漂移，还要 500 只股票的时点数据。已由固定的规模线 R-LIQ-02（市值高于 1000 亿美元）取代，它同时接过了旧编号 D01。"}}
 
-# Old rules that did not become a rule here (strategy choices or strategy-level checks, move them into strategy files):
-#   B12 margin account path, D15 trade direction, C06 12-month Sharpe against SPY.
+# ------------------------------------------------------------------------------
+# Old rules that did not become a rule
+# ------------------------------------------------------------------------------
+# Strategy choices or strategy-level checks; they belong in the strategy files.
+# B12 margin account path, D15 trade direction, C06 12-month Sharpe against SPY.
