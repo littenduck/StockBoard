@@ -186,6 +186,7 @@ PRODUCED_INDICATOR_NAME_SET = {
     "treasury_ten_year_minus_three_month_spread", "treasury_ten_year_minus_two_year_spread",
     "us_dollar_index_twenty_day_change_percent", "us_epu_thirty_day_average_percentile_five_year",
     "vix_to_twenty_day_average_ratio", "vxn_to_vix_ratio", "wti_crude_oil_one_month_change_percent", "wti_crude_oil_price",
+    "accruals_percent_of_average_total_assets", "free_cash_flow_after_stock_compensation", "piotroski_f_score",
 }
 
 

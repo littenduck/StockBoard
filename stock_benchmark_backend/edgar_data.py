@@ -4,17 +4,15 @@ SEC asks every client to identify itself: set the environment variable EDGAR_CON
 Each value is stamped with the date the filing reached EDGAR, so a backtest never sees a number before it was public.
 """
 import datetime
-import json
 import os
-import urllib.request
 from typing import Dict, List, Optional
 
 import pandas
+from edgar.httprequests import download_json
 
 EDGAR_TICKER_URL = "https://www.sec.gov/files/company_tickers.json"
 EDGAR_COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 EDGAR_SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
-EDGAR_TIMEOUT_SECONDS = 60
 ANNUAL_DAY_RANGE = (350, 380)
 YEAR_TO_DATE_MAXIMUM_DAYS = 300
 DATE_MATCH_TOLERANCE_DAYS = 10
@@ -23,13 +21,15 @@ ticker_cik_cache: Dict[str, str] = {}
 company_facts_cache: Dict[str, dict] = {}
 
 
-def edgar_data_build_user_agent() -> str:
+def edgar_data_build_identity() -> str:
+    """The User-Agent SEC asks for: a name and a contact. edgartools sends whatever EDGAR_IDENTITY holds."""
     return "Stock Benchmark research " + os.environ.get("EDGAR_CONTACT", "unset-contact")
 
 
 def edgar_data_fetch_json(url: str) -> dict:
-    request = urllib.request.Request(url, headers={"User-Agent": edgar_data_build_user_agent()})
-    return json.loads(urllib.request.urlopen(request, timeout=EDGAR_TIMEOUT_SECONDS).read())
+    """One SEC request through edgartools: its client sends the identity, retries, and keeps to SEC's rate limit."""
+    os.environ.setdefault("EDGAR_IDENTITY", edgar_data_build_identity())  # keep an identity the user set themselves
+    return download_json(url)
 
 
 def edgar_data_fetch_cik_by_ticker(ticker: str) -> str:

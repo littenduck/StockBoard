@@ -26,8 +26,12 @@ CONCEPT_NAME_LIST_BY_MEASURE = {
     "equity": ["StockholdersEquity"],
     "debt": ["LongTermDebt", "LongTermDebtNoncurrent"],
     "cash": ["CashAndCashEquivalentsAtCarryingValue"],
+    "total_assets": ["Assets"],
+    "current_assets": ["AssetsCurrent"],
+    "current_liabilities": ["LiabilitiesCurrent"],
+    "share_based_compensation": ["ShareBasedCompensation", "AllocatedShareBasedCompensationExpense"],
 }
-INSTANT_MEASURE_SET = {"equity", "debt", "cash"}
+INSTANT_MEASURE_SET = {"equity", "debt", "cash", "total_assets", "current_assets", "current_liabilities"}
 CORPORATE_TAX_RATE = 0.21
 DAYS_PER_YEAR = 365
 YEAR_COUNT_FOR_GROWTH = 3
@@ -58,6 +62,25 @@ def fundamental_series_compound_growth(series: pandas.Series, years: int) -> pan
     return (((series / earlier) ** (1 / years) - 1) * 100).where(valid)
 
 
+def build_piotroski_tests(series_by_name: dict):
+    """Piotroski's nine yes/no tests, each compared with the same figure a year earlier. Returns the tests and every series they use
+    (so a day is scored only when all of them are known). Input names: return_on_assets, operating_cash_flow, operating_cash_flow_on_assets,
+    long_term_debt_on_assets, current_ratio, shares, gross_margin, asset_turnover."""
+    now, year_ago = series_by_name, {name: fundamental_series_look_back(series, DAYS_PER_YEAR) for name, series in series_by_name.items()}
+    tests = [
+        now["return_on_assets"] > 0,
+        now["operating_cash_flow"] > 0,
+        now["return_on_assets"] > year_ago["return_on_assets"],
+        now["operating_cash_flow_on_assets"] > now["return_on_assets"],
+        now["long_term_debt_on_assets"] < year_ago["long_term_debt_on_assets"],
+        now["current_ratio"] > year_ago["current_ratio"],
+        now["shares"] <= year_ago["shares"],
+        now["gross_margin"] > year_ago["gross_margin"],
+        now["asset_turnover"] > year_ago["asset_turnover"],
+    ]
+    return tests, list(now.values()) + list(year_ago.values())
+
+
 def fundamental_series_divide(numerator: pandas.Series, denominator: pandas.Series) -> pandas.Series:
     return (numerator / denominator).where(denominator != 0)
 
@@ -82,6 +105,20 @@ def fundamental_series_build_table(
     ebitda = measure["operating_income"] + measure["depreciation_and_amortization"]
     net_debt = measure["debt"] - measure["cash"]
     invested_capital = measure["equity"] + measure["debt"] - measure["cash"]
+    total_assets = measure["total_assets"]
+    return_on_assets = fundamental_series_divide(measure["net_income"], total_assets)
+    operating_cash_flow_on_assets = fundamental_series_divide(measure["operating_cash_flow"], total_assets)
+    long_term_debt_on_assets = fundamental_series_divide(measure["debt"], total_assets)
+    current_ratio = fundamental_series_divide(measure["current_assets"], measure["current_liabilities"])
+    gross_margin = fundamental_series_divide(gross_profit, revenue)
+    asset_turnover = fundamental_series_divide(revenue, total_assets)
+    average_total_assets = (total_assets + fundamental_series_look_back(total_assets, DAYS_PER_YEAR)) / 2
+    piotroski_test_list, piotroski_input_list = build_piotroski_tests(
+        {"return_on_assets": return_on_assets, "operating_cash_flow": measure["operating_cash_flow"],
+         "operating_cash_flow_on_assets": operating_cash_flow_on_assets, "long_term_debt_on_assets": long_term_debt_on_assets,
+         "current_ratio": current_ratio, "shares": measure["shares"], "gross_margin": gross_margin, "asset_turnover": asset_turnover})
+    piotroski_complete = pandas.concat(piotroski_input_list, axis=1).notna().all(axis=1)
+    piotroski_f_score = sum(test.astype(float) for test in piotroski_test_list).where(piotroski_complete)
     table = pandas.DataFrame({
         "trailing_twelve_month_eps": measure["eps"],
         "revenue_year_over_year_percent": fundamental_series_percent_growth(revenue, DAYS_PER_YEAR),
@@ -100,6 +137,10 @@ def fundamental_series_build_table(
         "shares_outstanding_year_over_year_percent": fundamental_series_percent_growth(measure["shares"], DAYS_PER_YEAR),
         "dividend_to_free_cash_flow_ratio":
             fundamental_series_divide(measure["dividends_paid"].abs(), free_cash_flow).where(free_cash_flow > 0),
+        "accruals_percent_of_average_total_assets":
+            fundamental_series_divide(measure["net_income"] - measure["operating_cash_flow"], average_total_assets) * 100,
+        "free_cash_flow_after_stock_compensation": free_cash_flow - measure["share_based_compensation"],
+        "piotroski_f_score": piotroski_f_score,
     }, index=day_index)
     if price_series is not None and not price_series.empty:
         price = price_series.reindex(day_index.union(price_series.index)).ffill().reindex(day_index)

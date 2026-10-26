@@ -22,7 +22,7 @@ max_requests_per_second: 30
 # Language on first visit: en or zh. A choice made in the page is remembered and wins.
 default_language: en
 # The strategy shown first; the id of a file in config/strategies/.
-default_strategy_id: sell_put_four_in_one
+default_strategy_id: fundamentals
 # First row of the page: the indicators to show, in order, by indicator_id. Their names and whether a higher value is risky are in indicators.yaml.
 market_indicator_list: [I-051, I-052, I-053, I-003, I-007]  # vix_level, vxn_level, vvix_level, treasury_ten_year_yield, high_yield_credit_spread_basis_points
 # The symbols of the second row of the page are in config/symbols.yaml.
@@ -45,6 +45,14 @@ target_absolute_delta: 0.25
 # The IV history (I-100 IV percentile, I-101 IV against a month ago) comes from the free DoltHub database, which is slow and often times out.
 # No strategy uses it yet, so it is off: those two indicators read unknown. Set true to fetch it again.
 fetch_dolthub_iv_history: false
+
+# ------------------------------------------------------------------------------
+# Backtest (scripts/backtest_fundamentals.py reads these)
+# ------------------------------------------------------------------------------
+# Cost of one trade in basis points (1 bp = 0.01%). A monthly rebalance of the top bucket is charged this cost twice (buy and sell).
+backtest_cost_basis_points_per_trade: 10
+# Newey-West lags for the t-statistics: monthly returns overlap over 12 months, so 12 is the matching lag.
+backtest_newey_west_lag_count: 12
 
 # ------------------------------------------------------------------------------
 # Market calendar

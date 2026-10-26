@@ -65,3 +65,7 @@ Funds (SPY, QQQ) have no company figures, so their company rules read Unknown.
 ## Not built yet
 
 Account values (net value, cash, positions) and the strategy gates that need them (capital structure, position limits). The release calendar in `config/settings.yaml` ends in 2027 (PCE in 2026); add the next year's dates before then. Rules still unknown: R-IND-02, R-VAL-01, R-TRD-02 and R-TRD-03 are marked difficulty 5 in their notes and are not planned (they need hundreds of requests per refresh or a PDF read by hand); NAAIM (R-SEN-16/21, the archive copy is months old); the mega IPO list (R-SEN-22) and the industry, customer and supplier earnings dates (R-EVT-03/11), which need a list kept by hand; implied leverage of the option you buy (R-RET-07), whose definition is not settled.
+
+## Accounting quality (computed from SEC filings)
+
+Three indicators are worked out from EDGAR company facts, so they have a history for backtests: `I-123` accruals as a percent of average total assets, `I-124` free cash flow after stock compensation, and `I-125` the Piotroski F-score (nine yes or no tests, 0 to 9). Their rules are `R-ACC-01` to `R-ACC-03`, in the ACC group at the end of `config/rules.yaml`, because indicator ids must rise along the rule order.
