@@ -3,6 +3,7 @@ import contextlib
 import dataclasses
 import datetime
 import os
+import re
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -13,6 +14,19 @@ from stockboard_backend import (indicator_calculation, indicator_registry, marke
                                 settings_loader, snapshot_storage, strategy_loader)
 
 PROJECT_DIRECTORY = settings_loader.PROJECT_DIRECTORY
+VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def web_server_read_version() -> str:
+    """The one place the version is written: the VERSION file at the project root. The page and the API read it from here."""
+    with open(os.path.join(PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
+        version = version_file.read().strip()
+    if not VERSION_PATTERN.match(version):
+        raise SystemExit("VERSION must look like MAJOR.MINOR.PATCH, not " + repr(version))
+    return version
+
+
+APP_VERSION = web_server_read_version()
 application_settings = settings_loader.settings_loader_load_settings_from_yaml_file(
     os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
 application_rule_catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(
@@ -80,6 +94,7 @@ def web_server_find_strategy_id_or_raise(strategy_id: Optional[str]) -> str:
 def web_server_build_status(generated_at: Optional[str], prices_as_of: Optional[str] = None) -> dict:
     """Computed per request so clients can judge freshness against the server clock, not their own."""
     return {
+        "version": APP_VERSION,
         "server_time": refresh_scheduler.refresh_scheduler_get_current_exchange_time_text(),
         "generated_at": generated_at,
         "prices_as_of": prices_as_of or generated_at,  # when the prices were taken; the snapshot is also rebuilt after the close
@@ -132,6 +147,11 @@ def web_server_get_favicon() -> FileResponse:
 @app.get("/base.css")
 def web_server_get_base_stylesheet() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "base.css"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/v1/version")
+def web_server_get_version() -> dict:
+    return {"version": APP_VERSION}
 
 
 @app.get("/api/v1/rules")

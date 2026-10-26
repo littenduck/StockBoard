@@ -125,3 +125,27 @@ def test_the_rule_list_carries_the_indicator_text_and_the_lines_of_the_measure()
     assert [item["rule_id"] for item in rule["indicator_line_list"]] == ["R-MAC-03", "R-MAC-04"]
     assert [item["line"]["en"] for item in rule["indicator_line_list"]] == ["< 4.5%", "< 5.0%"]
     assert rule_by_id["R-POS-01"]["indicator_description"] is None and rule_by_id["R-POS-01"]["indicator_line_list"] == []
+
+
+def test_the_version_is_read_from_the_version_file_only():
+    with open(os.path.join(web_server.PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
+        version = version_file.read().strip()
+    assert web_server.APP_VERSION == version and web_server.web_server_get_version() == {"version": version}
+    assert web_server.web_server_build_status("2026-01-01T00:00:00-05:00")["version"] == version
+
+
+def test_nothing_else_writes_the_version_number():
+    import re
+    with open(os.path.join(web_server.PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
+        version = version_file.read().strip()
+    assert re.match(r"^\d+\.\d+\.\d+$", version)
+    for directory in ("static", "stockboard_backend"):
+        for name in os.listdir(os.path.join(web_server.PROJECT_DIRECTORY, directory)):
+            path = os.path.join(web_server.PROJECT_DIRECTORY, directory, name)
+            if os.path.isfile(path) and name.endswith((".py", ".js", ".html")):
+                assert version not in open(path, encoding="utf8").read(), "{} writes the version {}".format(path, version)
+
+
+def test_the_license_names_the_copyright_holder():
+    text = open(os.path.join(web_server.PROJECT_DIRECTORY, "LICENSE"), encoding="utf8").read()
+    assert text.startswith("MIT License") and "Copyright (c) 2026 littenduck" in text
