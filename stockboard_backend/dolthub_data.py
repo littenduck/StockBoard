@@ -49,17 +49,17 @@ def dolthub_data_fetch_implied_volatility_series(symbol: str, today: datetime.da
     raise RuntimeError("DoltHub query failed: " + str(answer.get("query_execution_message")))
 
 
-def dolthub_data_build_indicator_value_by_id(iv_series: pandas.Series, today: datetime.date) -> Dict[str, float]:
+def dolthub_data_build_indicator_value_by_name(iv_series: pandas.Series, today: datetime.date) -> Dict[str, float]:
     """implied_volatility_percentile: share of the last year's days with a lower implied volatility than the newest one, 0 to 100.
     implied_volatility_to_one_month_ago_ratio: the newest value over the value on or before 30 days earlier."""
     if iv_series.empty or (today - iv_series.index[-1].date()).days > MAX_AGE_DAYS:
         return {}
     latest_day, latest = iv_series.index[-1], float(iv_series.iloc[-1])
-    value_by_id: Dict[str, float] = {}
+    value_by_name: Dict[str, float] = {}
     window = iv_series.iloc[-PERCENTILE_WINDOW:]
     if len(window) >= MINIMUM_PERCENTILE_DAY_COUNT:
-        value_by_id["implied_volatility_percentile"] = round(float((window.iloc[:-1] < latest).mean() * 100), 1)
+        value_by_name["implied_volatility_percentile"] = round(float((window.iloc[:-1] < latest).mean() * 100), 1)
     month_ago = iv_series[iv_series.index <= latest_day - pandas.Timedelta(days=ONE_MONTH_DAYS)]
     if len(month_ago) and month_ago.iloc[-1] > 0 and (latest_day - month_ago.index[-1]).days <= ONE_MONTH_DAYS + 7:
-        value_by_id["implied_volatility_to_one_month_ago_ratio"] = round(latest / float(month_ago.iloc[-1]), 3)
-    return value_by_id
+        value_by_name["implied_volatility_to_one_month_ago_ratio"] = round(latest / float(month_ago.iloc[-1]), 3)
+    return value_by_name

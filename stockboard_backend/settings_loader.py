@@ -14,7 +14,7 @@ PROJECT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @dataclass
 class MarketIndicatorSetting:
-    indicator_id: str
+    indicator_name: str
     display_name: LocalizedText
     is_higher_value_risky: bool = False
 
@@ -62,7 +62,7 @@ def settings_loader_build_sidebar_indicator_list(indicator_id_list: list, settin
         indicator = registry.indicator_by_id.get(indicator_id)
         if indicator is None or indicator.display_name is None:
             raise ValueError("sidebar indicator {} needs a display_name in config/indicators.yaml".format(indicator_id))
-        sidebar_list.append(MarketIndicatorSetting(indicator_id, indicator.display_name, indicator.is_higher_value_risky))
+        sidebar_list.append(MarketIndicatorSetting(indicator.indicator_name, indicator.display_name, indicator.is_higher_value_risky))
     return sidebar_list
 
 

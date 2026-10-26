@@ -3,7 +3,7 @@ import datetime
 import pandas
 
 from stockboard_backend.indicator_calculation import (
-    indicator_calculation_build_symbol_indicator_value_by_id,
+    indicator_calculation_build_symbol_indicator_value_by_name,
     indicator_calculation_calculate_change_over_trading_days,
     indicator_calculation_calculate_distance_from_fifty_two_week_high_percent,
     indicator_calculation_calculate_fifty_two_week_range_percentile,
@@ -70,10 +70,10 @@ def test_volume_ratio_to_average():
 def test_symbol_indicator_values_include_trend_fields():
     rising_close = pandas.Series([float(n) for n in range(1, 261)])
     history = pandas.DataFrame({"Close": rising_close, "Volume": [1000.0] * 260})
-    value_by_id = indicator_calculation_build_symbol_indicator_value_by_id(
+    value_by_name = indicator_calculation_build_symbol_indicator_value_by_name(
         history, True, None, 45, datetime.date(2026, 10, 1))
-    assert value_by_id["fifty_day_average_above_two_hundred_day_average"].value is True
-    assert value_by_id["price_above_fifty_day_average"].value is True
-    assert value_by_id["price_below_five_day_average"].value is False
-    assert value_by_id["distance_from_fifty_two_week_high_percent"].value == 0.0
-    assert value_by_id["relative_strength_index_two_day"].value > 90
+    assert value_by_name["fifty_day_average_above_two_hundred_day_average"].value is True
+    assert value_by_name["price_above_fifty_day_average"].value is True
+    assert value_by_name["price_below_five_day_average"].value is False
+    assert value_by_name["distance_from_fifty_two_week_high_percent"].value == 0.0
+    assert value_by_name["relative_strength_index_two_day"].value > 90

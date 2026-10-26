@@ -29,7 +29,7 @@ def strategy_loader_build_rule_definition_from_catalog(raw_rule: dict, rule_cata
     if veto and entry.method == "manual":
         raise ValueError("rule {} is manual, it is always unknown and cannot be a veto".format(entry.rule_id))
     return RuleDefinition(
-        rule_id=entry.rule_id, name=entry.name, description=entry.description, indicator=entry.indicator,
+        rule_id=entry.rule_id, rule_name=entry.rule_name, description=entry.description, indicator=entry.indicator,
         operator=entry.operator, weight=weight, value=entry.value, veto=veto, method=entry.method, status=entry.status)
 
 
@@ -67,13 +67,13 @@ def strategy_loader_load_all_strategy_definitions_from_directory(
 
 
 def strategy_loader_validate_strategy_definition_against_known_indicators(
-    strategy_definition: StrategyDefinition, known_indicator_id_set: Set[str],
+    strategy_definition: StrategyDefinition, known_indicator_name_set: Set[str],
 ) -> List[str]:
     """Returns error messages; an empty list means the strategy is valid."""
     error_list = []
     for gate in strategy_definition.gate_list:
         for rule in gate.rule_list:
-            if rule.status == "built" and rule.indicator not in known_indicator_id_set:
+            if rule.status == "built" and rule.indicator not in known_indicator_name_set:
                 error_list.append("{}: rule {} uses unknown indicator {}".format(
                     strategy_definition.strategy_id, rule.rule_id, rule.indicator))
     return error_list

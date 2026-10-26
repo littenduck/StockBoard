@@ -20,15 +20,15 @@ application_rule_catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml
 strategy_definition_by_id = strategy_loader.strategy_loader_load_all_strategy_definitions_from_directory(
     os.path.join(PROJECT_DIRECTORY, "config", "strategies"), application_rule_catalog)
 
-built_indicator_id_set = application_rule_catalog.indicator_registry.built_indicator_id_set()
+built_indicator_name_set = application_rule_catalog.indicator_registry.built_indicator_name_set()
 validation_error_list = indicator_registry.indicator_registry_validate(application_rule_catalog.indicator_registry) + [
     "built indicator {} is not produced by the code".format(name)
-    for name in sorted(built_indicator_id_set - indicator_calculation.PRODUCED_INDICATOR_ID_SET)
+    for name in sorted(built_indicator_name_set - indicator_calculation.PRODUCED_INDICATOR_NAME_SET)
 ] + rule_catalog.rule_catalog_validate_rule_catalog_against_known_indicators(
-    application_rule_catalog, built_indicator_id_set) + [
+    application_rule_catalog, built_indicator_name_set) + [
     error for strategy_definition in strategy_definition_by_id.values()
     for error in strategy_loader.strategy_loader_validate_strategy_definition_against_known_indicators(
-        strategy_definition, built_indicator_id_set)]
+        strategy_definition, built_indicator_name_set)]
 if validation_error_list or application_settings.default_strategy_id not in strategy_definition_by_id:
     raise SystemExit("Invalid configuration: " + "; ".join(validation_error_list or ["default strategy missing"]))
 
@@ -107,6 +107,11 @@ def web_server_get_language_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "language.js"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/rule-text.js")
+def web_server_get_rule_text_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rule-text.js"), headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/rule-card.js")
 def web_server_get_rule_card_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rule-card.js"), headers={"Cache-Control": "no-cache"})
@@ -144,12 +149,17 @@ def web_server_get_rule_catalog() -> dict:
         "group_id": group.group_id, "display_name": dataclasses.asdict(group.display_name),
         "description": dataclasses.asdict(group.description),
         "aspect": dataclasses.asdict(group.aspect) if group.aspect else None,
+        "topic_list": [{"topic_id": topic.topic_id, "display_name": dataclasses.asdict(topic.display_name)} for topic in group.topic_list],
         "rule_list": [{
-            "rule_id": entry.rule_id, "name": dataclasses.asdict(entry.name),
+            "rule_id": entry.rule_id, "rule_name": entry.rule_name, "topic": entry.topic,
             "description": dataclasses.asdict(entry.description), "method": entry.method,
             "quantifiable": entry.quantifiable, "backtestable": entry.backtestable,
             "history_source": entry.history_source, "history_start": entry.history_start, "status": entry.status,
-            "indicator": entry.indicator, "fetch_group": entry.fetch_group, "fetch_every": entry.fetch_every, "max_age": entry.max_age,
+            "indicator_id": entry.indicator_id, "indicator": entry.indicator,
+            "indicator_description": dataclasses.asdict(entry.indicator_description) if entry.indicator_description else None,
+            "indicator_line_list": [{"rule_id": other.rule_id, "line": rule_catalog.rule_catalog_describe_line(other)}
+                                    for other in rule_catalog.rule_catalog_find_rule_list_of_indicator(application_rule_catalog, entry.indicator)]
+            if entry.indicator else [], "fetch_group": entry.fetch_group, "fetch_every": entry.fetch_every, "max_age": entry.max_age,
             "operator": entry.operator, "value": entry.value, "band_of": entry.band_of, "legacy_id": entry.legacy_id,
             "note": dataclasses.asdict(entry.note) if entry.note else None,
             "used_by": usage_list_by_rule_id.get(entry.rule_id, []),

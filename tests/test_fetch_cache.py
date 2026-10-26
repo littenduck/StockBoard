@@ -159,5 +159,5 @@ def test_a_value_older_than_its_max_age_is_dropped(registry):
     old = IndicatorValue("moodys_baa_minus_ten_year_treasury_spread", 1.4, "x", observed_at=now - 30 * 86400)  # max_age 10d
     unstamped = IndicatorValue("vix_level", 19.0, "x")
     kept = indicator_registry.indicator_registry_drop_stale_values(
-        {value.indicator_id: value for value in (fresh, old, unstamped)}, registry, now)
+        {value.indicator_name: value for value in (fresh, old, unstamped)}, registry, now)
     assert set(kept) == {"treasury_ten_year_minus_two_year_spread", "vix_level"}

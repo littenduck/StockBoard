@@ -141,7 +141,7 @@ def indicator_calculation_calculate_average_trading_value(price_history: pandas.
 
 
 # Every indicator id the code produces. A test checks it equals the built indicators of config/indicators.yaml, so a typo on either side is caught.
-PRODUCED_INDICATOR_ID_SET = {
+PRODUCED_INDICATOR_NAME_SET = {
     "shiller_cape", "damodaran_implied_equity_risk_premium_percent", "geopolitical_risk_index_thirty_day_average_percentile_five_year",
     "price_earnings_ttm_to_five_year_median_ratio", "no_audit_or_late_filing_problem_in_last_365_days", "implied_volatility_percentile",
     "implied_volatility_to_one_month_ago_ratio", "spmo_holding_rank", "equity_risk_premium_simple_percent",
@@ -172,7 +172,7 @@ PRODUCED_INDICATOR_ID_SET = {
     "net_debt_to_ebitda", "no_cpi_or_pce_release_inside_option_life", "no_election_day_inside_option_life",
     "no_ex_dividend_date_inside_option_life", "no_fomc_meeting_inside_option_life", "no_jobs_report_within_one_day",
     "no_new_fifty_two_week_low_in_last_20_days", "no_quadruple_witching_in_next_five_trading_days",
-    "one_sigma_expected_move_thirty_day_percent", "operating_cash_flow_to_net_income_ratio", "peg_ratio",
+    "one_sigma_expected_move_to_expiration_percent", "operating_cash_flow_to_net_income_ratio", "peg_ratio",
     "put_call_ratio_total_five_day_average", "put_skew_ten_percent_otm_minus_atm_iv_points", "return_on_equity_percent",
     "return_on_invested_capital_percent", "return_one_hundred_twenty_six_day_minus_spy_percent",
     "revenue_three_year_cagr_percent", "revenue_year_over_year_percent", "rsp_to_spy_ratio_above_two_hundred_day_average",
@@ -204,23 +204,23 @@ def indicator_calculation_calculate_latest_change_basis_points(value_series: pan
     return round(float(clean_series.iloc[-1] - clean_series.iloc[-2]) * 100, 1)
 
 
-def indicator_calculation_build_market_indicator_value_by_id(
+def indicator_calculation_build_market_indicator_value_by_name(
     price_history_by_symbol: Dict[str, pandas.DataFrame],
     ten_year_yield_series: Optional[pandas.Series],
     credit_spread_series: Optional[pandas.Series],
 ) -> Dict[str, IndicatorValue]:
     """Indicators shared by every symbol. A source that failed is simply left out (the rules read unknown)."""
-    value_by_id: Dict[str, IndicatorValue] = {}
+    value_by_name: Dict[str, IndicatorValue] = {}
 
-    def add_value(indicator_id: str, value, source: str, change_value: Optional[float] = None,
+    def add_value(indicator_name: str, value, source: str, change_value: Optional[float] = None,
                   change_unit: Optional[str] = None) -> None:
-        value_by_id[indicator_id] = IndicatorValue(indicator_id, value, source, change_value, change_unit)
+        value_by_name[indicator_name] = IndicatorValue(indicator_name, value, source, change_value, change_unit)
 
     close_series_by_symbol = {symbol: history["Close"] for symbol, history in price_history_by_symbol.items()}
-    for symbol, indicator_id in (("^VIX", "vix_level"), ("^VXN", "vxn_level"), ("^VVIX", "vvix_level")):
+    for symbol, indicator_name in (("^VIX", "vix_level"), ("^VXN", "vxn_level"), ("^VVIX", "vvix_level")):
         if symbol in close_series_by_symbol:
             series = close_series_by_symbol[symbol]
-            add_value(indicator_id, round(float(series.iloc[-1]), 2), "yfinance " + symbol,
+            add_value(indicator_name, round(float(series.iloc[-1]), 2), "yfinance " + symbol,
                       indicator_calculation_calculate_latest_change_percent(series), "percent")
     if "^VIX" in close_series_by_symbol and "^VIX3M" in close_series_by_symbol:
         add_value("vix_term_structure_is_contango",
@@ -261,10 +261,10 @@ def indicator_calculation_build_market_indicator_value_by_id(
         add_value("high_yield_credit_spread_basis_points", round(float(credit_spread_series.iloc[-1]) * 100),
                   "FRED BAMLH0A0HYM2",
                   indicator_calculation_calculate_latest_change_basis_points(credit_spread_series), "basis_points")
-    return value_by_id
+    return value_by_name
 
 
-def indicator_calculation_build_symbol_indicator_value_by_id(
+def indicator_calculation_build_symbol_indicator_value_by_name(
     price_history: pandas.DataFrame,
     is_earnings_date_known: bool,
     next_earnings_date: Optional[datetime.date],
@@ -274,12 +274,12 @@ def indicator_calculation_build_symbol_indicator_value_by_id(
     sector_etf_close_series: Optional[pandas.Series] = None,
 ) -> Dict[str, IndicatorValue]:
     close_series = price_history["Close"]
-    value_by_id: Dict[str, IndicatorValue] = {}
+    value_by_name: Dict[str, IndicatorValue] = {}
 
-    def add_value(indicator_id: str, value, change_value: Optional[float] = None,
+    def add_value(indicator_name: str, value, change_value: Optional[float] = None,
                   change_unit: Optional[str] = None) -> None:
         if value is not None:
-            value_by_id[indicator_id] = IndicatorValue(indicator_id, value, "yfinance", change_value, change_unit)
+            value_by_name[indicator_name] = IndicatorValue(indicator_name, value, "yfinance", change_value, change_unit)
 
     add_value("last_price", round(float(close_series.iloc[-1]), 2),
               indicator_calculation_calculate_latest_change_percent(close_series), "percent")
@@ -332,10 +332,10 @@ def indicator_calculation_build_symbol_indicator_value_by_id(
     if is_earnings_date_known:
         add_value("no_earnings_before_expiration",
                   next_earnings_date is None or (next_earnings_date - today).days > earnings_check_days)
-    return value_by_id
+    return value_by_name
 
 
-def indicator_calculation_build_option_indicator_value_by_id(
+def indicator_calculation_build_option_indicator_value_by_name(
     selected_put_contract, realized_volatility_percent: Optional[float],
     underlying_price: Optional[float] = None, support_price: Optional[float] = None, put_skew_points: Optional[float] = None,
 ) -> Dict[str, IndicatorValue]:
@@ -343,7 +343,7 @@ def indicator_calculation_build_option_indicator_value_by_id(
     if selected_put_contract is None:
         return {}
     contract = selected_put_contract
-    value_by_id = {
+    value_by_name = {
         "selected_put_absolute_delta": contract.absolute_delta,
         "selected_put_days_to_expiration": contract.days_to_expiration,
         "selected_option_days_to_expiration": contract.days_to_expiration,
@@ -351,26 +351,26 @@ def indicator_calculation_build_option_indicator_value_by_id(
         "selected_expiration_is_third_friday": contract.expiration_date.weekday() == 4 and 15 <= contract.expiration_date.day <= 21,
         "selected_strike_is_multiple_of_five": contract.strike_price % 5 == 0,
         "selected_put_probability_of_profit": round(1 - contract.absolute_delta, 3),
-        "one_sigma_expected_move_thirty_day_percent": round(
+        "one_sigma_expected_move_to_expiration_percent": round(
             contract.implied_volatility * math.sqrt(contract.days_to_expiration / 365) * 100, 2),
         "selected_put_monthly_premium_percent": round(contract.premium / contract.strike_price * 30 / contract.days_to_expiration * 100, 2),
     }
     if contract.bid + contract.ask > 0:
-        value_by_id["selected_put_bid_ask_spread_percent_of_mid"] = round((contract.ask - contract.bid) / ((contract.ask + contract.bid) / 2) * 100, 2)
+        value_by_name["selected_put_bid_ask_spread_percent_of_mid"] = round((contract.ask - contract.bid) / ((contract.ask + contract.bid) / 2) * 100, 2)
     if contract.open_interest is not None:
-        value_by_id["selected_put_open_interest"] = contract.open_interest
+        value_by_name["selected_put_open_interest"] = contract.open_interest
     if contract.volume is not None:
-        value_by_id["selected_put_volume"] = contract.volume
+        value_by_name["selected_put_volume"] = contract.volume
     if realized_volatility_percent is not None:
-        value_by_id["selected_put_implied_volatility_exceeds_realized"] = contract.implied_volatility * 100 > realized_volatility_percent
+        value_by_name["selected_put_implied_volatility_exceeds_realized"] = contract.implied_volatility * 100 > realized_volatility_percent
     if underlying_price:
-        value_by_id["selected_put_strike_discount_percent"] = round((underlying_price - contract.strike_price) / underlying_price * 100, 2)
-        value_by_id["selected_put_breakeven_discount_percent"] = round(
+        value_by_name["selected_put_strike_discount_percent"] = round((underlying_price - contract.strike_price) / underlying_price * 100, 2)
+        value_by_name["selected_put_breakeven_discount_percent"] = round(
             (underlying_price - (contract.strike_price - contract.premium)) / underlying_price * 100, 2)
         one_sigma_move = underlying_price * contract.implied_volatility * math.sqrt(contract.days_to_expiration / 365)
-        value_by_id["selected_put_strike_outside_one_sigma_move"] = contract.strike_price < underlying_price - one_sigma_move
+        value_by_name["selected_put_strike_outside_one_sigma_move"] = contract.strike_price < underlying_price - one_sigma_move
     if support_price:
-        value_by_id["selected_put_strike_below_support"] = contract.strike_price < support_price
+        value_by_name["selected_put_strike_below_support"] = contract.strike_price < support_price
     if put_skew_points is not None:
-        value_by_id["put_skew_ten_percent_otm_minus_atm_iv_points"] = put_skew_points
-    return {key: IndicatorValue(key, value, "yfinance option chain") for key, value in value_by_id.items()}
+        value_by_name["put_skew_ten_percent_otm_minus_atm_iv_points"] = put_skew_points
+    return {key: IndicatorValue(key, value, "yfinance option chain") for key, value in value_by_name.items()}

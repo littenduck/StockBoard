@@ -75,7 +75,7 @@ def event_calendar_determine_whether_event_is_inside(
     return False
 
 
-def event_calendar_build_option_life_indicator_value_by_id(
+def event_calendar_build_option_life_indicator_value_by_name(
     macro_event_calendar: List[dict], covered_until_by_event_name: Dict[str, datetime.date],
     today: datetime.date, expiration_date: datetime.date,
 ) -> Dict[str, Optional[bool]]:

@@ -13,20 +13,23 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 
 ## GET /api/v1/rules
 
-Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...), with the strategies that use it. A rule has no weight: the weight and the `veto` flag are per strategy and appear in `used_by`.
+Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...) and, inside a category, by topic (`topic_list` of the group, `topic` of the rule), with the strategies that use it. A rule has no weight: the weight and the `veto` flag are per strategy and appear in `used_by`. `indicator_description` is the bilingual text of the rule's indicator and `indicator_line_list` every line of that measure (`{"rule_id": "R-MAC-03", "line": "< 4.5"}`), so a client needs no second request to explain a rule.
 
 ```json
 {"default_language": "en",
  "group_list": [{"group_id": "EVT", "display_name": {"en": "EVT · Events", "zh": "EVT · 事件"},
   "description": {"en": "...", "zh": "..."}, "aspect": {"en": "Events", "zh": "事件面"},
-  "rule_list": [{"rule_id": "EVT-01", "name": {"en": "No earnings", "zh": "无财报"},
+  "topic_list": [{"topic_id": "company_events", "display_name": {"en": "Company events", "zh": "公司事件"}}],
+  "rule_list": [{"rule_id": "R-EVT-01", "rule_name": "no_earnings_within_45_days", "topic": "company_events",
                  "description": {"en": "Passes when there is no earnings report before the option expires. ...", "zh": "..."},
-                 "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "history_source": "edgar:submissions", "history_start": "2004", "status": "built", "indicator": "no_earnings_before_expiration", "fetch_group": "yahoo_company", "fetch_every": "1h", "max_age": "3d",
+                 "method": "api_fetch", "quantifiable": "yes", "backtestable": "yes", "history_source": "edgar:submissions", "history_start": "2004", "status": "built", "indicator_id": "I-082", "indicator": "no_earnings_before_expiration",
+                 "indicator_description": {"en": "True when the stock's next earnings date is later than ...", "zh": "..."},
+                 "indicator_line_list": [{"rule_id": "R-EVT-01", "line": {"en": "yes", "zh": "是"}}], "fetch_group": "yahoo_company", "fetch_every": "1h", "max_age": "3d",
                  "operator": "is_true", "value": null, "band_of": null, "legacy_id": ["A22", "F05"], "note": null,
                  "used_by": [{"strategy_id": "sell_put_four_in_one", "display_name": {"en": "Sell Put 4-in-1", "zh": "Sell Put 四合一"}, "weight": 5, "veto": true}]}]}]}
 ```
 
-`status`: `built`, `todo`, `no_data`. A rule with an `indicator` gets `method`, `quantifiable`, `backtestable`, `history_source`, `history_start`, `status`, `fetch_group`, `fetch_every` (how often the source is asked) and `max_age` (how old the newest value may be before the rule reads unknown) from that indicator in `config/indicators.yaml`; a manual rule has them from `config/rules.yaml` and no fetch fields. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `backtestable`: `yes` or `no`, whether free historical data can rebuild what the rule would have said on a past date; a `yes` rule also has `history_source` (for example `fred:DGS10`) and `history_start` (a year, month or day). Rules retired from the catalog are listed in `retired_rule_list` of `config/rules.yaml`, never in this response. `band_of` names the main rule when this rule is another line of the same measure (for example `SEN-12`, VIX below 25, points to `SEN-01`).
+`status`: `built`, `todo`, `no_data`. A rule with an `indicator` gets `method`, `quantifiable`, `backtestable`, `history_source`, `history_start`, `status`, `fetch_group`, `fetch_every` (how often the source is asked) and `max_age` (how old the newest value may be before the rule reads unknown) from that indicator in `config/indicators.yaml`; a manual rule has them from `config/rules.yaml` and no fetch fields. `method`: `api_fetch`, `scrape`, `computed`, `ai_search`, `manual`. `quantifiable`: `yes`, `part`, `no`. `backtestable`: `yes` or `no`, whether free historical data can rebuild what the rule would have said on a past date; a `yes` rule also has `history_source` (for example `fred:DGS10`) and `history_start` (a year, month or day). Rules retired from the catalog are listed in `retired_rule_list` of `config/rules.yaml`, never in this response. `band_of` names the main rule when this rule is another line of the same measure (for example `R-SEN-04`, VIX below 25, points to `R-SEN-01`).
 
 ## GET /api/v1/strategies
 
@@ -55,9 +58,9 @@ Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...), wi
   "strategy_id": "sell_put_four_in_one",
   "max_unknown_weight_ratio": 0.2,
   "market_indicator_card_list": [
-    {"indicator_id": "vix_level", "display_name": {"en": "VIX", "zh": "VIX"}, "is_higher_value_risky": true,
+    {"indicator_name": "vix_level", "display_name": {"en": "VIX", "zh": "VIX"}, "is_higher_value_risky": true,
      "value": 19.78, "change_value": 2.21, "change_unit": "percent"},
-    {"indicator_id": "treasury_ten_year_yield", "display_name": {"en": "10Y", "zh": "10Y"}, "is_higher_value_risky": true,
+    {"indicator_name": "treasury_ten_year_yield", "display_name": {"en": "10Y", "zh": "10Y"}, "is_higher_value_risky": true,
      "value": 4.96, "change_value": -17.0, "change_unit": "basis_points"}
   ],
   "symbol_card_list": [
@@ -94,7 +97,7 @@ The strategy tree for one symbol.
     {"gate_id": "gate_0_macro", "display_name": {"en": "GATE 0 Macro and sentiment", "zh": "GATE 0 宏观/情绪开关"}, "is_pass": true,
      "expiration_window_label": null, "alternative_window_result_list": [],
      "rule_result_list": [
-       {"rule_id": "MAC-03", "name": {"en": "10Y below 4.5%", "zh": "10Y 低于 4.5%"}, "status": "fail",
+       {"rule_id": "R-MAC-03", "rule_name": "ten_year_below_4_5pct", "status": "fail",
         "measured_value": 4.96, "weight": 2, "veto": false, "method": "api_fetch"}
      ]}
   ]
