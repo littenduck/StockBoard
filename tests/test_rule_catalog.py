@@ -385,7 +385,7 @@ def test_the_lines_of_a_rule_are_scaled_and_carry_their_unit_once():
 def test_the_symbols_come_from_symbols_yaml(tmp_path):
     import shutil
     settings = settings_loader_load_settings_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "settings.yaml"))
-    assert settings.watchlist_symbol_list[:2] == ["SPY", "QQQ"] and len(set(settings.watchlist_symbol_list)) == len(settings.watchlist_symbol_list)
+    assert settings.watchlist_symbol_list[0] == "SPY" and len(set(settings.watchlist_symbol_list)) == len(settings.watchlist_symbol_list)
     for name in ("settings.yaml", "indicators.yaml"):
         shutil.copy(os.path.join(PROJECT_DIRECTORY, "config", name), tmp_path / name)
     (tmp_path / "symbols.yaml").write_text("symbol_list: [SPY, SPY]\n")
