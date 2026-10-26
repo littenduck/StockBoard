@@ -125,3 +125,32 @@ def test_the_rule_list_carries_the_indicator_text_and_the_lines_of_the_measure()
     assert [item["rule_id"] for item in rule["indicator_line_list"]] == ["R-MAC-03", "R-MAC-04"]
     assert [item["line"]["en"] for item in rule["indicator_line_list"]] == ["< 4.5%", "< 5.0%"]
     assert rule_by_id["R-POS-01"]["indicator_description"] is None and rule_by_id["R-POS-01"]["indicator_line_list"] == []
+
+
+def test_indicator_catalog_lists_every_indicator_once_with_its_rules():
+    response = web_server.web_server_get_indicator_catalog()
+    indicator_list = [indicator for group in response["group_list"] for indicator in group["indicator_list"]]
+    registry = web_server.application_rule_catalog.indicator_registry
+    assert sorted(item["indicator_id"] for item in indicator_list) == sorted(item.indicator_id for item in registry.indicator_by_name.values())
+    rule_id_set = set(web_server.application_rule_catalog.rule_entry_by_id)
+    by_id = {item["indicator_id"]: item for item in indicator_list}
+    assert [item["rule_id"] for item in by_id["I-003"]["rule_list"]] == ["R-MAC-03", "R-MAC-04"]
+    assert by_id["I-003"]["rule_list"][0]["line"]["en"] == "< 4.5%" and by_id["I-003"]["unit"] == "%"
+    assert all(rule["rule_id"] in rule_id_set for item in indicator_list for rule in item["rule_list"])
+    group_of = {item["indicator_id"]: group["group_id"] for group in response["group_list"] for item in group["indicator_list"]}
+    assert group_of["I-003"] == "MAC" and group_of["I-052"] == "OTHER"  # VXN is on the market bar only
+    assert by_id["I-052"]["on_market_bar"] and by_id["I-052"]["rule_list"] == []
+
+
+def test_strategy_list_carries_gates_with_weights_and_vetoes():
+    strategy = next(item for item in web_server.web_server_get_strategy_list()["strategy_list"] if item["strategy_id"] == STRATEGY_ID)
+    rule_list = [rule for gate in strategy["gate_list"] for rule in gate["rule_list"]]
+    assert strategy["max_unknown_weight_ratio"] == 0.20 and strategy["gate_list"][0]["gate_id"].startswith("gate_0")
+    assert any(rule["rule_id"] == "R-EVT-01" and rule["veto"] and rule["weight"] == 5 for rule in rule_list)
+    assert all(rule["rule_id"] in web_server.application_rule_catalog.rule_entry_by_id and rule["line"]["en"] for rule in rule_list)
+
+
+def test_strategy_page_needs_a_known_strategy():
+    with pytest.raises(HTTPException) as error:
+        web_server.web_server_get_strategy_page("nope")
+    assert error.value.status_code == 404

@@ -102,6 +102,27 @@ def web_server_get_rule_catalog_page() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rules.html"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/indicators")
+def web_server_get_indicator_catalog_page() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "indicators.html"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/strategies")
+def web_server_get_strategy_list_page() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "strategies.html"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/strategies/{strategy_id}")
+def web_server_get_strategy_page(strategy_id: str) -> FileResponse:
+    web_server_find_strategy_id_or_raise(strategy_id)
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "strategy.html"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/page.js")
+def web_server_get_page_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "page.js"), headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/language.js")
 def web_server_get_language_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "language.js"), headers={"Cache-Control": "no-cache"})
@@ -167,6 +188,20 @@ def web_server_get_rule_catalog() -> dict:
     } for group in application_rule_catalog.rule_group_list]}
 
 
+def web_server_build_strategy_gate_list(strategy: strategy_loader.StrategyDefinition) -> list:
+    """The gates of a strategy with each rule's weight and veto and what the rule says, for the strategy page."""
+    return [{
+        "gate_id": gate.gate_id, "display_name": dataclasses.asdict(gate.display_name), "per_expiration_window": gate.per_expiration_window,
+        "rule_list": [{
+            "rule_id": rule.rule_id, "rule_name": rule.rule_name, "weight": rule.weight, "veto": rule.veto,
+            "description": dataclasses.asdict(application_rule_catalog.rule_entry_by_id[rule.rule_id].description),
+            "status": application_rule_catalog.rule_entry_by_id[rule.rule_id].status,
+            "method": application_rule_catalog.rule_entry_by_id[rule.rule_id].method,
+            "band_of": application_rule_catalog.rule_entry_by_id[rule.rule_id].band_of,
+            "line": rule_catalog.rule_catalog_describe_line(application_rule_catalog.rule_entry_by_id[rule.rule_id]),
+        } for rule in gate.rule_list]} for gate in strategy.gate_list]
+
+
 @app.get("/api/v1/strategies")
 def web_server_get_strategy_list() -> dict:
     return {
@@ -174,10 +209,42 @@ def web_server_get_strategy_list() -> dict:
         "default_language": application_settings.default_language,
         "strategy_list": [{"strategy_id": s.strategy_id, "display_name": dataclasses.asdict(s.display_name),
                            "summary": dataclasses.asdict(s.summary), "help_text": dataclasses.asdict(s.help_text),
-                           "source": dataclasses.asdict(s.source)}
+                           "source": dataclasses.asdict(s.source),
+                           "max_unknown_weight_ratio": s.thresholds.max_unknown_weight_ratio,
+                           "gate_list": web_server_build_strategy_gate_list(s)}
                           for s in sorted(strategy_definition_by_id.values(),
                                           key=lambda s: s.strategy_id != application_settings.default_strategy_id)],
     }
+
+
+INDICATOR_OTHER_GROUP = {"group_id": "OTHER", "display_name": {"en": "No rule yet", "zh": "暂无规则"},
+                         "description": {"en": "Indicators the market bar shows or that no rule tests yet.", "zh": "大盘栏显示的指标，或还没有规则使用的指标。"}}
+
+
+@app.get("/api/v1/indicators")
+def web_server_get_indicator_catalog() -> dict:
+    """Every indicator grouped like the rules: under the category of the first rule that tests it, the rest under OTHER."""
+    registry = application_rule_catalog.indicator_registry
+    rule_list_by_indicator_name = {}
+    for entry in application_rule_catalog.rule_entry_by_id.values():
+        if entry.indicator:
+            rule_list_by_indicator_name.setdefault(entry.indicator, []).append(entry)
+    group_list = [{"group_id": group.group_id, "display_name": dataclasses.asdict(group.display_name),
+                   "description": dataclasses.asdict(group.description), "indicator_list": []}
+                  for group in application_rule_catalog.rule_group_list] + [{**INDICATOR_OTHER_GROUP, "indicator_list": []}]
+    group_by_id = {group["group_id"]: group for group in group_list}
+    for indicator in sorted(registry.indicator_by_name.values(), key=lambda item: item.indicator_id):
+        rule_list = rule_list_by_indicator_name.get(indicator.indicator_name, [])
+        group_by_id[rule_list[0].group_id if rule_list else "OTHER"]["indicator_list"].append({
+            "indicator_id": indicator.indicator_id, "indicator_name": indicator.indicator_name,
+            "description": dataclasses.asdict(indicator.description), "unit": indicator.unit, "scope": indicator.scope,
+            "method": indicator.method, "quantifiable": indicator.quantifiable, "backtestable": indicator.backtestable,
+            "history_source": indicator.history_source, "history_start": indicator.history_start, "status": indicator.status,
+            "fetch_group": indicator.fetch_group, "fetch_every": indicator.fetch_every, "max_age": indicator.max_age,
+            "on_market_bar": indicator.display_name is not None,
+            "rule_list": [{"rule_id": entry.rule_id, "line": rule_catalog.rule_catalog_describe_line(entry)} for entry in rule_list]})
+    return {"default_language": application_settings.default_language,
+            "group_list": [group for group in group_list if group["indicator_list"]]}
 
 
 @app.get("/api/v1/snapshot")
