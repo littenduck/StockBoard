@@ -1,10 +1,30 @@
+# ------------------------------------------------------------------------------
+# Strategy: Momentum breakout (52-week high)
+# ------------------------------------------------------------------------------
+# One strategy: which rules it uses and how much each counts. Rules and indicators are defined once, in rules.yaml and indicators.yaml.
+# Read when the server starts; the page address is /strategies/<strategy_id>.
+
+# The id of the strategy: the same as the file name; used in the API and in the page address /strategies/<id>.
 strategy_id: momentum_breakout
+# The name shown on the page, in both languages.
 display_name: {en: "Momentum breakout (52-week high)", zh: "动量突破（52 周新高）"}
+# Where the idea comes from, in both languages; shown on the strategy page.
 source: {en: "Common 52-week-high breakout and price momentum rules; thresholds are common rules of thumb", zh: "常见的 52 周新高突破与价格动量规则（强者恒强），阈值为常用经验值"}
+
+# ------------------------------------------------------------------------------
+# Scoring
+# ------------------------------------------------------------------------------
+# max_unknown_weight_ratio: when more than this share of the weight is unknown, the dashboard greys the score as data insufficient (0.20 is 20%).
 thresholds: {max_unknown_weight_ratio: 0.20}
+
+# ------------------------------------------------------------------------------
+# Text on the strategy page and in the help popover (both languages)
+# ------------------------------------------------------------------------------
+# summary: one or two sentences.
 summary:
   en: "Find strong stocks making new highs: within 5% of the 52-week high, up more than 10% over 6 months, on higher volume."
   zh: "找正在创新高的强势股：价格离 52 周高点不到 5%，过去 6 个月涨幅超过 10%，并且放量。"
+# help: the full explanation; paragraphs are separated by a blank line.
 help:
   en: |
     Momentum strategies rest on a long-observed effect: stocks that did well over the past months tend to keep outperforming for a while. A stock near its 52-week high has no trapped sellers overhead and breaks out more easily.
@@ -22,17 +42,33 @@ help:
     市场环境（SPX 在 200 日线上方、VIX 不处于恐慌区）不好时，突破更容易失败。
 
     动量策略的风险是突破失败后回落很快，实际交易时通常配合止损，例如跌回突破位下方就离场。本页面只做筛选，不给出离场信号。不构成投资建议。
+
+# ------------------------------------------------------------------------------
+# Gates and rules
+# ------------------------------------------------------------------------------
+# A gate is a group of rules checked together; gates are checked in order. A rule is defined once in config/rules.yaml; here it has only its id,
+# this strategy's weight and an optional veto: true (a failed veto rule fails the whole result). The name after # is the rule_name, for reading.
+# A measure with several lines (VIX, Delta, DTE ...) is listed as several rules; each line the value passes adds its weight.
 gates:
+  # ----------------------------------------------------------------------------
+  # GATE 0 Market
+  # ----------------------------------------------------------------------------
   - gate_id: gate_0_market
     display_name: {en: "GATE 0 Market", zh: "GATE 0 市场环境"}
     rules:
       - {rule_id: R-TRD-01, weight: 3}   # market_above_200_day
       - {rule_id: R-SEN-04, weight: 2}   # vix_below_25
+  # ----------------------------------------------------------------------------
+  # GATE 1 Trend and momentum
+  # ----------------------------------------------------------------------------
   - gate_id: gate_1_momentum
     display_name: {en: "GATE 1 Trend and momentum", zh: "GATE 1 趋势与动量"}
     rules:
       - {rule_id: R-TRD-13, weight: 4}   # six_month_gain_above_10pct
       - {rule_id: R-TRD-07, weight: 4}   # golden_cross_state
+  # ----------------------------------------------------------------------------
+  # GATE 2 Breakout
+  # ----------------------------------------------------------------------------
   - gate_id: gate_2_breakout
     display_name: {en: "GATE 2 Breakout", zh: "GATE 2 突破确认"}
     rules:

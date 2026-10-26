@@ -4,10 +4,14 @@ const PAGE_STATUS_COLOR = { built:'positive', todo:'caution', no_data:'muted' };
 const pageText = localizedText => localizedText[languageGetActive()];
 const pageSlug = value => encodeURIComponent(value);
 
+let pageCurrent = '/', pageVersion = '';
 function pageRenderNav(current) {
+  pageCurrent = current;
   document.getElementById('page-nav').innerHTML = PAGE_NAV_LIST.map(([path, key]) =>
-    `<small><a href="${path}"${path === current ? ' aria-current="page"' : ''}>${languageEscape(languageText(key))}</a></small>`).join('');
+    `<small><a href="${path}"${path === current ? ' aria-current="page"' : ''}>${languageEscape(languageText(key))}</a></small>`).join('')
+    + (pageVersion ? `<small>${languageEscape(pageVersion)}</small>` : '');
 }
+fetch('/api/v1/version').then(response => response.json()).then(data => { pageVersion = 'v' + data.version; pageRenderNav(pageCurrent); }).catch(() => { /* no version label */ });
 
 function pageMarkTarget() {
   document.querySelectorAll('.is-target').forEach(row => row.classList.remove('is-target'));

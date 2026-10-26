@@ -11,6 +11,10 @@ JSON over HTTP, read only, served by `stockboard_backend/web_server.py`. Any cli
 - Errors: HTTP 404 with `{"detail": "..."}` for an unknown strategy or symbol.
 - CORS is off unless `allowed_origin_list` in `config/settings.yaml` lists origins. Native apps do not need it.
 
+## GET /api/v1/version
+
+`{"version": "<the VERSION file>"}`, read from the `VERSION` file at the project root, the only place the version is written. The snapshot's `status.version` carries the same value and the page shows it next to the title.
+
 ## GET /api/v1/rules
 
 Every rule from `config/rules.yaml`, grouped by category (`MAC`, `TRD`, ...) and, inside a category, by topic (`topic_list` of the group, `topic` of the rule), with the strategies that use it. A rule has no weight: the weight and the `veto` flag are per strategy and appear in `used_by`. `indicator_description` is the bilingual text of the rule's indicator and `indicator_line_list` every line of that measure (`{"rule_id": "R-MAC-03", "line": "< 4.5"}`), so a client needs no second request to explain a rule.
@@ -59,6 +63,7 @@ Every indicator, grouped like the rules: under the category of the first rule th
 {
   "schema_version": 4,
   "status": {
+    "version": "<the VERSION file>",
     "server_time": "2026-10-24T10:01:00-04:00",
     "generated_at": "2026-10-23T15:52:19-04:00",
     "market_is_open": true,

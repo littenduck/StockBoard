@@ -21,3 +21,11 @@ def test_a_symbol_that_failed_still_counts_as_followed(monkeypatch):
     monkeypatch.setattr(refresh_scheduler.os.path, "getmtime", lambda path: refresh_scheduler.time.time())
     fetch_cache = types.SimpleNamespace(is_anything_due=lambda: False)
     assert refresh_scheduler.refresh_scheduler_determine_whether_refresh_is_due(settings, fetch_cache) is False
+
+
+def test_the_dolthub_iv_history_is_off_by_default_and_has_a_short_timeout():
+    from stockboard_backend import dolthub_data, settings_loader
+    import os
+    settings = settings_loader.settings_loader_load_settings_from_yaml_file(os.path.join(settings_loader.PROJECT_DIRECTORY, "config", "settings.yaml"))
+    assert settings.fetch_dolthub_iv_history is False
+    assert dolthub_data.DOLTHUB_TIMEOUT_SECONDS * dolthub_data.ATTEMPT_COUNT <= 60

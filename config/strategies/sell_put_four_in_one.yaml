@@ -1,10 +1,30 @@
+# ------------------------------------------------------------------------------
+# Strategy: Sell Put 4-in-1
+# ------------------------------------------------------------------------------
+# One strategy: which rules it uses and how much each counts. Rules and indicators are defined once, in rules.yaml and indicators.yaml.
+# Read when the server starts; the page address is /strategies/<strategy_id>.
+
+# The id of the strategy: the same as the file name; used in the API and in the page address /strategies/<id>.
 strategy_id: sell_put_four_in_one
+# The name shown on the page, in both languages.
 display_name: {en: "Sell Put 4-in-1", zh: "Sell Put 四合一"}
+# Where the idea comes from, in both languages; shown on the strategy page.
 source: {en: "Notion: Sell Put 4-in-1 decision skill + stock option scorecard (gates 0-2 only)", zh: "Notion: Sell Put 四合一决策Skill + 个股期权评分卡 (gates 0-2 only)"}
+
+# ------------------------------------------------------------------------------
+# Scoring
+# ------------------------------------------------------------------------------
+# max_unknown_weight_ratio: when more than this share of the weight is unknown, the dashboard greys the score as data insufficient (0.20 is 20%).
 thresholds: {max_unknown_weight_ratio: 0.20}
+
+# ------------------------------------------------------------------------------
+# Text on the strategy page and in the help popover (both languages)
+# ------------------------------------------------------------------------------
+# summary: one or two sentences.
 summary:
   en: "Sell a cash-secured Put: when the macro backdrop is safe and the stock is sound, sell an out-of-the-money Put with 30-45 days left and a Delta near 0.25 to collect the premium."
   zh: "卖出现金担保看跌期权（Cash-Secured Put）：在宏观环境安全、标的质量好时，卖出 30-45 天、Delta 约 0.25 的虚值 Put 收取权利金。"
+# help: the full explanation; paragraphs are separated by a blank line.
 help:
   en: |
     This is an option-selling strategy: you sell a Put and collect the premium. If the stock ends above the strike, you keep the whole premium; if it falls below, you buy 100 shares at the strike, so only pick stocks you are willing to hold.
@@ -26,11 +46,19 @@ help:
     一票否决规则（目前是 R-EVT-01「到期前无财报」）不通过时，结果就是不通过。资金结构（GATE 3）和仓位上限（GATE 4）需要账户数据，这一版没有接入。
 
     期权数据只在美股开盘时有实时报价，休市时 GATE 2 显示「未知」。不构成投资建议。
+
+# ------------------------------------------------------------------------------
+# Gates and rules
+# ------------------------------------------------------------------------------
+# A gate is a group of rules checked together; gates are checked in order. A rule is defined once in config/rules.yaml; here it has only its id,
+# this strategy's weight and an optional veto: true (a failed veto rule fails the whole result). The name after # is the rule_name, for reading.
+# A measure with several lines (VIX, Delta, DTE ...) is listed as several rules; each line the value passes adds its weight.
 # Not built yet (need account data or manual answers): GATE 3 capital structure,
 # GATE 4 position limits, rules tagged ASK / PLAN, Fed / FOMC / CPI / oil rules.
-# Rules are defined in config/rules.yaml; here only the id, this strategy's weight and an optional veto flag.
-# A measure with several lines (VIX, Delta, DTE ...) is listed as several rules; each line the value passes adds its weight.
 gates:
+  # ----------------------------------------------------------------------------
+  # GATE 0 Macro and sentiment
+  # ----------------------------------------------------------------------------
   - gate_id: gate_0_macro
     display_name: {en: "GATE 0 Macro and sentiment", zh: "GATE 0 宏观/情绪开关"}
     rules:
@@ -44,6 +72,9 @@ gates:
       - {rule_id: R-SEN-01, weight: 2}   # vix_at_least_15
       - {rule_id: R-TRD-01, weight: 4}   # market_above_200_day
       - {rule_id: R-SEN-08, weight: 3}   # vix_in_contango
+  # ----------------------------------------------------------------------------
+  # GATE 1 Stock screen
+  # ----------------------------------------------------------------------------
   - gate_id: gate_1_underlying
     display_name: {en: "GATE 1 Stock screen", zh: "GATE 1 标的筛选"}
     rules:
@@ -51,6 +82,9 @@ gates:
       - {rule_id: R-TRD-12, weight: 1}   # range_position_at_most_50
       - {rule_id: R-TRD-11, weight: 2}   # range_position_at_most_25
       - {rule_id: R-TRD-05, weight: 3}   # stock_above_200_day
+  # ----------------------------------------------------------------------------
+  # GATE 2 Contract
+  # ----------------------------------------------------------------------------
   - gate_id: gate_2_contract
     display_name: {en: "GATE 2 Contract", zh: "GATE 2 合约选择"}
     per_expiration_window: true   # evaluated once per window in settings.yaml, best window wins

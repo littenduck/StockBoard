@@ -178,3 +178,26 @@ def test_the_catalog_pages_use_only_known_text_keys():
         text = open(os.path.join(STATIC_DIRECTORY, file_name), encoding="utf8").read()
         for key in re.findall(r"language(?:Text|Localize)\('(\w+)'", text) + re.findall(r"data-title-key=\"(\w+)\"", text):
             assert key in key_set, "{} uses the unknown text {}".format(file_name, key)
+
+def test_the_version_is_read_from_the_version_file_only():
+    with open(os.path.join(web_server.PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
+        version = version_file.read().strip()
+    assert web_server.APP_VERSION == version and web_server.web_server_get_version() == {"version": version}
+    assert web_server.web_server_build_status("2026-01-01T00:00:00-05:00")["version"] == version
+
+
+def test_nothing_else_writes_the_version_number():
+    import re
+    with open(os.path.join(web_server.PROJECT_DIRECTORY, "VERSION"), encoding="utf8") as version_file:
+        version = version_file.read().strip()
+    assert re.match(r"^\d+\.\d+\.\d+$", version)
+    for directory in ("static", "stockboard_backend"):
+        for name in os.listdir(os.path.join(web_server.PROJECT_DIRECTORY, directory)):
+            path = os.path.join(web_server.PROJECT_DIRECTORY, directory, name)
+            if os.path.isfile(path) and name.endswith((".py", ".js", ".html")):
+                assert version not in open(path, encoding="utf8").read(), "{} writes the version {}".format(path, version)
+
+
+def test_the_license_names_the_copyright_holder():
+    text = open(os.path.join(web_server.PROJECT_DIRECTORY, "LICENSE"), encoding="utf8").read()
+    assert text.startswith("MIT License") and "Copyright (c) 2026 littenduck" in text

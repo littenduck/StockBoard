@@ -17,6 +17,8 @@ Open http://localhost:8000. Data refreshes in the background every `refresh_inte
 
 Test: `.venv/bin/python -m pytest tests`
 
+**Version and license.** The version is written in one place, the `VERSION` file (`MAJOR.MINOR.PATCH`); the page header and `GET /api/v1/version` read it from there, so a release changes that file and nothing else (then tag `v<version>`). The code is under the MIT license, see `LICENSE`.
+
 Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.js is only needed to update them: `npm install` (installs `@tabler/icons` at the pinned version), then `.venv/bin/python scripts/build_icons.py` rewrites `static/icons.svg`, `static/favicon.svg` and the license copy. `node_modules/` is git-ignored and is not deployed.
 
 ## Layout
@@ -26,6 +28,7 @@ Icons come from the official Tabler Icons package (MIT, see `licenses/`). Node.j
 | `config/indicators.yaml` | every measured quantity, defined once: source, method, history, status, and the fetch schedule (`fetch_group`, `fetch_every`, `max_age`) |
 | `config/rules.yaml` | every rule, defined once, in 15 categories from macro to detail (190 rules: 156 on an indicator, 34 manual); a rule is an indicator plus the line to test; strategies reference rules by id |
 | `config/settings.yaml` | refresh interval, which indicators fill the sidebar cards, option expiration windows, the release calendar |
+| `data/symbols/<SYMBOL>/`, `data/market/` | what was downloaded, one file per answer (latest only; not in git): a restart reads it and asks a source again only when it is due. `result.json` in a symbol's folder is that symbol's computed result. Delete a folder to forget a symbol |
 | `data/logs/stockboard.log` | written on every run (not in git): one line per fetch with its seconds, one per symbol, one summary per refresh; `grep "refresh done" data/logs/stockboard.log` |
 | `config/symbols.yaml` | the symbols the dashboard follows, in order |
 | `config/strategies/*.yaml` | strategies: gates, rules, per-strategy weights and veto flags (see `docs/strategy.md`) |
