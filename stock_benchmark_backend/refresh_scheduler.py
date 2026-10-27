@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
 
 from stock_benchmark_backend import (company_indicators, fetch_store, event_calendar, indicator_calculation, indicator_registry, live_indicators, market_data,
-                                option_chain, snapshot_storage, strategy_evaluation, yahoo_company, yahoo_gate)
+                                option_chain, rule_catalog, snapshot_storage, strategy_evaluation, yahoo_company, yahoo_gate)
 from stock_benchmark_backend.fetch_cache import FetchCache
 from stock_benchmark_backend.run_log import run_log_write
 from stock_benchmark_backend.settings_loader import ApplicationSettings, PROJECT_DIRECTORY
@@ -131,6 +131,52 @@ def refresh_scheduler_fetch_option_indicators(
             "covered_call": refresh_scheduler_build_covered_call_indicator_value_by_name(option_session, price, today)}
 
 
+FUNDAMENTALS_ASPECT_NAME = "Fundamentals"
+# The company groups of the Fundamentals aspect; MAC (macro) is in that aspect too but describes the market, not the company.
+COMPANY_FUNDAMENTAL_GROUP_SET = {"IND", "QUA", "MGT", "VAL", "ACC"}
+fundamental_indicator_info_by_name: Optional[Dict[str, dict]] = None
+
+
+def refresh_scheduler_get_fundamental_indicator_info() -> Dict[str, dict]:
+    """Indicators used by rules in the Fundamentals aspect (IND, QUA, MGT, VAL, ACC): {indicator_name: {group_id, unit}}.
+    Loaded once from config/rules.yaml, so the financial panel lists the numbers the rules use, grouped as the rules are."""
+    global fundamental_indicator_info_by_name
+    if fundamental_indicator_info_by_name is None:
+        catalog = rule_catalog.rule_catalog_load_rule_catalog_from_yaml_file(os.path.join(PROJECT_DIRECTORY, "config", "rules.yaml"))
+        aspect_by_group = {group.group_id: group.aspect.en if group.aspect else None for group in catalog.rule_group_list}
+        info_by_name = {}
+        for entry in catalog.rule_entry_by_id.values():
+            if entry.indicator and entry.group_id in COMPANY_FUNDAMENTAL_GROUP_SET and aspect_by_group.get(entry.group_id) == FUNDAMENTALS_ASPECT_NAME:
+                indicator = catalog.indicator_registry.indicator_by_name.get(entry.indicator)
+                # Only numbers about this company: market-wide indicators (scope market, such as the equity risk premium) are left out.
+                if indicator and indicator.scope == "symbol":
+                    info_by_name[entry.indicator] = {"group_id": entry.group_id, "unit": indicator.unit}
+        fundamental_indicator_info_by_name = info_by_name
+    return fundamental_indicator_info_by_name
+
+
+# Yahoo's quoteType in plain words. Anything else (index, mutual fund, crypto ...) is "other".
+ASSET_TYPE_BY_QUOTE_TYPE = {"EQUITY": "stock", "ETF": "etf"}
+
+
+def refresh_scheduler_build_asset_type(info: dict) -> str:
+    return ASSET_TYPE_BY_QUOTE_TYPE.get(info.get("quoteType"), "other")
+
+
+def refresh_scheduler_build_not_applicable_evaluation(strategy_id: str, symbol: str) -> dict:
+    """A strategy that does not apply to this asset type: no pass, no score, nothing unknown to count. The page shows a dash."""
+    return {"strategy_id": strategy_id, "symbol": symbol, "is_pass": None, "score_percent": None, "unknown_weight_ratio": 0.0,
+            "gate_result_list": [], "not_applicable": True}
+
+
+def refresh_scheduler_build_fundamental_value_list(indicator_value_by_name: Dict[str, IndicatorValue]) -> List[dict]:
+    """The fundamental numbers of one symbol with their unit and source, for the financial panel (only the ones that have a value)."""
+    info_by_name = refresh_scheduler_get_fundamental_indicator_info()
+    return [{"indicator_name": name, "group_id": info_by_name[name]["group_id"], "unit": info_by_name[name]["unit"],
+             "value": indicator_value_by_name[name].value, "source": indicator_value_by_name[name].source}
+            for name in sorted(info_by_name) if name in indicator_value_by_name and indicator_value_by_name[name].value is not None]
+
+
 def refresh_scheduler_evaluate_symbol_for_all_strategies(
     symbol: str, price_history, shared_indicator_value_by_name: Dict[str, IndicatorValue],
     settings: ApplicationSettings, strategy_definition_by_id: Dict[str, StrategyDefinition],
@@ -145,6 +191,7 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     company_snapshot = yahoo_company.yahoo_company_overlay_quote(
         live_indicators.live_indicators_fetch_company_snapshot(fetch_cache, symbol), fetch_cache.peek("yahoo_quote", "all", {}).get(symbol))
     info = company_snapshot.get("info") if isinstance(company_snapshot.get("info"), dict) else {}
+    asset_type = refresh_scheduler_build_asset_type(info)
     shares_outstanding = company_indicators.company_indicators_get_number(info, "sharesOutstanding")
     company_indicator_value_by_name = live_indicators.live_indicators_build_company_indicator_value_by_name(company_snapshot, today)
     company_indicator_value_by_name.update(live_indicators.live_indicators_fetch_short_interest_indicator_value_by_name(
@@ -186,13 +233,17 @@ def refresh_scheduler_evaluate_symbol_for_all_strategies(
     return {
         "symbol": symbol,
         "price": last_price.value,
+        "fundamental_value_list": refresh_scheduler_build_fundamental_value_list(combined_indicator_value_by_name),
         "change_value": last_price.change_value,
         "change_unit": last_price.change_unit,
         "sparkline_close_price_list": [
             round(float(price), 2) for price in price_history["Close"].iloc[-SPARKLINE_TRADING_DAY_COUNT:]],
+        "asset_type": asset_type,
         "evaluation_by_strategy_id": {
-            strategy_id: dataclasses.asdict(strategy_evaluation.strategy_evaluation_evaluate_strategy_for_symbol(
-                strategy_definition, symbol, combined_indicator_value_by_name, option_indicator_by_window_label))
+            strategy_id: (refresh_scheduler_build_not_applicable_evaluation(strategy_id, symbol)
+                          if strategy_definition.asset_type_list is not None and asset_type not in strategy_definition.asset_type_list
+                          else dataclasses.asdict(strategy_evaluation.strategy_evaluation_evaluate_strategy_for_symbol(
+                              strategy_definition, symbol, combined_indicator_value_by_name, option_indicator_by_window_label)))
             for strategy_id, strategy_definition in strategy_definition_by_id.items()
         },
     }

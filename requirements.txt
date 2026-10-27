@@ -5,6 +5,8 @@ pyyaml
 
 # Data
 pandas
+edgartools>=4.6,<5  # SEC HTTP client: identity, retries and the 9 requests-per-second limit (see stock_benchmark_backend/edgar_data.py)
+hishel>=0.1.3,<1  # edgartools 4.x uses the hishel 0.x cache API; hishel 1.x breaks it
 numpy
 yfinance>=1.2,<2  # the code calls YfData.get and get_raw_json directly; tested with 1.2.0 and 1.7.0
 xlrd              # .xls files (AAII survey, Geopolitical Risk index)

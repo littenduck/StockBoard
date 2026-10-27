@@ -59,6 +59,7 @@ rule_group_list:
   - {group_id: "POS", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "POS · Position, account and portfolio", zh: "POS · 仓位、账户与组合"}, description: {en: "Option level, cash, exposure caps, loss limits and portfolio Greeks.", zh: "期权权限、现金、敞口上限、亏损上限和组合希腊字母。"}, topic_list: [{topic_id: "account_leverage", display_name: {en: "Account and leverage", zh: "账户与杠杆"}}, {topic_id: "exposure_limits", display_name: {en: "Exposure limits", zh: "敞口上限"}}, {topic_id: "sizing_building", display_name: {en: "Sizing and building", zh: "仓位大小与建仓"}}, {topic_id: "portfolio_risk", display_name: {en: "Portfolio risk", zh: "组合风险"}}]}
   - {group_id: "THS", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "THS · Thesis and discipline", zh: "THS · 投资逻辑与证伪"}, description: {en: "Why you trade, what proves you wrong, and your own limits.", zh: "为什么做、什么情况证明你错了，以及你自己的底线。"}, topic_list: [{topic_id: "why_trade", display_name: {en: "Why you trade", zh: "为什么交易"}}, {topic_id: "discipline", display_name: {en: "Discipline", zh: "纪律"}}]}
   - {group_id: "EXT", aspect: {en: "Risk", zh: "风控面"}, display_name: {en: "EXT · Management and exit", zh: "EXT · 管理与退出"}, description: {en: "Take profit, stop loss, time stop, roll and Wheel management.", zh: "止盈、止损、时间止损、展期和 Wheel 管理。"}, topic_list: [{topic_id: "profit_stop", display_name: {en: "Take profit and stop loss", zh: "止盈与止损"}}, {topic_id: "time_rolling", display_name: {en: "Time and rolling", zh: "时间与展期"}}, {topic_id: "covered_call_exit", display_name: {en: "Covered call exits", zh: "Covered Call 退出"}}]}
+  - {group_id: "ACC", aspect: {en: "Fundamentals", zh: "基本面"}, display_name: {en: "ACC · Accounting quality", zh: "ACC · 会计质量"}, description: {en: "Accruals, cash left after stock pay and the Piotroski score.", zh: "应计项目、扣除股票薪酬后的现金和 Piotroski 分数。"}, topic_list: [{topic_id: "accruals", display_name: {en: "Accruals and cash quality", zh: "应计与现金质量"}}]}
 
 # ------------------------------------------------------------------------------
 # Rules
@@ -1803,6 +1804,32 @@ rule_list:
     backtestable: "no"
     status: "no_data"
     legacy_id: ["EXT-10", "E15", "F12"]
+
+# ------------------------------------------------------------------------------
+# ACC · Accounting quality (added after the renumbering, so no legacy_id)
+# ------------------------------------------------------------------------------
+# Kept at the end of the file on purpose: indicator ids must rise along the rule order, and I-123 to I-125 are the newest.
+  - rule_id: R-ACC-01
+    rule_name: "accruals_below_5pct"
+    topic: "accruals"
+    description: {en: "Passes when accruals (profit not backed by cash) are below 5% of average total assets.", zh: "应计项目（没有现金支撑的利润）占平均总资产低于 5% 时通过。"}
+    indicator: "I-123"
+    operator: "less_than"
+    value: 5
+  - rule_id: R-ACC-02
+    rule_name: "fcf_after_stock_pay_positive"
+    topic: "accruals"
+    description: {en: "Passes when free cash flow is still positive after deducting stock-based compensation.", zh: "扣除股票薪酬后自由现金流仍为正时通过。"}
+    indicator: "I-124"
+    operator: "greater_than"
+    value: 0
+  - rule_id: R-ACC-03
+    rule_name: "piotroski_at_least_7"
+    topic: "accruals"
+    description: {en: "Passes when the Piotroski F-score is 7 or more of 9 tests.", zh: "Piotroski F 分数达到 9 项中的 7 项或以上时通过。"}
+    indicator: "I-125"
+    operator: "greater_or_equal"
+    value: 7
 
 # ------------------------------------------------------------------------------
 # Retired rules

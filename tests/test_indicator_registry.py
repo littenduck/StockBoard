@@ -75,10 +75,10 @@ def test_the_sidebar_reads_names_from_the_registry():
 
 
 def test_every_indicator_has_a_short_id_and_a_long_name(registry):
-    assert len(registry.indicator_by_id) == len(registry.indicator_by_name) == 122
+    assert len(registry.indicator_by_id) == len(registry.indicator_by_name) == 125
     assert registry.indicator_by_id["I-001"].indicator_name == "federal_funds_target_rate_not_raised_in_182_days"
     ids = [indicator.indicator_id for indicator in registry.indicator_by_name.values()]
-    assert ids == ["I-%03d" % number for number in range(1, 123)], "ids run 1 to 122 in file order"
+    assert ids == ["I-%03d" % number for number in range(1, 126)], "ids run 1 to 125 in file order"
 
 
 def test_a_rule_resolves_its_indicator_id_to_the_name_and_keeps_the_id():

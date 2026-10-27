@@ -153,6 +153,16 @@ def web_server_get_rule_card_script() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "rule-card.js"), headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/asset-filter.js")
+def web_server_get_asset_filter_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "asset-filter.js"), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/fundamentals-panel.js")
+def web_server_get_fundamentals_panel_script() -> FileResponse:
+    return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "fundamentals-panel.js"), headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/icons.svg")
 def web_server_get_icon_sprite() -> FileResponse:
     return FileResponse(os.path.join(PROJECT_DIRECTORY, "static", "icons.svg"), media_type="image/svg+xml",
@@ -278,7 +288,8 @@ def web_server_get_dashboard_snapshot(strategy_id: Optional[str] = None) -> dict
             "symbol": symbol_result["symbol"], "price": symbol_result["price"],
             "change_value": symbol_result["change_value"], "change_unit": symbol_result["change_unit"],
             "is_pass": evaluation["is_pass"], "score_percent": evaluation["score_percent"],
-            "unknown_weight_ratio": evaluation["unknown_weight_ratio"],
+            "unknown_weight_ratio": evaluation["unknown_weight_ratio"], "not_applicable": evaluation.get("not_applicable", False),
+            "asset_type": symbol_result.get("asset_type", "other"),
             "sparkline_close_price_list": symbol_result["sparkline_close_price_list"],
         })
     return {
@@ -290,6 +301,17 @@ def web_server_get_dashboard_snapshot(strategy_id: Optional[str] = None) -> dict
         "symbol_card_list": symbol_card_list,
         "failed_symbol_list": snapshot["failed_symbol_list"],
     }
+
+
+@app.get("/api/v1/fundamentals/{symbol}")
+def web_server_get_fundamental_values_for_symbol(symbol: str) -> dict:
+    """The fundamental numbers of one stock from the last snapshot. Snapshots from before this list existed give an empty list."""
+    snapshot = web_server_load_snapshot_or_empty_snapshot()
+    for symbol_result in snapshot["symbol_result_list"]:
+        if symbol_result["symbol"] == symbol:
+            return {"symbol": symbol, "generated_at": snapshot.get("generated_at"),
+                    "value_list": symbol_result.get("fundamental_value_list", [])}
+    raise HTTPException(status_code=404, detail="Unknown symbol: " + symbol)
 
 
 @app.get("/api/v1/evaluations/{strategy_id}/{symbol}")

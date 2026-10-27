@@ -49,7 +49,7 @@ Sizes in use: **28, 20, 15, 12**. Weights: **400 and 600**. No other sizes.
 
 ## Space and shape
 
-Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows, except the one soft shadow under the rule hover card, which floats over the page.
+Spacing only 4, 8, 12, 16, 24, 32px (`--space-1` to `--space-6`). A field (`.field`) keeps `--space-4` (16px) below it, so the next element never touches it. Radius: one token, `--radius` 8px, for everything (controls, rows, boxes, small tags). The only other curves are the 2px accent pill and the round gate icon. Hit size token: `--hit-size` 44px. No shadows, except the one soft shadow under the rule hover card, which floats over the page.
 
 ## Status
 

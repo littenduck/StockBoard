@@ -27,6 +27,11 @@ EDGAR_INDICATOR_NAME_LIST = [
     "revenue_three_year_cagr_percent", "eps_three_year_cagr_percent", "return_on_invested_capital_percent",
     "free_cash_flow_year_over_year_change", "interest_coverage_ratio", "shares_outstanding_year_over_year_percent",
     "price_earnings_ttm_to_five_year_median_ratio",
+    "accruals_percent_of_average_total_assets", "free_cash_flow_after_stock_compensation", "piotroski_f_score",
+    # Yahoo values of these are replaced by the SEC-rebuilt value when SEC has one, so the page and the backtest use the same figure.
+    "trailing_twelve_month_eps", "revenue_year_over_year_percent", "return_on_equity_percent", "gross_margin_percent",
+    "trailing_twelve_month_free_cash_flow", "net_debt_to_ebitda", "operating_cash_flow_to_net_income_ratio",
+    "dividend_to_free_cash_flow_ratio", "free_cash_flow_yield_percent", "enterprise_value_to_ebitda",
 ]
 SPMO_SYMBOL = "SPMO"
 # These three come with the price figures (they carry a daily change), so the series job leaves them alone.

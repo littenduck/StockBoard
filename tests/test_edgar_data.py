@@ -1,3 +1,4 @@
+import os
 import pandas
 import pytest
 
@@ -56,7 +57,7 @@ def test_instant_series_is_stamped_with_the_filing_date():
 
 def test_user_agent_carries_the_contact_from_the_environment(monkeypatch):
     monkeypatch.setenv("EDGAR_CONTACT", "me@example.org")
-    assert edgar_data.edgar_data_build_user_agent().endswith("me@example.org")
+    assert edgar_data.edgar_data_build_identity().endswith("me@example.org")
 
 
 def test_fundamental_table_derives_margins_growth_and_valuation():
@@ -75,3 +76,19 @@ def test_fundamental_table_derives_margins_growth_and_valuation():
     assert last["market_capitalization_billion_usd"] == pytest.approx(500 / 1e9)
     assert last["free_cash_flow_yield_percent"] == pytest.approx(20.0)
     assert pandas.isna(table.iloc[0]["revenue_year_over_year_percent"])  # a year earlier nothing was filed yet
+
+
+def test_fetch_json_sends_the_identity_through_edgartools(monkeypatch):
+    monkeypatch.setenv("EDGAR_CONTACT", "me@example.org")
+    monkeypatch.delenv("EDGAR_IDENTITY", raising=False)
+    seen = {}
+    monkeypatch.setattr(edgar_data, "download_json", lambda url: seen.setdefault("url", url) and {"ok": True})
+    assert edgar_data.edgar_data_fetch_json("https://data.sec.gov/x.json") == {"ok": True}
+    assert os.environ["EDGAR_IDENTITY"].endswith("me@example.org")
+
+
+def test_every_sec_override_name_is_a_column_of_the_company_table():
+    from stock_benchmark_backend import live_indicators
+    days = pandas.date_range("2020-01-01", periods=3, freq="D")
+    columns = set(fundamental_series.fundamental_series_build_table({"facts": {}}, days, pandas.Series(1.0, index=days)).columns)
+    assert set(live_indicators.EDGAR_INDICATOR_NAME_LIST) <= columns

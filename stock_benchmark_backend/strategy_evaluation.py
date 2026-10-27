@@ -32,6 +32,7 @@ class RuleDefinition:
     veto: bool = False
     method: Optional[str] = None
     status: Optional[str] = None
+    unit: str = ""  # the unit of the indicator it tests (%, USD ...), shown next to the measured value
 
 
 @dataclass
@@ -56,6 +57,8 @@ class StrategyDefinition:
     gate_list: List[GateDefinition]
     summary: Optional[LocalizedText] = None
     help_text: Optional[LocalizedText] = None
+    # Asset types the strategy applies to (stock, etf, other). None means every type. For the others the page shows a dash.
+    asset_type_list: Optional[List[str]] = None
 
 
 @dataclass
@@ -67,6 +70,7 @@ class RuleEvaluationResult:
     weight: int
     veto: bool = False
     method: Optional[str] = None
+    unit: str = ""
 
 
 @dataclass
@@ -122,6 +126,7 @@ def strategy_evaluation_evaluate_rule_against_indicator_values(
         weight=rule_definition.weight,
         veto=rule_definition.veto,
         method=rule_definition.method,
+        unit=rule_definition.unit,
     )
 
 

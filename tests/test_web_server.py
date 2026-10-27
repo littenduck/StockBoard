@@ -7,6 +7,8 @@ from fastapi import HTTPException
 from stock_benchmark_backend import refresh_scheduler, snapshot_storage, web_server
 
 STRATEGY_ID = web_server.application_settings.default_strategy_id
+# The rules and gates checked below belong to the sell put strategy, which is no longer the default.
+SELL_PUT_STRATEGY_ID = "sell_put_four_in_one"
 
 
 def build_symbol_result(symbol):
@@ -70,7 +72,7 @@ def test_evaluation_for_symbol(snapshot_file_path):
 def test_rule_catalog_lists_usage():
     response = web_server.web_server_get_rule_catalog()
     rule_by_id = {rule["rule_id"]: rule for group in response["group_list"] for rule in group["rule_list"]}
-    assert any(usage["strategy_id"] == STRATEGY_ID and usage["veto"] and usage["weight"] == 5
+    assert any(usage["strategy_id"] == SELL_PUT_STRATEGY_ID and usage["veto"] and usage["weight"] == 5
                for usage in rule_by_id["R-EVT-01"]["used_by"])
     assert rule_by_id["R-THS-03"]["used_by"] == [] and rule_by_id["R-THS-03"]["status"] == "no_data"
     assert rule_by_id["R-THS-03"]["method"] == "manual"
@@ -142,8 +144,14 @@ def test_indicator_catalog_lists_every_indicator_once_with_its_rules():
     assert by_id["I-052"]["on_market_bar"] and by_id["I-052"]["rule_list"] == []
 
 
+def test_default_strategy_is_first_in_strategy_list():
+    strategy_list = web_server.web_server_get_strategy_list()["strategy_list"]
+    assert STRATEGY_ID == "fundamentals" and strategy_list[0]["strategy_id"] == STRATEGY_ID
+    assert [gate["gate_id"] for gate in strategy_list[0]["gate_list"]][0] == "gate_1_earnings_and_cash"
+
+
 def test_strategy_list_carries_gates_with_weights_and_vetoes():
-    strategy = next(item for item in web_server.web_server_get_strategy_list()["strategy_list"] if item["strategy_id"] == STRATEGY_ID)
+    strategy = next(item for item in web_server.web_server_get_strategy_list()["strategy_list"] if item["strategy_id"] == SELL_PUT_STRATEGY_ID)
     rule_list = [rule for gate in strategy["gate_list"] for rule in gate["rule_list"]]
     assert strategy["max_unknown_weight_ratio"] == 0.20 and strategy["gate_list"][0]["gate_id"].startswith("gate_0")
     assert any(rule["rule_id"] == "R-EVT-01" and rule["veto"] and rule["weight"] == 5 for rule in rule_list)

@@ -1,0 +1,127 @@
+# ------------------------------------------------------------------------------
+# Strategy: Fundamentals (company health check)
+# ------------------------------------------------------------------------------
+# A company check, not a trade signal: is the business profitable, healthy, growing, high quality and fairly priced.
+# Rules and indicators are defined once, in rules.yaml and indicators.yaml. Read when the server starts; the page address is /strategies/<strategy_id>.
+
+# The id of the strategy: the same as the file name; used in the API and in the page address /strategies/<id>.
+strategy_id: fundamentals
+# The name shown on the page, in both languages.
+display_name: {en: "Fundamentals", zh: "基本面"}
+# Where the idea comes from, in both languages; shown on the strategy page.
+source: {en: "Common company quality, earnings-quality and valuation rules of thumb (QUA, ACC, MGT, VAL rule groups); thresholds are common rules of thumb", zh: "常见的公司质量、盈利质量与估值经验规则（QUA、ACC、MGT、VAL 规则组），阈值为常用经验值"}
+
+# ------------------------------------------------------------------------------
+# Scoring
+# ------------------------------------------------------------------------------
+# max_unknown_weight_ratio: when more than this share of the weight is unknown, the dashboard greys the score as data insufficient (0.20 is 20%).
+thresholds: {max_unknown_weight_ratio: 0.20}
+# Company numbers only: an ETF has no balance sheet or earnings, so the page shows a dash for it instead of a score.
+applies_to_asset_type_list: [stock]
+
+# Decision gate, written before the first backtest run (plan T1.3.16). It is checked by scripts/backtest_fundamentals.py on the 12-month
+# sector-neutral excess return, out of sample from 2019, after the costs in config/settings.yaml:
+#   1. out-of-sample rank IC mean above 0;
+#   2. out-of-sample Newey-West t of that mean above 2;
+#   3. top-minus-bottom decile spread after costs above 0;
+#   4. the same sign in sample (2011 to 2018) and out of sample;
+#   5. out-of-sample rank IC above the 95th percentile of the random baseline.
+# If any check fails, the strategy stays in the list but the page says it is not validated.
+
+# ------------------------------------------------------------------------------
+# Text on the strategy page and in the help popover (both languages)
+# ------------------------------------------------------------------------------
+# summary: one or two sentences.
+summary:
+  en: "Checks whether a company is profitable, financially sound, growing, high quality and not overpriced, in five gates."
+  zh: "分五道关检查公司：是否赚钱、财务是否稳健、是否在增长、质量是否高、价格是否合理。"
+# help: the full explanation; paragraphs are separated by a blank line.
+help:
+  en: |
+    The five gates group the rules by theme; they do not stop the check at the first failure. Only one rule can remove a company outright: an auditor change, a restatement or a late filing in the last year (the veto).
+
+    Gate 1 checks earnings and cash: a positive trailing profit, free cash flow positive, operating cash flow at least net income, accruals under 5% of assets, and cash flow still positive after stock pay. Gate 2 checks the balance sheet: net debt under 2 or 4 times EBITDA, and operating profit covering interest at least 5 times. Gate 3 checks growth over the last year and over three years.
+
+    Gate 4 checks return on equity and capital, gross margin, and the Piotroski score (seven or more of nine yes or no tests on profitability, leverage and efficiency). Gate 5 checks price and holders: a PEG under 1.5, EV/EBITDA under 15, free cash flow yield of at least 3 or 5%, a share count that is not rising, analyst estimates going up, and insiders buying.
+
+    This is a snapshot from the latest reported data; it does not say when to buy or sell. Not investment advice.
+  zh: |
+    五道关把规则按主题分组，但不会遇到第一个不通过就停止。只有一条规则能直接否决公司：过去一年有审计师变更、重述或迟交财报。
+
+    第一道关看盈利与现金：过去十二个月利润为正，自由现金流为正，经营现金流不低于净利润，应计项目不超过平均总资产的 5%，扣除股票薪酬后现金流仍为正。第二道关看资产负债表：净负债不超过 EBITDA 的 2 倍或 4 倍，营业利润能覆盖利息 5 倍以上。第三道关看增长：最近一年和近三年的营收、每股收益增长。
+
+    第四道关看回报与质量：净资产收益率和资本回报率、毛利率，以及 Piotroski 分数（九项是非测试中通过 7 项或以上，覆盖盈利、杠杆和效率）。第五道关看价格和股东：PEG 低于 1.5，EV/EBITDA 低于 15，自由现金流收益率至少 3% 或 5%，股本不再增加，分析师预期在上调，内部人在买入。
+
+    本页面基于最新披露的财务数据，不给出买卖时机。不构成投资建议。
+
+# ------------------------------------------------------------------------------
+# Gates and rules
+# ------------------------------------------------------------------------------
+# A gate is a group of rules checked together; gates are checked in order. A rule is defined once in config/rules.yaml; here it has only its id,
+# this strategy's weight and an optional veto: true (a failed veto rule fails the whole result). The name after # is the rule_name, for reading.
+# Several lines of one measure are listed as several rules; each line the value passes adds its weight.
+gates:
+  # ----------------------------------------------------------------------------
+  # GATE 一 Earnings and cash
+  # ----------------------------------------------------------------------------
+  - gate_id: gate_1_earnings_and_cash
+    display_name: {en: "GATE 1 Earnings and cash", zh: "GATE 一 盈利与现金"}
+    rules:
+      - {rule_id: R-QUA-01, weight: 2}  # ttm_eps_positive
+      - {rule_id: R-QUA-08, weight: 3}  # fcf_positive
+      - {rule_id: R-QUA-10, weight: 2}  # cash_flow_covers_profit (at least 1.0)
+      - {rule_id: R-ACC-01, weight: 2}  # accruals_below_5pct
+      - {rule_id: R-ACC-02, weight: 2}  # fcf_after_stock_pay_positive
+
+  # ----------------------------------------------------------------------------
+  # GATE 二 Balance sheet
+  # ----------------------------------------------------------------------------
+  - gate_id: gate_2_balance_sheet
+    display_name: {en: "GATE 2 Balance sheet", zh: "GATE 二 财务稳健"}
+    rules:
+      - {rule_id: R-QUA-12, weight: 3}  # net_debt_to_ebitda_below_2
+      - {rule_id: R-QUA-13, weight: 2}  # net_debt_to_ebitda_below_4
+      - {rule_id: R-QUA-14, weight: 2}  # interest_coverage_above_5
+
+  # ----------------------------------------------------------------------------
+  # GATE 三 Growth
+  # ----------------------------------------------------------------------------
+  - gate_id: gate_3_growth
+    display_name: {en: "GATE 3 Growth", zh: "GATE 三 增长"}
+    rules:
+      - {rule_id: R-QUA-02, weight: 2}  # revenue_above_year_ago
+      - {rule_id: R-QUA-03, weight: 3}  # revenue_3_year_growth (at least 10)
+      - {rule_id: R-QUA-04, weight: 3}  # eps_3_year_growth (at least 10)
+
+  # ----------------------------------------------------------------------------
+  # GATE 四 Return and quality
+  # ----------------------------------------------------------------------------
+  - gate_id: gate_4_return_and_quality
+    display_name: {en: "GATE 4 Return and quality", zh: "GATE 四 回报与质量"}
+    rules:
+      - {rule_id: R-QUA-06, weight: 3}  # roe_at_least_15pct
+      - {rule_id: R-QUA-05, weight: 3}  # roic_at_least_15pct
+      - {rule_id: R-QUA-07, weight: 2}  # gross_margin_at_least_40pct
+      - {rule_id: R-ACC-03, weight: 3}  # piotroski_at_least_7
+
+  # ----------------------------------------------------------------------------
+  # GATE 五 Price and holders
+  # ----------------------------------------------------------------------------
+  - gate_id: gate_5_price_and_holders
+    display_name: {en: "GATE 5 Price and holders", zh: "GATE 五 价格与股东"}
+    rules:
+      - {rule_id: R-VAL-10, weight: 3}  # peg_below_1_5 (one-year growth)
+      - {rule_id: R-VAL-09, weight: 2}  # ev_ebitda_below_15
+      - {rule_id: R-VAL-11, weight: 2}  # fcf_yield_at_least_5pct
+      - {rule_id: R-VAL-12, weight: 1}  # fcf_yield_at_least_3pct
+      - {rule_id: R-MGT-03, weight: 2}  # share_count_not_rising
+      - {rule_id: R-QUA-15, weight: 2}  # estimates_rising
+      - {rule_id: R-MGT-02, weight: 1}  # insider_bought
+
+  # ----------------------------------------------------------------------------
+  # Veto: no auditor change, restatement or late filing in the last year
+  # ----------------------------------------------------------------------------
+  - gate_id: gate_veto_audit_red_flags
+    display_name: {en: "Veto: audit red flags", zh: "一票否决：审计风险"}
+    rules:
+      - {rule_id: R-MGT-06, weight: 5, veto: true}  # no_audit_red_flags

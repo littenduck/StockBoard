@@ -114,7 +114,8 @@ def test_the_project_catalog_has_no_retired_id_and_keeps_every_legacy_id():
     kept |= {legacy for retired in catalog.retired_rule_list for legacy in retired.legacy_id}
     assert len(kept) == 119
     for entry in catalog.rule_entry_by_id.values():
-        assert older.match(entry.legacy_id[0]), entry.rule_id  # the id it had before the renumbering comes first
+        if entry.legacy_id:  # rules added after the renumbering (R-ACC-*) have none
+            assert older.match(entry.legacy_id[0]), entry.rule_id  # the id it had before the renumbering comes first
 
 
 def test_todo_rule_may_name_an_indicator_that_does_not_exist_yet():
@@ -198,7 +199,7 @@ def test_rule_names_are_short_unique_words_with_underscores():
     import re
     catalog = rule_catalog_load_rule_catalog_from_yaml_file(CATALOG_FILE_PATH)
     name_list = [entry.rule_name for entry in catalog.rule_entry_by_id.values()]
-    assert len(set(name_list)) == len(name_list) == 190
+    assert len(set(name_list)) == len(name_list) == 193
     assert all(re.match(r"^[a-z][a-z0-9_]{2,34}$", name) for name in name_list), [n for n in name_list if len(n) > 35]
 
 
@@ -345,7 +346,7 @@ def test_indicator_ids_follow_the_first_rule_that_uses_them():
             first_use_list.append(entry.indicator_id)
     number_list = [int(indicator_id[2:]) for indicator_id in first_use_list]
     skipped = sorted(set(range(1, max(number_list) + 1)) - set(number_list))
-    sidebar_list = [indicator.indicator_id for indicator in catalog.indicator_registry.indicator_by_name.values() if indicator.display_name and indicator.indicator_id not in first_use_list]
+    sidebar_list = [indicator.indicator_id for indicator in catalog.indicator_registry.indicator_by_name.values() if indicator.indicator_id not in first_use_list]  # shown without a rule (sidebar, symbol page)
     assert [number for number in number_list if number > max(number_list[:1])] == sorted(number_list)[1:]  # ids rise along the rule order
     assert len(skipped) == len(sidebar_list), (skipped, sidebar_list)  # the gaps are the sidebar-only indicators
 

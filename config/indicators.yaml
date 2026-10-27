@@ -384,7 +384,7 @@ indicator_list:
     max_age: 3d
   - indicator_id: I-023
     indicator_name: "revenue_year_over_year_percent"
-    description: {en: "Revenue of the latest quarter compared with the same quarter a year earlier, in percent. A company with no sales growth rarely rises for long. Source: Yahoo Finance via yfinance (history from SEC EDGAR).", zh: "最近一个季度的营收与去年同期相比的变化，单位 %。营收不增长的公司很少能长期上涨。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。"}
+    description: {en: "Revenue of the latest quarter compared with the same quarter a year earlier, in percent. A company with no sales growth rarely rises for long. Worked out from SEC EDGAR: the latest 10-Q quarter against the same quarter a year earlier. For Apple: 109.417 bn against 94.036 bn gives 16.4%, the same figure Yahoo shows. Source: SEC EDGAR.", zh: "最近一个季度的营收与去年同期相比的变化，单位 %。营收不增长的公司很少能长期上涨。计算方法：最近一个 10-Q 季度与一年前同一季度相比。以苹果为例：109.417 十亿美元对 94.036 十亿美元，得 16.4%，与 Yahoo 显示的数字相同。数据来源：SEC EDGAR。"}
     unit: "%"
     scope: symbol
     method: "api_fetch"
@@ -440,7 +440,7 @@ indicator_list:
     max_age: 120d
   - indicator_id: I-027
     indicator_name: "return_on_equity_percent"
-    description: {en: "ROE (return on equity): net profit divided by shareholders' equity, in percent. It can be inflated by buybacks, so it is paired with ROIC. Source: Yahoo Finance via yfinance (history from SEC EDGAR).", zh: "ROE（净资产收益率）：净利润除以股东权益，单位 %。回购会把它抬高，所以要和 ROIC 配合看。数据来源：通过 yfinance 取 Yahoo Finance（历史来自 SEC EDGAR）。"}
+    description: {en: "ROE (return on equity): trailing twelve month net profit divided by the average of shareholders' equity a year apart, in percent. Apple: 128.93 bn over (65.83 + 107.52) / 2 = 86.68 bn gives 148.75%, the same as Yahoo. It can be inflated by buybacks, so it is paired with ROIC. Source: SEC EDGAR.", zh: "ROE（净资产收益率）：最近 12 个月（TTM）的净利润除以一年前与现在的股东权益平均值，单位 %。以苹果为例：128.93 十亿美元除以 (65.83 + 107.52) / 2 = 86.68 十亿美元，得 148.75%，与 Yahoo 相同。回购会把它抬高，所以要和 ROIC 配合看。数据来源：SEC EDGAR。"}
     unit: "%"
     scope: symbol
     method: "computed"
@@ -1768,3 +1768,45 @@ indicator_list:
     fetch_group: yahoo_quote
     fetch_every: 10m
     max_age: 4d
+  - indicator_id: I-123
+    indicator_name: "accruals_percent_of_average_total_assets"
+    description: {en: "Accruals: the part of reported profit that is not backed by cash, as a percent of average total assets. It is net income minus operating cash flow, over the average of this year's and last year's total assets. A high figure means profit is mostly accounting entries, which tend to reverse later. Source: SEC EDGAR company facts. Typical values: below 5 is common for healthy companies.", zh: "应计项目：报告利润中没有现金支撑的部分，占平均总资产的百分比。计算方法是净利润减经营现金流，再除以今年与去年总资产的平均值。数值高说明利润主要来自会计分录，之后往往会转回。数据来源：SEC EDGAR 公司财务数据。常见值：健康公司一般低于 5。"}
+    unit: "%"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-124
+    indicator_name: "free_cash_flow_after_stock_compensation"
+    description: {en: "Trailing twelve month free cash flow minus stock-based compensation, in dollars. Stock pay is a real cost that free cash flow does not count, so this is the cash left for owners after paying employees in shares. Source: SEC EDGAR company facts.", zh: "最近 12 个月的自由现金流减去股票薪酬，单位美元。股票薪酬是真实成本，自由现金流没有把它算进去，所以这是支付员工股票之后留给股东的现金。数据来源：SEC EDGAR 公司财务数据。"}
+    unit: "USD"
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d
+  - indicator_id: I-125
+    indicator_name: "piotroski_f_score"
+    description: {en: "Piotroski F-score: the number of nine yes or no tests passed (0 to 9). Four are about profitability (positive return on assets, positive operating cash flow, return on assets rising, cash flow above profit), three about balance sheet and funding (less long-term debt, a higher current ratio, no new shares), two about efficiency (a higher gross margin, a higher asset turnover). Each compares with a year earlier. Source: SEC EDGAR company facts. Typical values: 7 to 9 is strong, 0 to 3 is weak.", zh: "Piotroski F 分数：九项是非测试通过的数量（0 到 9）。四项看盈利（资产收益率为正、经营现金流为正、资产收益率上升、现金流高于利润），三项看资产负债与融资（长期负债减少、流动比率上升、没有增发股份），两项看效率（毛利率上升、资产周转率上升）。每项都与一年前比较。数据来源：SEC EDGAR 公司财务数据。常见值：7 到 9 为强，0 到 3 为弱。"}
+    unit: ""
+    scope: symbol
+    method: "computed"
+    quantifiable: "yes"
+    backtestable: "yes"
+    history_source: "edgar:companyfacts"
+    history_start: "2009"
+    status: built
+    fetch_group: edgar
+    fetch_every: 1d
+    max_age: 120d

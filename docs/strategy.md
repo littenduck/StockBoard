@@ -85,6 +85,12 @@ Retired. The old evaluator let rules sharing a `variant_group` act as loose and 
 
 A gate with `per_expiration_window: true` is evaluated once per window in `option_expiration_window_list` (`config/settings.yaml`). The symbol's result for that gate is the window with the highest score; the other windows are shown as alternatives. Rule `R-CTR-04` (DTE 30 to 45; old id `B07`) is fixed, so the standard window normally wins.
 
+## Validated and unvalidated strategies
+
+A strategy's score is a claim that it ranks stocks by future return. A claim is only shown as validated after `scripts/backtest_fundamentals.py` writes a report with every check in the decision gate passing. The gate is written in the strategy file's comments before the run (for `fundamentals`, in `config/strategies/fundamentals.yaml`). The report is `docs/reports/fundamentals_backtest.md`.
+
+Backtest code: `stock_benchmark_backend/backtest.py` (score per rebalance date, baselines), `forward_returns.py` (returns after N trading days, minus the sector ETF), `factor_statistics.py` (rank IC, decile spread, Newey-West t). The score uses only the company table as it was on each date, so a rule whose value is only live (estimates, insider buying, PEG) is unknown in the backtest and is left out of the score.
+
 ## Converting to other formats
 
 The YAML is `indicator + operator + threshold`, which maps to other tools:
