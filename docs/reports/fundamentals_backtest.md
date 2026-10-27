@@ -11,17 +11,17 @@ Scores use only the company table as it was on each rebalance date (EDGAR filing
 - Stocks tested: 35 (AAOI, AAPL, ALAB, AMD, AMZN, ARM, ASML, ASTS, AVGO, BE, BEAM, BRK-B, CBRS, COHR, COIN, CRCL, GOOGL, HOOD, INTC, LITE, LUNR, META, MRVL, MSFT, MU, NFLX, NVDA, PLTR, QCOM, RKLB, SKHY, SNDK, SPCX, TSLA, TSM)
 - Stocks skipped: DRAM (no SEC company facts (KeyError)); MUU (no SEC company facts (KeyError)); QQQ (no SEC company facts (KeyError)); RAM (no SEC company facts (KeyError)); SMH (no SEC company facts (KeyError)); SNXX (no SEC company facts (KeyError)); SOXL (no SEC company facts (KeyError)); SOXX (no SEC company facts (KeyError)); SPMO (no SEC company facts (KeyError)); SPXL (no SEC company facts (KeyError)); SPY (no SEC company facts (HTTPStatusError)); TQQQ (no SEC company facts (KeyError)); UFO (no SEC company facts (KeyError)); VGT (no SEC company facts (KeyError)); VOO (no SEC company facts (KeyError))
 - Rebalance dates: 176 from 2011-01-31 to 2025-08-29
-- Average unknown share of the fundamentals score: 0.67
+- Average unknown share of the fundamentals score: 0.70
 - Cost assumption: 10 bp per trade, two trades per monthly rebalance.
 
 ## Sector-neutral excess return, 3 months ahead
 
 | Score | Dates | Rank IC mean | IC t | Top-minus-bottom decile after costs | Spread t | IC > 0 |
 |---|---|---|---|---|---|---|
-| fundamentals | 176 | 0.020 | 0.49 | -0.0810 | -1.75 | yes |
-| low_price_earnings | 176 | 0.083 | 2.28 | -0.0678 | -1.01 | yes |
-| piotroski_only | 157 | -0.014 | -0.26 | -0.0432 | -0.69 | no |
-| quality_factor | 157 | -0.007 | -0.14 | -0.0439 | -0.64 | no |
+| fundamentals | 176 | 0.026 | 0.73 | -0.0865 | -1.50 | yes |
+| low_price_earnings | 176 | 0.087 | 2.37 | -0.0678 | -1.01 | yes |
+| piotroski_only | 112 | -0.049 | -0.69 | -0.0972 | -1.38 | no |
+| quality_factor | 131 | -0.012 | -0.15 | -0.0583 | -0.65 | no |
 
 Random baseline rank IC, 5th to 95th percentile over 100 repeats: -0.028 to 0.031.
 
@@ -29,10 +29,10 @@ Random baseline rank IC, 5th to 95th percentile over 100 repeats: -0.028 to 0.03
 
 | Score | Dates | Rank IC mean | IC t | Top-minus-bottom decile after costs | Spread t | IC > 0 |
 |---|---|---|---|---|---|---|
-| fundamentals | 176 | 0.008 | 0.14 | -0.2070 | -1.93 | yes |
-| low_price_earnings | 176 | 0.122 | 2.64 | -0.1064 | -0.75 | yes |
-| piotroski_only | 157 | -0.030 | -0.45 | -0.0711 | -0.59 | no |
-| quality_factor | 157 | 0.015 | 0.26 | -0.0884 | -0.66 | yes |
+| fundamentals | 176 | -0.002 | -0.03 | -0.2639 | -1.92 | no |
+| low_price_earnings | 176 | 0.128 | 2.74 | -0.1064 | -0.75 | yes |
+| piotroski_only | 112 | -0.055 | -0.59 | -0.1445 | -1.18 | no |
+| quality_factor | 131 | -0.015 | -0.16 | -0.1107 | -0.68 | no |
 
 Random baseline rank IC, 5th to 95th percentile over 100 repeats: -0.025 to 0.035.
 
@@ -40,10 +40,10 @@ Random baseline rank IC, 5th to 95th percentile over 100 repeats: -0.025 to 0.03
 
 | Score | Dates | Rank IC mean | IC t | Top-minus-bottom decile after costs | Spread t | IC > 0 |
 |---|---|---|---|---|---|---|
-| fundamentals | 176 | -0.022 | -0.34 | -0.8273 | -1.78 | no |
-| low_price_earnings | 176 | 0.154 | 2.58 | -0.2875 | -0.91 | yes |
-| piotroski_only | 157 | -0.064 | -0.89 | -0.4195 | -1.09 | no |
-| quality_factor | 157 | -0.032 | -0.48 | -0.5243 | -1.39 | no |
+| fundamentals | 176 | -0.029 | -0.51 | -0.8656 | -1.95 | no |
+| low_price_earnings | 176 | 0.158 | 2.61 | -0.2875 | -0.91 | yes |
+| piotroski_only | 112 | -0.046 | -0.49 | -0.6580 | -1.40 | no |
+| quality_factor | 131 | -0.028 | -0.29 | -0.3391 | -0.95 | no |
 
 Random baseline rank IC, 5th to 95th percentile over 100 repeats: -0.028 to 0.031.
 

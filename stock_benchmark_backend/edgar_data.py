@@ -67,7 +67,9 @@ def edgar_data_extract_fact_table(
     table = pandas.DataFrame(row_list)
     for column in ("start", "end", "filed"):
         table[column] = pandas.to_datetime(table[column])
-    table = table[table["form"].isin(REPORT_FORM_SET)].sort_values(["filed", "rank"])
+    # Sorted by filing date, then by period end: when one filing holds several periods on the same day, the series keeps the last row,
+    # so the latest period must come last (it used to depend on the order of the JSON).
+    table = table[table["form"].isin(REPORT_FORM_SET)].sort_values(["filed", "end", "rank"])
     # the earliest filing of a period wins (what was public first), and among equals the earlier concept name
     table = table.drop_duplicates(subset=["start", "end"], keep="first") if table["start"].notna().any() \
         else table.drop_duplicates(subset=["end"], keep="first")

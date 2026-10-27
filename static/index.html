@@ -15,7 +15,7 @@
   aside > header > div { display:flex; align-items:center; }
   .status-bar { display:flex; align-items:center; gap:var(--space-2); margin:var(--space-2) var(--space-4) var(--space-4); }
   .status-bar.is-loading .status-dot { animation:pulse 1s ease-in-out infinite; }
-  aside .field { width:calc(100% - var(--space-6)); margin:0 var(--space-4); }
+  aside .field { width:calc(100% - var(--space-6)); margin:0 var(--space-4) var(--space-4); }  /* every sidebar field keeps one standard space (16px) below it */
   aside > small, .strategy-gate > small { display:block; }
   aside > small { margin:var(--space-5) var(--space-4) var(--space-2); }
   #indicator-list > .row { display:grid; grid-template-columns:1fr auto 72px; align-items:baseline; column-gap:var(--space-3); padding:var(--space-1) var(--space-2); }
@@ -75,7 +75,7 @@
     <span class="field"><select id="strategy-select" aria-labelledby="strategy-heading"></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
     <small id="market-heading"></small>
     <ul id="indicator-list"></ul>
-    <small id="symbols-heading"></small>
+    <small id="symbols-heading"></small><span class="field"><select id="asset-filter" aria-labelledby="symbols-heading"></select><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-chevron"/></svg></span>
     <ul id="symbol-list"><li class="row placeholder"></li><li class="row placeholder"></li><li class="row placeholder"></li></ul>
     <a class="row" id="catalog-link" href="/strategies"><small></small></a>
   </aside>
@@ -84,7 +84,7 @@
 <div id="strategy-help" class="box" popover aria-labelledby="strategy-help-title"></div>
 <script src="/language.js"></script>
 <script src="/rule-text.js"></script>
-<script src="/rule-card.js"></script>
+<script src="/rule-card.js"></script><script src="/fundamentals-panel.js"></script><script src="/asset-filter.js"></script>
 <script>
 const STATUS_STYLE = {
   pass: { icon:'icon-pass', color:'positive' },
@@ -172,7 +172,7 @@ function renderSymbolList(symbolCardList, failedSymbolList) {
   const focusedSymbol = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.symbol : null;
   symbolList.innerHTML = symbolCardList.map(card => {
     const isInsufficient = card.unknown_weight_ratio > maxUnknownWeightRatio;
-    const score = card.score_percent == null ? '—' : Math.round(card.score_percent);
+    const score = card.not_applicable || card.unknown_weight_ratio > maxUnknownWeightRatio || card.score_percent == null ? '—' : Math.round(card.score_percent);
     const status = summaryStatus(card.is_pass);
     return `<li><button class="row" data-symbol="${escapeText(card.symbol)}" aria-current="${card.symbol === selectedSymbol}"
         aria-label="${escapeText(languageText('symbol_summary', { symbol:card.symbol, status:languageText(status), score }))}${isInsufficient ? ' · ' + escapeText(languageText('insufficient_data')) : ''}">
@@ -218,7 +218,7 @@ function handleLanguageChange() {
   renderStatusBar();
   if (latestSnapshot) {
     renderIndicatorList(latestSnapshot.market_indicator_card_list);
-    if (latestSnapshot.symbol_card_list.length || latestSnapshot.status.generated_at) renderSymbolList(latestSnapshot.symbol_card_list, latestSnapshot.failed_symbol_list);
+    if (latestSnapshot.symbol_card_list.length || latestSnapshot.status.generated_at) renderSymbolList(assetFilterCards(latestSnapshot.symbol_card_list), latestSnapshot.failed_symbol_list);
   }
   if (lastEvaluation) renderStrategyTree(lastEvaluationSymbol, lastEvaluation, false);
 }
@@ -288,7 +288,7 @@ function renderRuleRows(ruleResultList) {
   return ruleResultList.map(rule => `<div class="row" data-status="${rule.status}">
     <small><a href="/rules#rule-${encodeURIComponent(rule.rule_id)}" title="${escapeText(languageText('open_rule', { id:rule.rule_id }))}">${escapeText(rule.rule_id)}</a>
       <a href="/rules#rule-${encodeURIComponent(rule.rule_id)}" data-rule="${escapeText(rule.rule_id)}" aria-label="${escapeText(languageText('rule_details', { id:rule.rule_id }))}"><svg class="icon" aria-hidden="true"><use href="/icons.svg#icon-help"/></svg></a></small>
-    <span>${languageRenderName(rule.rule_name)}</span><span>${formatMeasuredValue(rule.measured_value)}</span>${renderStatusBadge(rule.status)}</div>`).join('');
+    <span>${languageRenderName(rule.rule_name)}</span><span>${typeof rule.measured_value === 'number' ? escapeText(formatFundamentalValue(rule.measured_value, rule.unit)) : formatMeasuredValue(rule.measured_value)}</span>${renderStatusBadge(rule.status)}</div>`).join('');
 }
 
 function renderStrategyTree(symbol, evaluation, shouldAnimate) {
@@ -296,7 +296,7 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
   if (evaluationKey === renderedEvaluationKey && !shouldAnimate) return;
   renderedEvaluationKey = evaluationKey;
   const isInsufficient = evaluation.unknown_weight_ratio > maxUnknownWeightRatio;
-  const score = evaluation.score_percent == null ? '—' : Math.round(evaluation.score_percent);
+  const score = evaluation.not_applicable || isInsufficient || evaluation.score_percent == null ? '—' : Math.round(evaluation.score_percent);
   const strategyName = (strategyById[strategySelect.value] || {}).display_name || { en:strategySelect.value, zh:strategySelect.value };
   const symbolCard = latestSnapshot && latestSnapshot.symbol_card_list.find(card => card.symbol === symbol);
   const gates = evaluation.gate_result_list.map(gate => `<section class="strategy-gate">
@@ -313,11 +313,11 @@ function renderStrategyTree(symbol, evaluation, shouldAnimate) {
       <div class="symbol-header"><h1>${escapeText(symbol)}</h1>${symbolCard ? `<small>$${priceFormat.format(symbolCard.price)}
       <span class="${symbolCard.change_value >= 0 ? 'positive' : 'negative'}">${formatChange(symbolCard.change_value, symbolCard.change_unit)}</span></small>` : ''}</div>
     <div class="result-row">
-      <div><small>${languageRenderText(languageLocalize('verdict'))}</small><h1>${renderStatusBadge(summaryStatus(evaluation.is_pass))}</h1></div>
+      <div><small>${languageRenderText(languageLocalize('verdict'))}</small><h1>${evaluation.not_applicable ? '—' : renderStatusBadge(summaryStatus(evaluation.is_pass))}</h1></div>
       <div><small>${languageRenderText(languageLocalize('score'))}</small>${isInsufficient ? `<small class="box">${escapeText(languageText('insufficient_data'))}</small>` : ''}
         <h1 class="${isInsufficient ? 'muted' : scoreColor(evaluation.score_percent)}">${score}</h1></div>
-      </div><small>${escapeText(languageText('missing_weight', { percent:Math.round(evaluation.unknown_weight_ratio * 100) }))}</small>
-    </header>${gates}`;
+      </div><small>${evaluation.not_applicable ? languageRenderText({ en:'This strategy does not apply to this type of asset.', zh:'此策略不适用于这类标的。' }) : escapeText(languageText('missing_weight', { percent:Math.round(evaluation.unknown_weight_ratio * 100) }))}</small>
+    </header>${gates}${evaluation.not_applicable ? '' : `<section class="strategy-gate" id="fundamental-panel" data-symbol="${escapeText(symbol)}"><small>…</small></section>`}`; if (!evaluation.not_applicable) loadFundamentalsPanel(symbol);
   if (shouldAnimate) { strategyPanel.classList.remove('panel-enter'); void strategyPanel.offsetWidth; strategyPanel.classList.add('panel-enter'); }
 }
 

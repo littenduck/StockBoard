@@ -1,7 +1,7 @@
 """Load strategy YAML files into StrategyDefinition objects. Rules come from the rule catalog by id."""
 import glob
 import os
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 import yaml
 
@@ -28,9 +28,13 @@ def strategy_loader_build_rule_definition_from_catalog(raw_rule: dict, rule_cata
         raise ValueError("rule {}: veto must be true or false".format(entry.rule_id))
     if veto and entry.method == "manual":
         raise ValueError("rule {} is manual, it is always unknown and cannot be a veto".format(entry.rule_id))
+    # The unit comes from the indicator the rule tests, so a value can be shown as 148.75 % or 8.72 USD.
+    registry = rule_catalog.indicator_registry  # None for a catalog built without indicators (tests)
+    indicator = registry.indicator_by_name.get(entry.indicator) if registry and entry.indicator else None
     return RuleDefinition(
         rule_id=entry.rule_id, rule_name=entry.rule_name, description=entry.description, indicator=entry.indicator,
-        operator=entry.operator, weight=weight, value=entry.value, veto=veto, method=entry.method, status=entry.status)
+        operator=entry.operator, weight=weight, value=entry.value, veto=veto, method=entry.method, status=entry.status,
+        unit=indicator.unit if indicator else "")
 
 
 def strategy_loader_load_strategy_definition_from_yaml_file(
@@ -53,7 +57,22 @@ def strategy_loader_load_strategy_definition_from_yaml_file(
     return StrategyDefinition(
         strategy_id=raw["strategy_id"], display_name=localized_field("display_name"), source=localized_field("source"),
         thresholds=StrategyThresholds(**raw.get("thresholds", {})), gate_list=gate_list,
-        summary=localized_field("summary"), help_text=localized_field("help"))
+        summary=localized_field("summary"), help_text=localized_field("help"),
+        asset_type_list=strategy_loader_read_asset_type_list(raw))
+
+
+ASSET_TYPE_SET = {"stock", "etf", "other"}
+
+
+def strategy_loader_read_asset_type_list(raw: dict) -> Optional[List[str]]:
+    """applies_to_asset_type_list in a strategy file: which of stock, etf, other it is judged for. Missing means all of them."""
+    asset_type_list = raw.get("applies_to_asset_type_list")
+    if asset_type_list is None:
+        return None
+    unknown = [asset_type for asset_type in asset_type_list if asset_type not in ASSET_TYPE_SET]
+    if unknown:
+        raise ValueError("{}: unknown asset type {}".format(raw["strategy_id"], unknown))
+    return list(asset_type_list)
 
 
 def strategy_loader_load_all_strategy_definitions_from_directory(

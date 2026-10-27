@@ -16,6 +16,8 @@ source: {en: "Common company quality, earnings-quality and valuation rules of th
 # ------------------------------------------------------------------------------
 # max_unknown_weight_ratio: when more than this share of the weight is unknown, the dashboard greys the score as data insufficient (0.20 is 20%).
 thresholds: {max_unknown_weight_ratio: 0.20}
+# Company numbers only: an ETF has no balance sheet or earnings, so the page shows a dash for it instead of a score.
+applies_to_asset_type_list: [stock]
 
 # Decision gate, written before the first backtest run (plan T1.3.16). It is checked by scripts/backtest_fundamentals.py on the 12-month
 # sector-neutral excess return, out of sample from 2019, after the costs in config/settings.yaml:

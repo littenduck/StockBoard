@@ -85,3 +85,10 @@ def test_fetch_json_sends_the_identity_through_edgartools(monkeypatch):
     monkeypatch.setattr(edgar_data, "download_json", lambda url: seen.setdefault("url", url) and {"ok": True})
     assert edgar_data.edgar_data_fetch_json("https://data.sec.gov/x.json") == {"ok": True}
     assert os.environ["EDGAR_IDENTITY"].endswith("me@example.org")
+
+
+def test_every_sec_override_name_is_a_column_of_the_company_table():
+    from stock_benchmark_backend import live_indicators
+    days = pandas.date_range("2020-01-01", periods=3, freq="D")
+    columns = set(fundamental_series.fundamental_series_build_table({"facts": {}}, days, pandas.Series(1.0, index=days)).columns)
+    assert set(live_indicators.EDGAR_INDICATOR_NAME_LIST) <= columns

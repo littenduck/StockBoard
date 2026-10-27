@@ -45,10 +45,13 @@ def main():
         try:
             table = history_series.history_series_build_company_indicator_table(symbol, price_by_symbol[symbol]["Close"])
             snapshot = yahoo_company.yahoo_company_fetch_snapshot(symbol)
-        except (KeyError, ValueError, RuntimeError):  # ETFs and stocks without SEC facts
+        except Exception:  # ETFs and stocks without SEC facts (SEC answers 404), or one failing request: skip it, keep going
             continue
         live_by_name = company_indicators.company_indicators_build_info_indicator_value_by_name(snapshot["info"])
-        latest = table.dropna(how="all").iloc[-1]
+        known_rows = table.dropna(how="all")
+        if known_rows.empty:  # no SEC figures for this stock
+            continue
+        latest = known_rows.iloc[-1]
         for name, live in live_by_name.items():
             if name in latest.index and pandas.notna(latest[name]):
                 rebuilt = float(latest[name])
