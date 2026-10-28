@@ -17,3 +17,23 @@ def test_fundamental_value_list_only_lists_known_values_with_source():
     }
     value_list = refresh_scheduler.refresh_scheduler_build_fundamental_value_list(value_by_name)
     assert value_list == [{"indicator_name": "return_on_equity_percent", "group_id": "QUA", "unit": "%", "value": 148.75, "source": "SEC EDGAR"}]
+
+
+def test_empty_price_history_gives_no_series_and_dates_lose_their_time_zone(monkeypatch):
+    import pandas
+    from stock_benchmark_backend import live_indicators
+
+    class FakeTicker:
+        def __init__(self, history):
+            self.history_table = history
+
+        def history(self, period, auto_adjust):
+            return self.history_table
+
+    monkeypatch.setattr(live_indicators.yfinance, "Ticker", lambda symbol: FakeTicker(pandas.DataFrame()))
+    assert live_indicators.live_indicators_fetch_price_series_or_none("AAOI") is None
+
+    dated = pandas.DataFrame({"Close": [1.0, 2.0]}, index=pandas.DatetimeIndex(["2021-10-29", "2021-11-01"]).tz_localize("America/New_York"))
+    monkeypatch.setattr(live_indicators.yfinance, "Ticker", lambda symbol: FakeTicker(dated))
+    series = live_indicators.live_indicators_fetch_price_series_or_none("AAPL")
+    assert series.index.tz is None and series.index[0] == pandas.Timestamp("2021-10-29")

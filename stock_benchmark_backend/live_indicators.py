@@ -148,8 +148,14 @@ def live_indicators_build_short_interest_indicator_value_by_name(
 
 def live_indicators_fetch_price_series_or_none(symbol: str) -> Optional[pandas.Series]:
     try:
-        close = yfinance.Ticker(symbol).history(period="7y", auto_adjust=False)["Close"]
-        close.index = close.index.tz_localize(None).normalize()
+        history = yfinance.Ticker(symbol).history(period="7y", auto_adjust=False)
+        # Yahoo can return an empty table with a plain Index (no dates, no time zone) for a stock with no history;
+        # that is "no price series", not an error to log. Dates with a time zone are made naive so they match the other series.
+        if history.empty or "Close" not in history:
+            return None
+        close = history["Close"]
+        index = pandas.DatetimeIndex(close.index)
+        close.index = (index.tz_localize(None) if index.tz is not None else index).normalize()
         return close
     except Exception as error:
         print("price history failed:", symbol, error)
