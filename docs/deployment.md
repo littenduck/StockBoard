@@ -51,8 +51,8 @@ Funnel needs no domain, no inbound port and hides the server's own IP. It only s
    ExecStart=/home/ubuntu/stock-benchmark/.venv/bin/python -m uvicorn stock_benchmark_backend.web_server:app --host 127.0.0.1 --port 8000
    Restart=always
    RestartSec=5
-   MemoryHigh=300M
-   MemoryMax=400M
+   MemoryHigh=380M
+   MemoryMax=450M
    MemorySwapMax=64M
    TasksMax=96
    CPUWeight=50
@@ -118,7 +118,11 @@ A sizing method that works on any machine:
 3. Take the cap from several independent estimates and use their median: the free-memory budget, the app's peak × 1.3 to 1.5, how much the kernel needs left for `sshd` and `tailscaled`, and the platform's limits. Estimates that rest on the same evidence count once.
 4. Lean low when estimates disagree, and never exceed a ceiling that leaves room for SSH. If the refresh peak does not fit under the ceiling, reduce the refresh work instead of raising the cap.
 
-Rules of thumb: `MemoryMax` ≈ 40% of RAM, `MemoryHigh` ≈ 75% of `MemoryMax`, `MemorySwapMax` ≈ 6% of RAM, `TasksMax` about three times the usual thread count. On the 1 GB machine used here that gives 400 MB, 300 MB and 64 MB.
+Measured on the 1 GB machine: the long-running service process reached 302 to 309 MB resident, which is more than the first estimate of about 100 MB (that estimate measured one refresh, not the running server). With `MemoryHigh=300M` the kernel throttled the process at that line, swap filled up (64 MB), and the process stopped answering on 2026-10-27 (about 14:18 server time). Restarting it fixed the outage.
+
+So the limits are now 380 MB (high) and 450 MB (max). Free memory after the change: about 500 MB used and 450 MB available, with the page answering. The 40% / 75% / 6% percentages below are a starting point only; measure the running process (`ps -o rss -C python`, `systemctl show -p MemoryPeak`) before choosing numbers.
+
+Rules of thumb: `MemoryMax` ≈ 45% of RAM, `MemoryHigh` ≈ 85% of `MemoryMax`, `MemorySwapMax` ≈ 6% of RAM, `TasksMax` about three times the usual thread count. On the 1 GB machine used here that gives 450 MB, 380 MB and 64 MB.
 
 If something breaks: `sudo systemctl restart stock-benchmark`, then `journalctl -u stock-benchmark -n 50`. If the whole machine hangs, reboot the instance from the Oracle console.
 
